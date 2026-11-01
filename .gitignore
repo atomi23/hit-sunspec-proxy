@@ -1,0 +1,19 @@
+.pio/
+.vscode/
+.claude/
+*.pyc
+__pycache__/
+.DS_Store
+Thumbs.db
+# Build / lokale Secrets
+*.elf
+*.map
+firmware.bin
+secrets*
+*.pem
+.env
+.env.*
+**/settings.local.json
+# Keine echten Anlagen-Notizen
+*HANDOFF*
+*PRIVATE*
