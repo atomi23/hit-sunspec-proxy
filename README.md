@@ -4,7 +4,7 @@ Autarker Modbus-Proxy: **Hoymiles HIT** → **Consolinno HEMS** (SunSpec GEN24 a
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch). **Kein PoE** — 12–24 V DC.
 
-Aktuelle Firmware: **v0.3.4**
+Aktuelle Firmware: **v0.3.5**
 
 ## Architektur
 
@@ -27,25 +27,42 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
 
 ## Screenshots
 
-### Web-UI (Config)
+> Mockups mit **Pseudodaten** (RFC‑5737 `192.0.2.x`) — keine echten Anlagenwerte.
+
+### Live-Dashboard (`/`)
+
+![Live Dashboard](docs/screenshots/live-dashboard.jpg)
+
+### Einrichtungsassistent (`/setup`)
+
+![Setup Wizard](docs/screenshots/setup-wizard.jpg)
+
+### Config (`/config`)
 
 ![Web Config](docs/screenshots/web-config.jpg)
 
-### Display (Live)
+### Debug / SunSpec-Writes (`/debug`)
+
+![Debug](docs/screenshots/debug-page.jpg)
+
+### OTA Update (`/ota`)
+
+![OTA](docs/screenshots/ota-page.jpg)
+
+### Display (Board)
 
 ![Display Live](docs/screenshots/display-live.jpg)
 
-> Screenshots = **Mockups mit Pseudodaten** (keine echten IPs/Zählerstände aus einer Anlage).
-
 ## Features
 
+- **Live-Dashboard** auf `/` (PV/Bat/Netz/SoC, Fluss, LPP, Tasmota, Phasen) — Auto-Refresh 2 s
 - HIT Modbus TCP (Reg. **2000** PV-Energie, PV/Bat/SoC/V/I)
 - SunSpec GEN24-Map auf **:1502** inkl. Model **123** (LPP von Consolinno)
 - **Debug:** `/debug` — Log aller SunSpec-Writes (§14a-Test)
 - **OTA:** `/ota` — `firmware.bin` per Browser (NVS-Config bleibt)
 - **Demo-Modus** — Fake-Daten ohne HIT
 - Dual-Auth: Display-Code (random) + selbst gewähltes Web-Passwort
-- First-Boot: Setup-Screen mit IP + WLAN-QR
+- First-Boot: Setup-Assistent → danach autark HIT ↔ Consolinno
 - MQTT Home Assistant Discovery
 - Optional Tasmota E320 (`Power` / `E_in` / `E_out`)
 - Optional HIT-Schreiben (306–309, APC) hinter Web-Schalter
@@ -58,8 +75,8 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
    - Zugang (Passwort)
    - HIT-IP (oder Demo) + Test-Poll
    - Consolinno: Proxy-IP / Port **1502** / Unit **1**
-   - Abschließen → Setup-Screen aus, **autark HIT ↔ Consolinno**
-4. HA/MQTT/Tasmota optional später in der normalen Config
+   - Abschließen → **Live-Dashboard**, Display-QR aus
+4. Config / MQTT / Tasmota optional unter `/config`
 5. OTA: `http://<IP>/ota`
 
 Pins: [`PINS.md`](PINS.md)

@@ -32,7 +32,7 @@ input[type=file]{width:100%;margin:12px 0;color:var(--txt)}
 <button type="button" onclick="go()">Hochladen &amp; flashen</button>
 <div id="bar"><div id="fill"></div></div>
 <div id="msg" class="muted"></div>
-<p class="muted" style="margin-top:14px"><a href="/">← Config</a> · Partition: OTA dual-slot (16 MB)</p>
+<p class="muted" style="margin-top:14px"><a href="/">← Live</a> · <a href="/config">Config</a> · Partition: OTA dual-slot (16 MB)</p>
 </div>
 <script>
 async function boot(){const s=await(await fetch('/api/status')).json();document.getElementById('ver').textContent=s.version||'?';}

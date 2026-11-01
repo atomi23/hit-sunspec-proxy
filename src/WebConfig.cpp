@@ -16,11 +16,105 @@
 namespace {
 AsyncWebServer server(80);
 
+const char DASH_HTML[] PROGMEM = R"HTML(
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Live · HIT Proxy</title>
+<style>
+:root{--bg:#0b1220;--card:#121a2b;--line:#243049;--txt:#e8eefc;--muted:#93a0b8;--acc:#3dde7d;--warn:#ffb020;--cyan:#7ee0ff}
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:radial-gradient(1100px 520px at 8% 0%,#1a2744,var(--bg));color:var(--txt)}
+.wrap{max-width:980px;margin:0 auto;padding:20px 18px 36px}
+.top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px}
+h1{margin:0;font-size:1.35rem} .sub{color:var(--muted);font-size:.88rem;margin-top:4px}
+nav a{color:var(--cyan);margin-right:12px;text-decoration:none;font-size:.9rem}
+.ip{font-size:1.55rem;font-weight:700;color:var(--cyan)}.badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#3a2a08;color:var(--warn);font-size:.72rem;font-weight:700}
+.dots{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px;color:var(--muted);font-size:.86rem}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+.ok{background:var(--acc)}.bad{background:#ff5a5a}
+.metrics{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.k{font-size:.75rem;color:var(--muted);letter-spacing:.02em}.v{font-size:1.55rem;font-weight:700;margin-top:4px}.u{font-size:.85rem;color:var(--muted);font-weight:600}
+.flow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
+.box{flex:1;min-width:110px;text-align:center;padding:12px 8px;border-radius:12px;border:1px solid var(--line);background:#0e1626}
+.box b{display:block;font-size:1.1rem;margin-top:4px}.arr{color:var(--muted);font-size:1.2rem}
+.grid2{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.bar{height:8px;background:#0e1626;border-radius:6px;overflow:hidden;margin-top:8px}.fill{height:100%;background:linear-gradient(90deg,#2bb673,var(--acc))}
+.meta{color:var(--muted);font-size:.78rem;margin-top:12px;line-height:1.45}
+button{background:#243049;color:var(--txt);border:0;border-radius:999px;padding:8px 12px;cursor:pointer;margin-right:6px}
+</style></head><body><div class="wrap">
+<div class="top">
+  <div>
+    <h1>HIT → Consolinno Live <span id="ver" style="font-size:.7rem;color:var(--muted)"></span></h1>
+    <div class="sub">Autark: HIT → Proxy :1502 → HEMS</div>
+  </div>
+  <nav><a href="/">Live</a><a href="/config">Config</a><a href="/debug">Debug</a><a href="/ota">OTA</a></nav>
+</div>
+<div class="ip" id="ip">…</div>
+<div class="dots" id="dots"></div>
+<div class="metrics" id="m"></div>
+<div class="card">
+  <div class="k">Energiefluss</div>
+  <div class="flow">
+    <div class="box">PV<b id="fPv">—</b></div><div class="arr">→</div>
+    <div class="box">Akku / Haus<b id="fBat">—</b></div><div class="arr">→</div>
+    <div class="box">Netz<b id="fGrid">—</b></div>
+  </div>
+  <div class="k">Batterie SoC</div>
+  <div class="bar"><div class="fill" id="socBar" style="width:0%"></div></div>
+  <div class="meta" id="socTxt">—</div>
+</div>
+<div class="grid2" style="margin-top:12px">
+  <div class="card"><div class="k">Energie HIT</div><div id="en" class="meta">—</div></div>
+  <div class="card"><div class="k">Consolinno LPP / Steuerung</div><div id="lpp" class="meta">—</div></div>
+  <div class="card"><div class="k">Tasmota</div><div id="tas" class="meta">—</div></div>
+  <div class="card"><div class="k">Phasen</div><div id="ph" class="meta">—</div></div>
+</div>
+<div class="meta" style="margin-top:14px">
+  <button type="button" onclick="poll()">Jetzt pollen</button>
+  <span id="age"></span>
+</div>
+</div>
+<script>
+const d=ok=>`<span class="dot ${ok?'ok':'bad'}"></span>`;
+const w=n=>`${Number(n)||0} W`;
+async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
+async function refresh(){
+  const s=await(await fetch('/api/status')).json();
+  if(s.setupComplete===false){location.href='/setup';return;}
+  document.getElementById('ver').textContent='v'+(s.version||'');
+  document.getElementById('ip').innerHTML=(s.ipShown||'-')+(s.demoMode?' <span class="badge">DEMO</span>':'');
+  document.getElementById('dots').innerHTML=
+    `${d(s.hitOk)} HIT &nbsp; ${d(s.sunspecClient)} HEMS &nbsp; ${d(s.mqttOk)} MQTT &nbsp; ${d(s.tasmotaOk)} TAS &nbsp; ${d(s.ethOk||s.wifiOk)} NET`;
+  document.getElementById('m').innerHTML=
+    `<div class="card"><div class="k">PV</div><div class="v">${s.pvW||0} <span class="u">W</span></div></div>
+     <div class="card"><div class="k">Batterie</div><div class="v">${s.batW||0} <span class="u">W</span></div></div>
+     <div class="card"><div class="k">Netz</div><div class="v">${s.gridW||0} <span class="u">W</span></div></div>
+     <div class="card"><div class="k">SoC</div><div class="v">${s.soc||0} <span class="u">%</span></div></div>`;
+  document.getElementById('fPv').textContent=w(s.pvW);
+  document.getElementById('fBat').textContent=w(s.batW);
+  document.getElementById('fGrid').textContent=w(s.gridW);
+  const soc=Math.max(0,Math.min(100,Number(s.soc)||0));
+  document.getElementById('socBar').style.width=soc+'%';
+  document.getElementById('socTxt').textContent=soc+' % · Status: '+(s.status||'—');
+  document.getElementById('en').innerHTML=`PV ${Number(s.energyPvKwh||0).toFixed(1)} kWh<br>Bezug ${Number(s.energyImpKwh||0).toFixed(1)} · Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh`;
+  const lpp=(Number(s.wMaxLimPct||0)/100).toFixed(2);
+  document.getElementById('lpp').innerHTML=`WMaxLimPct ${lpp}% ${s.wMaxLimEna?'aktiv':'aus'}<br>HEMS ${s.sunspecClient?'verbunden':'wartet'}<br>${s.lastWriteNote||''}`;
+  document.getElementById('tas').innerHTML=s.tasmotaOk
+    ? `${s.tasmotaSensorKey||'Zähler'}: ${s.tasmotaPowerW} W<br>E_in ${Number(s.tasmotaTotalKwh).toFixed(3)} · E_out ${Number(s.tasmotaExportKwh).toFixed(3)} kWh`
+    : 'aus / offline';
+  document.getElementById('ph').innerHTML=`L1 ${Number(s.v1||0).toFixed(1)} V · L2 ${Number(s.v2||0).toFixed(1)} V · L3 ${Number(s.v3||0).toFixed(1)} V<br>I ${Number(s.i1||0).toFixed(1)} / ${Number(s.i2||0).toFixed(1)} / ${Number(s.i3||0).toFixed(1)} A`;
+  document.getElementById('age').textContent='HIT vor '+Math.floor((s.lastHitAgeMs||0)/1000)+'s · Eth '+(s.ipEth||'-')+' · WiFi '+(s.ipWifi||'-');
+}
+refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
+</script></body></html>
+)HTML";
+
 const char INDEX_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>HIT SunSpec Proxy</title>
+<title>Config · HIT Proxy</title>
 <style>
 :root{--bg:#0b1220;--card:#121a2b;--line:#243049;--txt:#e8eefc;--muted:#93a0b8;--acc:#3dde7d;--warn:#ffb020}
 *{box-sizing:border-box}body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:radial-gradient(1000px 500px at 0% 0%,#1a2744,var(--bg));color:var(--txt)}
@@ -37,8 +131,8 @@ button.sec{background:#243049;color:var(--txt)}.dot{width:8px;height:8px;border-
 .hint{color:var(--muted);font-size:.75rem;margin:8px 0 0}#probeBox{margin-top:12px;display:none}
 #probeSum{color:var(--acc);font-size:.9rem;margin-bottom:6px}
 </style></head><body><div class="wrap">
-<h1>HIT → Consolinno Proxy <span style="font-size:.7rem;color:var(--muted)">v0.3</span></h1>
-<div class="sub">HIT = SunSpec für HEMS · <a href="/debug" style="color:#7ee0ff">Debug</a> · <a href="/ota" style="color:#7ee0ff">OTA Update</a> · Tasmota / MQTT</div>
+<h1>HIT → Consolinno Config <span style="font-size:.7rem;color:var(--muted)">v0.3</span></h1>
+<div class="sub"><a href="/" style="color:#7ee0ff">Live-Dashboard</a> · <a href="/debug" style="color:#7ee0ff">Debug</a> · <a href="/ota" style="color:#7ee0ff">OTA</a> · Tasmota / MQTT</div>
 <div id="live" class="card" style="margin-bottom:12px">Lade…</div>
 <form id="f" class="grid">
 <div class="card"><strong>HIT Quelle</strong>
@@ -146,7 +240,7 @@ document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.
 Tasmota ${s.tasmotaSensorKey||''}: ${s.tasmotaOk? (s.tasmotaPowerW+' W · E_in '+Number(s.tasmotaTotalKwh).toFixed(3)+' · E_out '+Number(s.tasmotaExportKwh).toFixed(3)+' kWh') : 'aus'}
 HIT ${s.hitHost||''} · ${s.status||''}</pre>`;}
 async function boot(){const s=await(await fetch('/api/status')).json();if(s.setupComplete===false)location.href='/setup';else load();}
-boot();setInterval(()=>{if(document.hidden)return;refresh();},3000);
+boot();setInterval(()=>{if(document.hidden)return;refresh();},5000);
 </script></body></html>
 )HTML";
 
@@ -283,7 +377,7 @@ async function finish(){
   if(!body.demoMode && !body.hitHost){fin.innerHTML='<span class="bad">HIT-IP oder Demo nötig</span>';go(2);return;}
   const r=await(await fetch('/api/setup/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
   if(!r.ok){fin.innerHTML='<span class="bad">'+(r.error||'Fehler')+'</span>';return;}
-  fin.innerHTML='<span class="ok">Fertig — weiter zur Config…</span>';
+  fin.innerHTML='<span class="ok">Fertig — weiter zum Live-Dashboard…</span>';
   setTimeout(()=>location.href='/',1200);
 }
 boot();
@@ -312,7 +406,7 @@ th{color:var(--muted);font-weight:600}button{background:#243049;color:var(--txt)
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
 <button onclick="refresh()">Aktualisieren</button>
 <button onclick="clr()">Log leeren</button>
-<a href="/">← Config</a>
+<a href="/">← Live</a> · <a href="/config">Config</a>
 </div>
 <table><thead><tr><th>Alter</th><th>FC</th><th>Addr</th><th>Wert</th><th>Hinweis</th></tr></thead>
 <tbody id="tb"></tbody></table>
@@ -441,6 +535,15 @@ void begin() {
       req->redirect("/setup");
       return;
     }
+    req->send_P(200, "text/html", DASH_HTML);
+  });
+
+  server.on("/config", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    if (!ConfigStore::get().setupComplete) {
+      req->redirect("/setup");
+      return;
+    }
     req->send_P(200, "text/html", INDEX_HTML);
   });
 
@@ -528,6 +631,12 @@ void begin() {
     doc["batW"] = gLive.batW;
     doc["soc"] = gLive.soc;
     doc["gridW"] = gLive.gridW;
+    doc["v1"] = gLive.v1;
+    doc["v2"] = gLive.v2;
+    doc["v3"] = gLive.v3;
+    doc["i1"] = gLive.i1;
+    doc["i2"] = gLive.i2;
+    doc["i3"] = gLive.i3;
     doc["energyPvKwh"] = gLive.energyPvKwh;
     doc["energyImpKwh"] = gLive.energyImpKwh;
     doc["energyExpKwh"] = gLive.energyExpKwh;
@@ -539,6 +648,7 @@ void begin() {
     doc["wMaxLimPct"] = gLive.wMaxLimPct;
     doc["wMaxLimEna"] = gLive.wMaxLimEna;
     doc["lastWriteNote"] = DebugLog::lastNote();
+    doc["lastHitAgeMs"] = gLive.lastHitMs ? (millis() - gLive.lastHitMs) : 0;
     doc["status"] = gLive.status;
     doc["version"] = PROXY_VERSION;
     doc["otaBusy"] = OtaUpdate::inProgress();
