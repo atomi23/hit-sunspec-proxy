@@ -13,26 +13,24 @@ const char OTA_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>OTA Update · HIT Proxy</title>
-<style>
-:root{--bg:#0b1220;--card:#121a2b;--line:#243049;--txt:#e8eefc;--muted:#93a0b8;--acc:#3dde7d}
-*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:radial-gradient(900px 400px at 0% 0%,#1a2744,var(--bg));color:var(--txt)}
-.wrap{max-width:640px;margin:0 auto;padding:22px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
-.muted{color:var(--muted);font-size:.85rem}a{color:#7ee0ff}
-button{background:var(--acc);color:#04180c;border:0;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer}
-input[type=file]{width:100%;margin:12px 0;color:var(--txt)}
-#bar{height:10px;background:#0e1626;border-radius:6px;overflow:hidden;margin-top:12px}
-#fill{height:100%;width:0;background:var(--acc);transition:width .15s}
-#msg{margin-top:10px;font-size:.9rem}
-</style></head><body><div class="wrap">
-<h1>Firmware OTA</h1>
-<p class="muted">Aktuell: <b id="ver">…</b> · <b>Config bleibt in NVS</b> (Passwörter, HIT-IP, MQTT…). Datei: PlatformIO <code>firmware.bin</code>.</p>
+<meta name="color-scheme" content="dark"/><title>OTA Update · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>.wrap{max-width:640px}input[type=file]{width:100%;margin:14px 0;color:var(--txt)}</style>
+</head><body><div class="wrap">
+<div class="top">
+  <div>
+    <p class="brand">HIT SunSpec Proxy</p>
+    <h1>Firmware OTA</h1>
+    <p class="sub">Aktuell <b id="ver">…</b> · NVS-Config bleibt · <code>firmware.bin</code></p>
+  </div>
+  <nav><a href="/">Live</a><a href="/config">Config</a><a href="/debug">Debug</a><a class="on" href="/ota">OTA</a></nav>
+</div>
 <div class="card">
 <input type="file" id="f" accept=".bin,application/octet-stream"/>
 <button type="button" onclick="go()">Hochladen &amp; flashen</button>
 <div id="bar"><div id="fill"></div></div>
-<div id="msg" class="muted"></div>
-<p class="muted" style="margin-top:14px"><a href="/">← Live</a> · <a href="/config">Config</a> · Partition: OTA dual-slot (16 MB)</p>
+<div id="msg" class="muted" style="margin-top:10px"></div>
+<p class="hint">Partition: OTA dual-slot (16 MB)</p>
 </div>
 <script>
 async function boot(){const s=await(await fetch('/api/status')).json();document.getElementById('ver').textContent=s.version||'?';}

@@ -4,7 +4,7 @@ Autarker Modbus-Proxy: **Hoymiles HIT** → **Consolinno HEMS** (SunSpec GEN24 a
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch). **Kein PoE** — 12–24 V DC.
 
-Aktuelle Firmware: **v0.3.5**
+Aktuelle Firmware: **v0.3.6**
 
 ## Architektur
 
@@ -56,6 +56,7 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
 ## Features
 
 - **Live-Dashboard** auf `/` (PV/Bat/Netz/SoC, Fluss, LPP, Tasmota, Phasen) — Auto-Refresh 2 s
+- Modernes Web-UI 2026 (gemeinsames `/a.css`, Glass-Panels, Chip-Status)
 - HIT Modbus TCP (Reg. **2000** PV-Energie, PV/Bat/SoC/V/I)
 - SunSpec GEN24-Map auf **:1502** inkl. Model **123** (LPP von Consolinno)
 - **Debug:** `/debug` — Log aller SunSpec-Writes (§14a-Test)

@@ -16,67 +16,123 @@
 namespace {
 AsyncWebServer server(80);
 
+// Shared 2026 UI — once in flash, linked by all pages
+const char UI_CSS[] PROGMEM = R"CSS(
+:root{
+  --bg:#0c0f0d;--bg2:#121816;--panel:rgba(22,28,24,.72);--line:rgba(180,210,190,.12);
+  --txt:#eef3ef;--muted:#8b9a90;--acc:#6ef0a5;--acc2:#2dd4a0;--warn:#f0b429;--danger:#ff6b6b;--cyan:#8ee7ff;
+  --r:14px;--ease:cubic-bezier(.22,1,.36,1);
+  --font:"Segoe UI Variable Text","Segoe UI","SF Pro Text",system-ui,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
+}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;font:15px/1.45 var(--font);color:var(--txt);background:
+  radial-gradient(900px 520px at 12% -10%,rgba(45,212,160,.16),transparent 55%),
+  radial-gradient(700px 480px at 100% 0%,rgba(110,180,255,.08),transparent 50%),
+  linear-gradient(180deg,#101512 0%,var(--bg) 45%,#0a0c0b 100%);
+  letter-spacing:-.01em}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");mix-blend-mode:overlay}
+.wrap{position:relative;max-width:980px;margin:0 auto;padding:28px 20px 48px}
+.top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:22px}
+.brand{font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--acc2);margin:0 0 6px}
+h1{margin:0;font-size:clamp(1.35rem,3vw,1.85rem);font-weight:650;letter-spacing:-.03em;line-height:1.15}
+.sub,.muted,.meta,.hint{color:var(--muted)}.sub{margin:6px 0 0;font-size:.92rem}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:4px;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(10px)}
+nav a{color:var(--muted);text-decoration:none;padding:8px 12px;border-radius:9px;font-size:.86rem;font-weight:550;transition:color .2s var(--ease),background .2s var(--ease)}
+nav a:hover,nav a.on{color:var(--txt);background:rgba(110,240,165,.1)}
+a{color:var(--cyan)}
+.panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;
+  backdrop-filter:blur(14px) saturate(1.2);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 12px 40px rgba(0,0,0,.22);
+  transition:border-color .25s var(--ease),transform .25s var(--ease)}
+.metrics{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));margin:16px 0}
+.metric .k,.k{font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.metric .v,.v{font:650 1.65rem/1.1 var(--mono);font-variant-numeric:tabular-nums;margin-top:8px;letter-spacing:-.02em}
+.u{font:600 .8rem/1 var(--font);color:var(--muted);margin-left:2px}
+.ip{font:650 clamp(1.4rem,4vw,1.9rem)/1.1 var(--mono);color:var(--cyan);letter-spacing:-.03em}
+.badge{display:inline-block;margin-left:10px;padding:3px 9px;border-radius:8px;border:1px solid rgba(240,180,41,.35);
+  background:rgba(240,180,41,.12);color:var(--warn);font:650 .68rem/1.2 var(--font);letter-spacing:.06em;vertical-align:middle}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(0,0,0,.28);color:var(--muted);font-size:.78rem;font-weight:550}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(0,0,0,.25)}
+.dot.ok{background:var(--acc);box-shadow:0 0 10px rgba(110,240,165,.45)}.dot.bad{background:var(--danger)}
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:stretch;margin:12px 0 16px}
+.box{text-align:center;padding:14px 10px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.28)}
+.box span{display:block;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.box b{display:block;margin-top:8px;font:650 1.05rem/1 var(--mono);font-variant-numeric:tabular-nums}
+.arr{color:rgba(110,240,165,.45);align-self:center;font-size:1.1rem}
+.bar{height:6px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;margin-top:10px}
+.fill{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .5s var(--ease)}
+.grid,.grid2{display:grid;gap:12px}.grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid2{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-top:12px}
+.card strong{display:block;font-size:.95rem;font-weight:650;letter-spacing:-.01em;margin-bottom:2px}
+label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+input,select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.35);
+  color:var(--txt);font:450 .95rem/1.3 var(--font);outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus{border-color:rgba(110,240,165,.45);box-shadow:0 0 0 3px rgba(110,240,165,.12)}
+input[type=checkbox]{width:auto;margin-right:8px;accent-color:var(--acc2)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
+button,.btn{appearance:none;border:0;cursor:pointer;padding:11px 16px;border-radius:10px;font:650 .9rem/1 var(--font);
+  background:linear-gradient(180deg,#8af5b8,var(--acc2));color:#062416;box-shadow:0 1px 0 rgba(255,255,255,.25) inset;
+  transition:transform .15s var(--ease),filter .15s}button:hover,.btn:hover{filter:brightness(1.05)}button:active{transform:scale(.98)}
+button.sec,.btn.sec{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid var(--line);box-shadow:none}
+.hint{font-size:.78rem;margin:8px 0 0;line-height:1.45}
+.ok{color:var(--acc)}.bad{color:var(--danger)}
+code{font-family:var(--mono);font-size:.86em;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+pre{color:var(--muted);white-space:pre-wrap;font:450 .78rem/1.4 var(--mono);max-height:220px;overflow:auto;margin:8px 0 0}
+.steps{display:flex;gap:6px;margin:18px 0 8px}.steps i{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.08);transition:background .3s}
+.steps i.on{background:var(--acc)}
+.hide{display:none}ul{margin:10px 0 0 18px;color:var(--muted);font-size:.9rem;line-height:1.5}
+.big{font:650 clamp(1.5rem,3.5vw,2rem)/1.1 var(--mono);color:var(--acc);letter-spacing:-.03em}
+table{width:100%;border-collapse:collapse;font-size:.82rem}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:600;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase}
+#probeBox{margin-top:12px;display:none}#bar{height:8px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;margin-top:14px}
+#fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .15s}
+@media(max-width:640px){.flow{grid-template-columns:1fr;}.arr{display:none;transform:rotate(90deg)}}
+)CSS";
+
 const char DASH_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Live · HIT Proxy</title>
-<style>
-:root{--bg:#0b1220;--card:#121a2b;--line:#243049;--txt:#e8eefc;--muted:#93a0b8;--acc:#3dde7d;--warn:#ffb020;--cyan:#7ee0ff}
-*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:radial-gradient(1100px 520px at 8% 0%,#1a2744,var(--bg));color:var(--txt)}
-.wrap{max-width:980px;margin:0 auto;padding:20px 18px 36px}
-.top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px}
-h1{margin:0;font-size:1.35rem} .sub{color:var(--muted);font-size:.88rem;margin-top:4px}
-nav a{color:var(--cyan);margin-right:12px;text-decoration:none;font-size:.9rem}
-.ip{font-size:1.55rem;font-weight:700;color:var(--cyan)}.badge{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:#3a2a08;color:var(--warn);font-size:.72rem;font-weight:700}
-.dots{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px;color:var(--muted);font-size:.86rem}
-.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
-.ok{background:var(--acc)}.bad{background:#ff5a5a}
-.metrics{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-.k{font-size:.75rem;color:var(--muted);letter-spacing:.02em}.v{font-size:1.55rem;font-weight:700;margin-top:4px}.u{font-size:.85rem;color:var(--muted);font-weight:600}
-.flow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
-.box{flex:1;min-width:110px;text-align:center;padding:12px 8px;border-radius:12px;border:1px solid var(--line);background:#0e1626}
-.box b{display:block;font-size:1.1rem;margin-top:4px}.arr{color:var(--muted);font-size:1.2rem}
-.grid2{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.bar{height:8px;background:#0e1626;border-radius:6px;overflow:hidden;margin-top:8px}.fill{height:100%;background:linear-gradient(90deg,#2bb673,var(--acc))}
-.meta{color:var(--muted);font-size:.78rem;margin-top:12px;line-height:1.45}
-button{background:#243049;color:var(--txt);border:0;border-radius:999px;padding:8px 12px;cursor:pointer;margin-right:6px}
-</style></head><body><div class="wrap">
+<meta name="color-scheme" content="dark"/><title>Live · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+</head><body><div class="wrap">
 <div class="top">
   <div>
-    <h1>HIT → Consolinno Live <span id="ver" style="font-size:.7rem;color:var(--muted)"></span></h1>
-    <div class="sub">Autark: HIT → Proxy :1502 → HEMS</div>
+    <p class="brand">HIT SunSpec Proxy</p>
+    <h1>Live <span id="ver" class="muted" style="font-size:.7rem;font-weight:500"></span></h1>
+    <p class="sub">HIT → Proxy :1502 → Consolinno · autark</p>
   </div>
-  <nav><a href="/">Live</a><a href="/config">Config</a><a href="/debug">Debug</a><a href="/ota">OTA</a></nav>
+  <nav><a class="on" href="/">Live</a><a href="/config">Config</a><a href="/debug">Debug</a><a href="/ota">OTA</a></nav>
 </div>
 <div class="ip" id="ip">…</div>
-<div class="dots" id="dots"></div>
+<div class="chips" id="dots"></div>
 <div class="metrics" id="m"></div>
-<div class="card">
+<div class="panel">
   <div class="k">Energiefluss</div>
   <div class="flow">
-    <div class="box">PV<b id="fPv">—</b></div><div class="arr">→</div>
-    <div class="box">Akku / Haus<b id="fBat">—</b></div><div class="arr">→</div>
-    <div class="box">Netz<b id="fGrid">—</b></div>
+    <div class="box"><span>PV</span><b id="fPv">—</b></div><div class="arr">→</div>
+    <div class="box"><span>Akku / Haus</span><b id="fBat">—</b></div><div class="arr">→</div>
+    <div class="box"><span>Netz</span><b id="fGrid">—</b></div>
   </div>
   <div class="k">Batterie SoC</div>
-  <div class="bar"><div class="fill" id="socBar" style="width:0%"></div></div>
-  <div class="meta" id="socTxt">—</div>
+  <div class="bar"><div class="fill" id="socBar"></div></div>
+  <div class="meta" id="socTxt" style="margin-top:10px">—</div>
 </div>
-<div class="grid2" style="margin-top:12px">
-  <div class="card"><div class="k">Energie HIT</div><div id="en" class="meta">—</div></div>
-  <div class="card"><div class="k">Consolinno LPP / Steuerung</div><div id="lpp" class="meta">—</div></div>
-  <div class="card"><div class="k">Tasmota</div><div id="tas" class="meta">—</div></div>
-  <div class="card"><div class="k">Phasen</div><div id="ph" class="meta">—</div></div>
+<div class="grid2">
+  <div class="panel"><div class="k">Energie HIT</div><div id="en" class="meta" style="margin-top:10px">—</div></div>
+  <div class="panel"><div class="k">Consolinno LPP</div><div id="lpp" class="meta" style="margin-top:10px">—</div></div>
+  <div class="panel"><div class="k">Tasmota</div><div id="tas" class="meta" style="margin-top:10px">—</div></div>
+  <div class="panel"><div class="k">Phasen</div><div id="ph" class="meta" style="margin-top:10px">—</div></div>
 </div>
-<div class="meta" style="margin-top:14px">
-  <button type="button" onclick="poll()">Jetzt pollen</button>
-  <span id="age"></span>
+<div class="row">
+  <button class="sec" type="button" onclick="poll()">Jetzt pollen</button>
+  <span class="meta" id="age"></span>
 </div>
 </div>
 <script>
-const d=ok=>`<span class="dot ${ok?'ok':'bad'}"></span>`;
+const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
 const w=n=>`${Number(n)||0} W`;
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
 async function refresh(){
@@ -85,25 +141,25 @@ async function refresh(){
   document.getElementById('ver').textContent='v'+(s.version||'');
   document.getElementById('ip').innerHTML=(s.ipShown||'-')+(s.demoMode?' <span class="badge">DEMO</span>':'');
   document.getElementById('dots').innerHTML=
-    `${d(s.hitOk)} HIT &nbsp; ${d(s.sunspecClient)} HEMS &nbsp; ${d(s.mqttOk)} MQTT &nbsp; ${d(s.tasmotaOk)} TAS &nbsp; ${d(s.ethOk||s.wifiOk)} NET`;
+    chip(s.hitOk,'HIT')+chip(s.sunspecClient,'HEMS')+chip(s.mqttOk,'MQTT')+chip(s.tasmotaOk,'TAS')+chip(s.ethOk||s.wifiOk,'NET');
   document.getElementById('m').innerHTML=
-    `<div class="card"><div class="k">PV</div><div class="v">${s.pvW||0} <span class="u">W</span></div></div>
-     <div class="card"><div class="k">Batterie</div><div class="v">${s.batW||0} <span class="u">W</span></div></div>
-     <div class="card"><div class="k">Netz</div><div class="v">${s.gridW||0} <span class="u">W</span></div></div>
-     <div class="card"><div class="k">SoC</div><div class="v">${s.soc||0} <span class="u">%</span></div></div>`;
+    `<div class="panel metric"><div class="k">PV</div><div class="v">${s.pvW||0}<span class="u">W</span></div></div>
+     <div class="panel metric"><div class="k">Batterie</div><div class="v">${s.batW||0}<span class="u">W</span></div></div>
+     <div class="panel metric"><div class="k">Netz</div><div class="v">${s.gridW||0}<span class="u">W</span></div></div>
+     <div class="panel metric"><div class="k">SoC</div><div class="v">${s.soc||0}<span class="u">%</span></div></div>`;
   document.getElementById('fPv').textContent=w(s.pvW);
   document.getElementById('fBat').textContent=w(s.batW);
   document.getElementById('fGrid').textContent=w(s.gridW);
   const soc=Math.max(0,Math.min(100,Number(s.soc)||0));
   document.getElementById('socBar').style.width=soc+'%';
-  document.getElementById('socTxt').textContent=soc+' % · Status: '+(s.status||'—');
+  document.getElementById('socTxt').textContent=soc+' % · '+(s.status||'—');
   document.getElementById('en').innerHTML=`PV ${Number(s.energyPvKwh||0).toFixed(1)} kWh<br>Bezug ${Number(s.energyImpKwh||0).toFixed(1)} · Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh`;
   const lpp=(Number(s.wMaxLimPct||0)/100).toFixed(2);
-  document.getElementById('lpp').innerHTML=`WMaxLimPct ${lpp}% ${s.wMaxLimEna?'aktiv':'aus'}<br>HEMS ${s.sunspecClient?'verbunden':'wartet'}<br>${s.lastWriteNote||''}`;
+  document.getElementById('lpp').innerHTML=`WMaxLimPct ${lpp}% · ${s.wMaxLimEna?'aktiv':'aus'}<br>HEMS ${s.sunspecClient?'verbunden':'wartet'}<br>${s.lastWriteNote||''}`;
   document.getElementById('tas').innerHTML=s.tasmotaOk
     ? `${s.tasmotaSensorKey||'Zähler'}: ${s.tasmotaPowerW} W<br>E_in ${Number(s.tasmotaTotalKwh).toFixed(3)} · E_out ${Number(s.tasmotaExportKwh).toFixed(3)} kWh`
     : 'aus / offline';
-  document.getElementById('ph').innerHTML=`L1 ${Number(s.v1||0).toFixed(1)} V · L2 ${Number(s.v2||0).toFixed(1)} V · L3 ${Number(s.v3||0).toFixed(1)} V<br>I ${Number(s.i1||0).toFixed(1)} / ${Number(s.i2||0).toFixed(1)} / ${Number(s.i3||0).toFixed(1)} A`;
+  document.getElementById('ph').innerHTML=`L1 ${Number(s.v1||0).toFixed(1)} · L2 ${Number(s.v2||0).toFixed(1)} · L3 ${Number(s.v3||0).toFixed(1)} V<br>${Number(s.i1||0).toFixed(1)} / ${Number(s.i2||0).toFixed(1)} / ${Number(s.i3||0).toFixed(1)} A`;
   document.getElementById('age').textContent='HIT vor '+Math.floor((s.lastHitAgeMs||0)/1000)+'s · Eth '+(s.ipEth||'-')+' · WiFi '+(s.ipWifi||'-');
 }
 refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
@@ -114,26 +170,18 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Config · HIT Proxy</title>
-<style>
-:root{--bg:#0b1220;--card:#121a2b;--line:#243049;--txt:#e8eefc;--muted:#93a0b8;--acc:#3dde7d;--warn:#ffb020}
-*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:radial-gradient(1000px 500px at 0% 0%,#1a2744,var(--bg));color:var(--txt)}
-.wrap{max-width:960px;margin:0 auto;padding:22px}h1{margin:0 0 6px;font-size:1.35rem}.sub{color:var(--muted);margin-bottom:16px}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-label{display:block;font-size:.78rem;color:var(--muted);margin:10px 0 4px}
-input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0e1626;color:var(--txt)}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-button{background:var(--acc);color:#04180c;border:0;border-radius:999px;padding:10px 14px;font-weight:700;cursor:pointer}
-button.sec{background:#243049;color:var(--txt)}.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.ok{background:var(--acc)}.bad{background:#ff5a5a}pre{color:var(--muted);white-space:pre-wrap;font-size:.78rem;max-height:220px;overflow:auto}
-.ip{font-size:1.4rem;font-weight:700;color:#7ee0ff}
-.hint{color:var(--muted);font-size:.75rem;margin:8px 0 0}#probeBox{margin-top:12px;display:none}
-#probeSum{color:var(--acc);font-size:.9rem;margin-bottom:6px}
-</style></head><body><div class="wrap">
-<h1>HIT → Consolinno Config <span style="font-size:.7rem;color:var(--muted)">v0.3</span></h1>
-<div class="sub"><a href="/" style="color:#7ee0ff">Live-Dashboard</a> · <a href="/debug" style="color:#7ee0ff">Debug</a> · <a href="/ota" style="color:#7ee0ff">OTA</a> · Tasmota / MQTT</div>
-<div id="live" class="card" style="margin-bottom:12px">Lade…</div>
+<meta name="color-scheme" content="dark"/><title>Config · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+</head><body><div class="wrap">
+<div class="top">
+  <div>
+    <p class="brand">HIT SunSpec Proxy</p>
+    <h1>Config</h1>
+    <p class="sub">HIT Pflicht · Tasmota / MQTT optional</p>
+  </div>
+  <nav><a href="/">Live</a><a class="on" href="/config">Config</a><a href="/debug">Debug</a><a href="/ota">OTA</a></nav>
+</div>
+<div id="live" class="panel" style="margin-bottom:14px">Lade…</div>
 <form id="f" class="grid">
 <div class="card"><strong>HIT Quelle</strong>
 <label>Verbindung</label>
@@ -232,10 +280,11 @@ async function probeTas(){
   document.getElementById('probeRaw').textContent=r.raw||'';
   if(r.ok){f.tasmotaEnabled.checked=true;refresh();}
 }
-async function refresh(){const s=await(await fetch('/api/status')).json();const d=ok=>`<span class="dot ${ok?'ok':'bad'}"></span>`;
-document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.demoMode?' · <span style="color:#ffb020">DEMO</span>':''}</div>
-<div style="margin:8px 0">${d(s.hitOk)} HIT &nbsp; ${d(s.sunspecClient)} HEMS &nbsp; ${d(s.mqttOk)} MQTT &nbsp; ${d(s.tasmotaOk)} TAS &nbsp; ${d(s.ethOk||s.wifiOk)} NET</div>
-<div><b>${s.pvW} W</b> PV · Bat ${s.batW} W · Netz ${s.gridW} W · SoC ${s.soc}% · ${Number(s.energyPvKwh).toFixed(1)} kWh</div>
+async function refresh(){const s=await(await fetch('/api/status')).json();
+const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
+document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.demoMode?' <span class="badge">DEMO</span>':''}</div>
+<div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.tasmotaOk,'TAS')}${chip(s.ethOk||s.wifiOk,'NET')}</div>
+<div class="meta" style="margin-top:8px"><b>${s.pvW} W</b> PV · Bat ${s.batW} W · Netz ${s.gridW} W · SoC ${s.soc}% · ${Number(s.energyPvKwh).toFixed(1)} kWh</div>
 <pre>HIT Bezug ${Number(s.energyImpKwh||0).toFixed(1)} / Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh
 Tasmota ${s.tasmotaSensorKey||''}: ${s.tasmotaOk? (s.tasmotaPowerW+' W · E_in '+Number(s.tasmotaTotalKwh).toFixed(3)+' · E_out '+Number(s.tasmotaExportKwh).toFixed(3)+' kWh') : 'aus'}
 HIT ${s.hitHost||''} · ${s.status||''}</pre>`;}
@@ -248,25 +297,13 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Einrichtung · HIT Proxy</title>
-<style>
-:root{--bg:#0b1220;--card:#121a2b;--line:#243049;--txt:#e8eefc;--muted:#93a0b8;--acc:#3dde7d;--warn:#ffb020}
-*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:radial-gradient(900px 420px at 0% 0%,#1a2744,var(--bg));color:var(--txt)}
-.wrap{max-width:560px;margin:0 auto;padding:22px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
-.steps{display:flex;gap:6px;margin:12px 0 4px} .steps i{flex:1;height:4px;border-radius:4px;background:#243049} .steps i.on{background:var(--acc)}
-h1{font-size:1.25rem;margin:0} .sub{color:var(--muted);font-size:.9rem;margin-top:6px}
-label{display:block;font-size:.78rem;color:var(--muted);margin:12px 0 4px}
-input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0e1626;color:var(--txt)}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-button{background:var(--acc);color:#04180c;border:0;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer}
-button.sec{background:#243049;color:var(--txt)} .ip{font-size:1.5rem;font-weight:700;color:#7ee0ff}
-.ok{color:var(--acc)} .bad{color:#ff5a5a} .hint{color:var(--muted);font-size:.8rem;margin-top:8px;line-height:1.4}
-code{background:#0e1626;padding:2px 6px;border-radius:6px}
-.hide{display:none} ul{margin:8px 0 0 18px;color:var(--muted);font-size:.9rem;line-height:1.45}
-</style></head><body><div class="wrap">
-<h1>Einrichtungsassistent</h1>
-<p class="sub">Ziel: <b>Hoymiles HIT → dieser Proxy → Consolinno</b> — ohne Home Assistant / Node-RED.</p>
+<meta name="color-scheme" content="dark"/><title>Einrichtung · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>.wrap{max-width:560px}.card{margin-top:14px}</style>
+</head><body><div class="wrap">
+<p class="brand">HIT SunSpec Proxy</p>
+<h1>Einrichtung</h1>
+<p class="sub">Hoymiles HIT → dieser Proxy → Consolinno — ohne HA / Node-RED.</p>
 <div class="steps" id="bar"><i></i><i></i><i></i><i></i><i></i></div>
 
 <div class="card" id="s0">
@@ -388,25 +425,23 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Write-Debug · HIT Proxy</title>
-<style>
-:root{--bg:#0b1220;--card:#121a2b;--line:#243049;--txt:#e8eefc;--muted:#93a0b8;--acc:#3dde7d;--warn:#ffb020}
-*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:radial-gradient(900px 400px at 10% 0%,#1a2744,var(--bg));color:var(--txt)}
-.wrap{max-width:900px;margin:0 auto;padding:22px}a{color:#7ee0ff}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-.big{font-size:1.6rem;font-weight:700;color:var(--acc)}.muted{color:var(--muted);font-size:.85rem}
-table{width:100%;border-collapse:collapse;font-size:.82rem}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
-th{color:var(--muted);font-weight:600}button{background:#243049;color:var(--txt);border:0;border-radius:999px;padding:8px 12px;cursor:pointer;margin-right:6px}
-.ok{color:var(--acc)}.bad{color:#ff5a5a}
-</style></head><body><div class="wrap">
-<h1>§14a / Consolinno Write-Debug</h1>
-<p class="muted">Zeigt Modbus-Writes von Consolinno auf :1502 (bes. SunSpec Model 123 WMaxLimPct). EEBus bleibt im HEMS — der Proxy sieht nur das, was Consolinno per SunSpec schreibt.</p>
+<meta name="color-scheme" content="dark"/><title>Write-Debug · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>.card{margin-bottom:12px}</style>
+</head><body><div class="wrap">
+<div class="top">
+  <div>
+    <p class="brand">HIT SunSpec Proxy</p>
+    <h1>§14a Write-Debug</h1>
+    <p class="sub">SunSpec Model 123 Writes von Consolinno auf :1502</p>
+  </div>
+  <nav><a href="/">Live</a><a href="/config">Config</a><a class="on" href="/debug">Debug</a><a href="/ota">OTA</a></nav>
+</div>
 <div class="card" id="sum">Lade…</div>
 <div class="card">
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-<button onclick="refresh()">Aktualisieren</button>
-<button onclick="clr()">Log leeren</button>
-<a href="/">← Live</a> · <a href="/config">Config</a>
+<div class="row" style="margin-top:0;margin-bottom:12px">
+<button class="sec" type="button" onclick="refresh()">Aktualisieren</button>
+<button class="sec" type="button" onclick="clr()">Log leeren</button>
 </div>
 <table><thead><tr><th>Alter</th><th>FC</th><th>Addr</th><th>Wert</th><th>Hinweis</th></tr></thead>
 <tbody id="tb"></tbody></table>
@@ -529,6 +564,11 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
 namespace WebConfig {
 
 void begin() {
+  // Public stylesheet (no auth) — pages stay readable right after login
+  server.on("/a.css", HTTP_GET, [](AsyncWebServerRequest *req) {
+    req->send_P(200, "text/css", UI_CSS);
+  });
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     if (!ConfigStore::get().setupComplete) {
