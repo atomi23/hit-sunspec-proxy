@@ -1,5 +1,6 @@
 #include "HitClient.h"
 #include "ModbusTcpRaw.h"
+#include "DataSource.h"
 #include <math.h>
 
 namespace {
@@ -59,6 +60,7 @@ bool doPollTcp() {
   gLive.soc = soc[0];
   gLive.hitOk = true;
   gLive.lastHitMs = millis();
+  gLive.dataOrigin = DataOrigin::Native;
   strlcpy(gLive.status, "HIT ok", sizeof(gLive.status));
   return true;
 }
@@ -100,6 +102,7 @@ bool doDemo() {
   gLive.hitOk = true;
   gLive.lastHitMs = millis();
   gLive.lastTasmotaMs = millis();
+  gLive.dataOrigin = DataOrigin::Demo;
   strlcpy(gLive.status, "DEMO — kein HIT", sizeof(gLive.status));
   return true;
 }

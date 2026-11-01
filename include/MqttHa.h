@@ -6,4 +6,6 @@ namespace MqttHa {
   void applyConfig(const AppConfig &cfg);
   void loop();
   void publishNow();
+  bool ingestFresh(uint32_t maxAgeMs);
+  void applyIngestToLive();
 }

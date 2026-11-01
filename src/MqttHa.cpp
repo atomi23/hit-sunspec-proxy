@@ -13,12 +13,16 @@ uint32_t nextReconnect = 0;
 bool started = false;
 bool discoverySent = false;
 
-String topicState() {
-  return String(local.mqttBase) + "/state";
-}
-String topicAvail() {
-  return String(local.mqttBase) + "/status";
-}
+struct IngestSnap {
+  bool valid = false;
+  int32_t pvW = 0, batW = 0, gridW = 0;
+  uint16_t soc = 0;
+  double energyPvKwh = 0, energyImpKwh = 0, energyExpKwh = 0;
+  uint32_t atMs = 0;
+} ingest;
+
+String topicState() { return String(local.mqttBase) + "/state"; }
+String topicAvail() { return String(local.mqttBase) + "/status"; }
 String topicDisc(const char *objId) {
   return String("homeassistant/sensor/") + local.mqttBase + "_" + objId + "/config";
 }
@@ -42,7 +46,6 @@ void publishDiscoveryOne(const char *objId, const char *name, const char *unit,
   dev["mf"] = "HIT-Proxy";
   dev["mdl"] = "SunSpec Proxy";
   dev["sw"] = PROXY_VERSION;
-
   String payload;
   serializeJson(doc, payload);
   mqtt.publish(topicDisc(objId).c_str(), payload.c_str(), true);
@@ -58,11 +61,58 @@ void sendDiscovery() {
   publishDiscoveryOne("tas_w", "Zaehler Leistung", "W", "power", "measurement", "tasmota_w");
   publishDiscoveryOne("tas_in", "Zaehler Bezug", "kWh", "energy", "total_increasing", "tasmota_in_kwh");
   publishDiscoveryOne("tas_out", "Zaehler Einspeisung", "kWh", "energy", "total_increasing", "tasmota_out_kwh");
+  publishDiscoveryOne("src", "Datenquelle", "", "", "", "data_origin");
   discoverySent = true;
 }
 
+void onMessage(char *topic, byte *payload, unsigned int len) {
+  if (!local.mqttIngestEnabled) return;
+  if (local.mqttIngestTopic[0] && strcmp(topic, local.mqttIngestTopic) != 0) return;
+
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, payload, len);
+  if (err) return;
+
+  auto takeI = [&](const char *a, const char *b = nullptr) -> int32_t {
+    if (!doc[a].isNull()) return doc[a].as<int32_t>();
+    if (b && !doc[b].isNull()) return doc[b].as<int32_t>();
+    return INT32_MIN;
+  };
+  auto takeF = [&](const char *a, const char *b = nullptr) -> double {
+    if (!doc[a].isNull()) return doc[a].as<double>();
+    if (b && !doc[b].isNull()) return doc[b].as<double>();
+    return NAN;
+  };
+
+  int32_t pv = takeI("pv_w", "pvW");
+  int32_t bat = takeI("bat_w", "batW");
+  int32_t grid = takeI("grid_w", "gridW");
+  int32_t soc = takeI("soc", "battery_soc");
+  double ePv = takeF("energy_pv_kwh", "energyPvKwh");
+  double eImp = takeF("energy_imp_kwh", "energyImpKwh");
+  double eExp = takeF("energy_exp_kwh", "energyExpKwh");
+
+  if (pv == INT32_MIN && bat == INT32_MIN && soc == INT32_MIN) return;
+
+  if (pv != INT32_MIN) ingest.pvW = pv;
+  if (bat != INT32_MIN) ingest.batW = bat;
+  if (grid != INT32_MIN) ingest.gridW = grid;
+  if (soc != INT32_MIN) {
+    if (soc < 0) soc = 0;
+    if (soc > 100) soc = 100;
+    ingest.soc = uint16_t(soc);
+  }
+  if (!isnan(ePv)) ingest.energyPvKwh = ePv;
+  if (!isnan(eImp)) ingest.energyImpKwh = eImp;
+  if (!isnan(eExp)) ingest.energyExpKwh = eExp;
+  ingest.valid = true;
+  ingest.atMs = millis();
+  gLive.mqttIngestOk = true;
+  gLive.lastMqttIngestMs = ingest.atMs;
+}
+
 bool ensureConnected() {
-  if (!local.mqttEnabled) {
+  if (!local.mqttEnabled && !local.mqttIngestEnabled) {
     gLive.mqttOk = false;
     return false;
   }
@@ -74,7 +124,8 @@ bool ensureConnected() {
   nextReconnect = millis() + 5000;
 
   mqtt.setServer(local.mqttHost, local.mqttPort);
-  mqtt.setBufferSize(1024);
+  mqtt.setBufferSize(2048);
+  mqtt.setCallback(onMessage);
   String cid = String(local.mqttBase) + "-" + String((uint32_t)ESP.getEfuseMac(), HEX);
   bool ok;
   if (local.mqttUser[0]) {
@@ -85,9 +136,14 @@ bool ensureConnected() {
   }
   gLive.mqttOk = ok;
   if (ok) {
-    mqtt.publish(topicAvail().c_str(), "online", true);
-    discoverySent = false;
-    sendDiscovery();
+    if (local.mqttEnabled) {
+      mqtt.publish(topicAvail().c_str(), "online", true);
+      discoverySent = false;
+      sendDiscovery();
+    }
+    if (local.mqttIngestEnabled && local.mqttIngestTopic[0]) {
+      mqtt.subscribe(local.mqttIngestTopic);
+    }
   }
   return ok;
 }
@@ -101,6 +157,7 @@ void begin(const AppConfig &cfg) {
   discoverySent = false;
   nextPub = 0;
   nextReconnect = 0;
+  ingest = {};
 }
 
 void applyConfig(const AppConfig &cfg) {
@@ -110,9 +167,12 @@ void applyConfig(const AppConfig &cfg) {
   nextPub = 0;
   nextReconnect = 0;
   gLive.mqttOk = false;
+  ingest = {};
+  gLive.mqttIngestOk = false;
 }
 
 void publishNow() {
+  if (!local.mqttEnabled) return;
   if (!ensureConnected()) return;
   if (!discoverySent) sendDiscovery();
 
@@ -129,6 +189,8 @@ void publishNow() {
   doc["tasmota_in_kwh"] = round(gLive.tasmotaTotalKwh * 1000.0) / 1000.0;
   doc["tasmota_out_kwh"] = round(gLive.tasmotaExportKwh * 1000.0) / 1000.0;
   doc["hit_ok"] = gLive.hitOk;
+  doc["cloud_ok"] = gLive.cloudOk;
+  doc["data_origin"] = dataOriginLabel(gLive.dataOrigin);
   doc["ip"] = gLive.ipShown;
 
   String payload;
@@ -136,16 +198,38 @@ void publishNow() {
   mqtt.publish(topicState().c_str(), payload.c_str(), false);
 }
 
+bool ingestFresh(uint32_t maxAgeMs) {
+  if (!ingest.valid || !ingest.atMs) return false;
+  return (millis() - ingest.atMs) <= maxAgeMs;
+}
+
+void applyIngestToLive() {
+  if (!ingest.valid) return;
+  gLive.pvW = ingest.pvW;
+  gLive.batW = ingest.batW;
+  gLive.gridW = ingest.gridW;
+  gLive.soc = ingest.soc;
+  gLive.energyPvKwh = ingest.energyPvKwh;
+  gLive.energyImpKwh = ingest.energyImpKwh;
+  gLive.energyExpKwh = ingest.energyExpKwh;
+  gLive.mqttIngestOk = true;
+  gLive.lastMqttIngestMs = ingest.atMs;
+}
+
 void loop() {
-  if (!started || !local.mqttEnabled) {
+  if (!started || (!local.mqttEnabled && !local.mqttIngestEnabled)) {
     gLive.mqttOk = false;
     return;
   }
   if (!ensureConnected()) return;
   mqtt.loop();
-  if (millis() >= nextPub) {
+  if (local.mqttEnabled && millis() >= nextPub) {
     nextPub = millis() + max<uint32_t>(2000, local.mqttPublishMs);
     publishNow();
+  }
+  if (ingest.valid && ingest.atMs &&
+      (millis() - ingest.atMs) > max<uint32_t>(local.mqttIngestMaxAgeMs, 1000)) {
+    gLive.mqttIngestOk = false;
   }
 }
 

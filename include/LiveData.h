@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "DataSource.h"
 
 struct LiveData {
   bool hitOk = false;
@@ -7,7 +8,12 @@ struct LiveData {
   bool wifiOk = false;
   bool sunspecClient = false;
   bool mqttOk = false;
+  bool mqttIngestOk = false;
+  bool cloudOk = false;
+  DataOrigin dataOrigin = DataOrigin::None;
   uint32_t lastHitMs = 0;
+  uint32_t lastMqttIngestMs = 0;
+  uint32_t lastCloudMs = 0;
   uint32_t lastMapMs = 0;
   uint32_t hitFails = 0;
 

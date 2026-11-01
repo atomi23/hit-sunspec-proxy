@@ -9,6 +9,9 @@
 #include "TasmotaClient.h"
 #include "MqttHa.h"
 #include "HitControl.h"
+#include "HoyCloud.h"
+#include "DataSource.h"
+#include "Watchdog.h"
 
 void setup() {
   Serial.begin(115200);
@@ -19,6 +22,8 @@ void setup() {
   auto &cfg = ConfigStore::get();
   gLive.setupScreen = !cfg.setupComplete;
 
+  Watchdog::begin(45);
+
   NetBoot::begin(cfg);
   StatusDisplay::begin(cfg);
   HitClient::begin(cfg);
@@ -26,10 +31,13 @@ void setup() {
   TasmotaClient::begin(cfg);
   SunSpecServer::begin(cfg);
   MqttHa::begin(cfg);
+  HoyCloud::begin(cfg);
+  DataBroker::begin();
   WebConfig::begin();
 
   HitClient::pollNow();
   TasmotaClient::pollNow();
+  DataBroker::reconcile();
   SunSpecServer::rebuildMap();
   MqttHa::publishNow();
 
@@ -44,17 +52,25 @@ void setup() {
   Serial.printf("SunSpec: %s:%u\n", gLive.ipShown, cfg.sunspecPort);
   Serial.printf("HIT Ziel: %s:%u mode=%d\n", cfg.hitHost, cfg.hitPort, int(cfg.hitMode));
   if (cfg.tasmotaEnabled) Serial.printf("Tasmota: %s spoof=%d\n", cfg.tasmotaHost, int(cfg.tasmotaMeterSpoof));
-  if (cfg.mqttEnabled) Serial.printf("MQTT: %s:%u base=%s\n", cfg.mqttHost, cfg.mqttPort, cfg.mqttBase);
+  if (cfg.mqttEnabled || cfg.mqttIngestEnabled)
+    Serial.printf("MQTT: %s:%u pub=%d ingest=%d topic=%s\n", cfg.mqttHost, cfg.mqttPort,
+                  int(cfg.mqttEnabled), int(cfg.mqttIngestEnabled), cfg.mqttIngestTopic);
+  if (cfg.cloudEnabled) Serial.printf("Cloud: %s sid=%s\n", cfg.cloudHost, cfg.cloudStationId);
 }
 
 void loop() {
+  Watchdog::feed();
   auto &cfg = ConfigStore::get();
   NetBoot::loop(cfg);
   HitClient::loop();
   TasmotaClient::loop();
-  SunSpecServer::loop();
   MqttHa::loop();
+  HoyCloud::loop();
+  DataBroker::reconcile();
+  SunSpecServer::loop();
   StatusDisplay::loop();
   WebConfig::loop();
+  Watchdog::checkSoft();
+  Watchdog::feed();
   delay(2);
 }

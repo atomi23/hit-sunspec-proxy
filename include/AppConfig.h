@@ -59,7 +59,7 @@ struct AppConfig {
   char tasmotaPass[64] = "";
   bool tasmotaMeterSpoof = false;
 
-  // MQTT
+  // MQTT (Publish → HA + optional Ingest-Fallback)
   bool mqttEnabled = false;
   char mqttHost[64] = "192.0.2.10"; // Beispiel-IP
   uint16_t mqttPort = 1883;
@@ -68,6 +68,18 @@ struct AppConfig {
   char mqttBase[48] = "hitproxy";
   bool mqttDiscovery = true;
   uint32_t mqttPublishMs = 5000;
+  bool mqttIngestEnabled = false;
+  char mqttIngestTopic[80] = "hitproxy/in"; // JSON: pv_w,bat_w,grid_w,soc,…
+  uint32_t mqttIngestMaxAgeMs = 120000;
+
+  // Hoymiles Cloud Fallback (wenn HIT tot)
+  bool cloudEnabled = false;
+  char cloudHost[64] = "neapi.hoymiles.com";
+  char cloudUser[64] = "";
+  char cloudPass[64] = "";
+  char cloudStationId[24] = ""; // sid / station_id
+  uint32_t cloudPollMs = 60000;
+  uint32_t cloudMaxAgeMs = 180000;
 
   char deviceName[32] = "HIT-SunSpec-Proxy";
 };

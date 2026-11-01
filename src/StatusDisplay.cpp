@@ -64,10 +64,19 @@ static void drawHeader() {
   lcd.setTextColor(COL_CYAN, COL_BG);
   lcd.setTextSize(2);
   lcd.drawString(gLive.ipShown, 12, 28);
-  badge(250, 20, gLive.hitOk, "HIT");
-  badge(300, 20, gLive.sunspecClient, "HEMS");
-  badge(360, 20, gLive.mqttOk, "MQTT");
-  badge(420, 20, gLive.ethOk || gLive.wifiOk, "NET");
+  badge(220, 12, gLive.hitOk, "HIT");
+  badge(270, 12, gLive.sunspecClient, "HEMS");
+  badge(330, 12, gLive.ethOk || gLive.wifiOk, "NET");
+  // Datenquelle groß sichtbar
+  lcd.setTextDatum(middle_right);
+  uint16_t sc = COL_MUTED;
+  if (gLive.dataOrigin == DataOrigin::Native) sc = COL_ACCENT;
+  else if (gLive.dataOrigin == DataOrigin::Mqtt) sc = COL_CYAN;
+  else if (gLive.dataOrigin == DataOrigin::Cloud) sc = COL_WARN;
+  else if (gLive.dataOrigin == DataOrigin::Demo) sc = COL_PURPLE;
+  lcd.setTextColor(sc, COL_BG);
+  lcd.setTextSize(2);
+  lcd.drawString(dataOriginLabel(gLive.dataOrigin), 468, 22);
 }
 
 static void drawPageLive() {
@@ -156,7 +165,10 @@ static void drawPageFlow() {
   lcd.drawString(buf, 240, 150);
   lcd.setTextSize(1);
   lcd.setTextColor(COL_MUTED, COL_CARD);
-  lcd.drawString(gLive.tasmotaOk ? "Quelle: Tasmota" : "Quelle: HIT Grid", 240, 180);
+  char src[48];
+  snprintf(src, sizeof(src), "Daten: %s%s", dataOriginLabel(gLive.dataOrigin),
+           gLive.tasmotaOk ? " · Zaehler Tasmota" : "");
+  lcd.drawString(src, 240, 180);
   lcd.drawString("Seite 2/4  Fluss", 400, 190);
 }
 
@@ -212,11 +224,13 @@ static void drawPageStatus() {
   uint32_t age = gLive.lastHitMs ? (millis() - gLive.lastHitMs) / 1000 : 0;
   lcd.setTextSize(1);
   lcd.setTextColor(COL_CYAN, COL_CARD);
-  snprintf(buf, sizeof(buf), "HIT Poll vor %lus  Fails %lu", (unsigned long)age, (unsigned long)gLive.hitFails);
+  snprintf(buf, sizeof(buf), "Quelle %s · HIT vor %lus · Fails %lu",
+           dataOriginLabel(gLive.dataOrigin), (unsigned long)age, (unsigned long)gLive.hitFails);
   lcd.drawString(buf, 22, 112);
 
-  const char *mode = (local.hitMode == HitLinkMode::Tcp) ? "HIT via TCP" : "HIT via RS485";
-  lcd.drawString(mode, 22, 130);
+  snprintf(buf, sizeof(buf), "MQTT-in %s · Cloud %s",
+           gLive.mqttIngestOk ? "ok" : "—", gLive.cloudOk ? "ok" : "—");
+  lcd.drawString(buf, 22, 130);
   snprintf(buf, sizeof(buf), "LPP %s %.0f%%  Write %s",
            gLive.wMaxLimEna ? "AN" : "aus",
            gLive.wMaxLimPct / 100.0f,

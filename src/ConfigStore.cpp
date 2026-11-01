@@ -112,6 +112,19 @@ bool load() {
   strlcpy(cfg.mqttBase, prefs.getString("mqbase", cfg.mqttBase).c_str(), sizeof(cfg.mqttBase));
   cfg.mqttDiscovery = prefs.getBool("mqdisc", cfg.mqttDiscovery);
   cfg.mqttPublishMs = prefs.getUInt("mqpub", cfg.mqttPublishMs);
+  cfg.mqttIngestEnabled = prefs.getBool("mqinena", cfg.mqttIngestEnabled);
+  strlcpy(cfg.mqttIngestTopic, prefs.getString("mqintopic", cfg.mqttIngestTopic).c_str(),
+          sizeof(cfg.mqttIngestTopic));
+  cfg.mqttIngestMaxAgeMs = prefs.getUInt("mqinage", cfg.mqttIngestMaxAgeMs);
+
+  cfg.cloudEnabled = prefs.getBool("cldena", cfg.cloudEnabled);
+  strlcpy(cfg.cloudHost, prefs.getString("cldhost", cfg.cloudHost).c_str(), sizeof(cfg.cloudHost));
+  strlcpy(cfg.cloudUser, prefs.getString("clduser", cfg.cloudUser).c_str(), sizeof(cfg.cloudUser));
+  strlcpy(cfg.cloudPass, prefs.getString("cldpass", cfg.cloudPass).c_str(), sizeof(cfg.cloudPass));
+  strlcpy(cfg.cloudStationId, prefs.getString("cldsid", cfg.cloudStationId).c_str(),
+          sizeof(cfg.cloudStationId));
+  cfg.cloudPollMs = prefs.getUInt("cldpoll", cfg.cloudPollMs);
+  cfg.cloudMaxAgeMs = prefs.getUInt("clage", cfg.cloudMaxAgeMs);
 
   strlcpy(cfg.deviceName, prefs.getString("name", cfg.deviceName).c_str(), sizeof(cfg.deviceName));
   return true;
@@ -170,6 +183,17 @@ bool save() {
   prefs.putString("mqbase", cfg.mqttBase);
   prefs.putBool("mqdisc", cfg.mqttDiscovery);
   prefs.putUInt("mqpub", cfg.mqttPublishMs);
+  prefs.putBool("mqinena", cfg.mqttIngestEnabled);
+  prefs.putString("mqintopic", cfg.mqttIngestTopic);
+  prefs.putUInt("mqinage", cfg.mqttIngestMaxAgeMs);
+
+  prefs.putBool("cldena", cfg.cloudEnabled);
+  prefs.putString("cldhost", cfg.cloudHost);
+  prefs.putString("clduser", cfg.cloudUser);
+  prefs.putString("cldpass", cfg.cloudPass);
+  prefs.putString("cldsid", cfg.cloudStationId);
+  prefs.putUInt("cldpoll", cfg.cloudPollMs);
+  prefs.putUInt("clage", cfg.cloudMaxAgeMs);
 
   prefs.putString("name", cfg.deviceName);
   return true;

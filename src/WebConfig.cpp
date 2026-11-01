@@ -9,6 +9,8 @@
 #include "HitControl.h"
 #include "DebugLog.h"
 #include "OtaUpdate.h"
+#include "HoyCloud.h"
+#include "DataSource.h"
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 #include <mbedtls/base64.h>
@@ -141,7 +143,8 @@ async function refresh(){
   document.getElementById('ver').textContent='v'+(s.version||'');
   document.getElementById('ip').innerHTML=(s.ipShown||'-')+(s.demoMode?' <span class="badge">DEMO</span>':'');
   document.getElementById('dots').innerHTML=
-    chip(s.hitOk,'HIT')+chip(s.sunspecClient,'HEMS')+chip(s.mqttOk,'MQTT')+chip(s.tasmotaOk,'TAS')+chip(s.ethOk||s.wifiOk,'NET');
+    chip(s.hitOk,'HIT')+chip(s.sunspecClient,'HEMS')+chip(s.mqttOk,'MQTT')+chip(s.mqttIngestOk,'MQ-IN')+chip(s.cloudOk,'CLOUD')+chip(s.ethOk||s.wifiOk,'NET')+
+    `<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span>`;
   document.getElementById('m').innerHTML=
     `<div class="panel metric"><div class="k">PV</div><div class="v">${s.pvW||0}<span class="u">W</span></div></div>
      <div class="panel metric"><div class="k">Batterie</div><div class="v">${s.batW||0}<span class="u">W</span></div></div>
@@ -238,7 +241,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
 </div>
 <div class="card"><strong>MQTT → Home Assistant</strong>
-<label><input name="mqttEnabled" type="checkbox"/> aktiv</label>
+<label><input name="mqttEnabled" type="checkbox"/> Publish aktiv</label>
 <label><input name="mqttDiscovery" type="checkbox"/> HA Discovery</label>
 <label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
 <label>Port</label><input name="mqttPort" type="number"/>
@@ -246,7 +249,21 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <label>Passwort</label><input name="mqttPass" type="password"/>
 <label>Topic-Basis</label><input name="mqttBase" placeholder="hitproxy"/>
 <label>Publish (ms)</label><input name="mqttPublishMs" type="number"/>
-<p class="hint">State: &lt;basis&gt;/state · Discovery unter homeassistant/sensor/…</p>
+<p class="hint">State: &lt;basis&gt;/state · inkl. data_origin</p>
+<label><input name="mqttIngestEnabled" type="checkbox"/> <b>Ingest-Fallback</b> (wenn HIT tot)</label>
+<label>Ingest-Topic (JSON)</label><input name="mqttIngestTopic" placeholder="hitproxy/in"/>
+<label>Max Alter (ms)</label><input name="mqttIngestMaxAgeMs" type="number"/>
+<p class="hint">JSON-Keys: pv_w, bat_w, grid_w, soc, energy_pv_kwh, … Priorität: NATIVE → MQTT → CLOUD</p>
+</div>
+<div class="card"><strong>Hoymiles Cloud Fallback</strong>
+<label><input name="cloudEnabled" type="checkbox"/> aktiv (wenn HIT &amp; MQTT-in tot)</label>
+<label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
+<label>Cloud User / E-Mail</label><input name="cloudUser"/>
+<label>Passwort</label><input name="cloudPass" type="password"/>
+<label>Station / Plant ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567"/>
+<label>Poll (ms)</label><input name="cloudPollMs" type="number"/>
+<label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
+<p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
 </form>
 <div class="row">
@@ -283,7 +300,7 @@ async function probeTas(){
 async function refresh(){const s=await(await fetch('/api/status')).json();
 const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
 document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.demoMode?' <span class="badge">DEMO</span>':''}</div>
-<div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.tasmotaOk,'TAS')}${chip(s.ethOk||s.wifiOk,'NET')}</div>
+<div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.mqttIngestOk,'MQ-IN')}${chip(s.cloudOk,'CLOUD')}${chip(s.ethOk||s.wifiOk,'NET')}<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span></div>
 <div class="meta" style="margin-top:8px"><b>${s.pvW} W</b> PV · Bat ${s.batW} W · Netz ${s.gridW} W · SoC ${s.soc}% · ${Number(s.energyPvKwh).toFixed(1)} kWh</div>
 <pre>HIT Bezug ${Number(s.energyImpKwh||0).toFixed(1)} / Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh
 Tasmota ${s.tasmotaSensorKey||''}: ${s.tasmotaOk? (s.tasmotaPowerW+' W · E_in '+Number(s.tasmotaTotalKwh).toFixed(3)+' · E_out '+Number(s.tasmotaExportKwh).toFixed(3)+' kWh') : 'aus'}
@@ -557,6 +574,16 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (o["mqttPass"].is<const char *>()) strlcpy(c.mqttPass, o["mqttPass"], sizeof(c.mqttPass));
   if (o["mqttBase"].is<const char *>()) strlcpy(c.mqttBase, o["mqttBase"], sizeof(c.mqttBase));
   if (!o["mqttPublishMs"].isNull()) c.mqttPublishMs = o["mqttPublishMs"];
+  if (!o["mqttIngestEnabled"].isNull()) c.mqttIngestEnabled = o["mqttIngestEnabled"];
+  if (o["mqttIngestTopic"].is<const char *>()) strlcpy(c.mqttIngestTopic, o["mqttIngestTopic"], sizeof(c.mqttIngestTopic));
+  if (!o["mqttIngestMaxAgeMs"].isNull()) c.mqttIngestMaxAgeMs = o["mqttIngestMaxAgeMs"];
+  if (!o["cloudEnabled"].isNull()) c.cloudEnabled = o["cloudEnabled"];
+  if (o["cloudHost"].is<const char *>()) strlcpy(c.cloudHost, o["cloudHost"], sizeof(c.cloudHost));
+  if (o["cloudUser"].is<const char *>()) strlcpy(c.cloudUser, o["cloudUser"], sizeof(c.cloudUser));
+  if (o["cloudPass"].is<const char *>()) strlcpy(c.cloudPass, o["cloudPass"], sizeof(c.cloudPass));
+  if (o["cloudStationId"].is<const char *>()) strlcpy(c.cloudStationId, o["cloudStationId"], sizeof(c.cloudStationId));
+  if (!o["cloudPollMs"].isNull()) c.cloudPollMs = o["cloudPollMs"];
+  if (!o["cloudMaxAgeMs"].isNull()) c.cloudMaxAgeMs = o["cloudMaxAgeMs"];
   if (o["deviceName"].is<const char *>()) strlcpy(c.deviceName, o["deviceName"], sizeof(c.deviceName));
 }
 } // namespace
@@ -647,6 +674,7 @@ void begin() {
               StatusDisplay::applyConfig(c);
               TasmotaClient::applyConfig(c);
               MqttHa::applyConfig(c);
+              HoyCloud::applyConfig(c);
               HitClient::pollNow();
               SunSpecServer::rebuildMap();
               req->send(200, "application/json", "{\"ok\":true}");
@@ -667,6 +695,9 @@ void begin() {
     doc["wifiOk"] = gLive.wifiOk;
     doc["sunspecClient"] = gLive.sunspecClient;
     doc["mqttOk"] = gLive.mqttOk;
+    doc["mqttIngestOk"] = gLive.mqttIngestOk;
+    doc["cloudOk"] = gLive.cloudOk;
+    doc["dataOrigin"] = dataOriginLabel(gLive.dataOrigin);
     doc["pvW"] = gLive.pvW;
     doc["batW"] = gLive.batW;
     doc["soc"] = gLive.soc;
@@ -745,6 +776,16 @@ void begin() {
     doc["mqttPass"] = c.mqttPass;
     doc["mqttBase"] = c.mqttBase;
     doc["mqttPublishMs"] = c.mqttPublishMs;
+    doc["mqttIngestEnabled"] = c.mqttIngestEnabled;
+    doc["mqttIngestTopic"] = c.mqttIngestTopic;
+    doc["mqttIngestMaxAgeMs"] = c.mqttIngestMaxAgeMs;
+    doc["cloudEnabled"] = c.cloudEnabled;
+    doc["cloudHost"] = c.cloudHost;
+    doc["cloudUser"] = c.cloudUser;
+    doc["cloudPass"] = c.cloudPass;
+    doc["cloudStationId"] = c.cloudStationId;
+    doc["cloudPollMs"] = c.cloudPollMs;
+    doc["cloudMaxAgeMs"] = c.cloudMaxAgeMs;
     doc["deviceName"] = c.deviceName;
     String out; serializeJson(doc, out);
     req->send(200, "application/json", out);
@@ -770,6 +811,7 @@ void begin() {
               StatusDisplay::applyConfig(c);
               TasmotaClient::applyConfig(c);
               MqttHa::applyConfig(c);
+              HoyCloud::applyConfig(c);
               req->send(200, "application/json", "{\"ok\":true}");
             });
 
@@ -786,6 +828,7 @@ void begin() {
   server.on("/api/poll", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     HitClient::pollNow();
+    DataBroker::reconcile();
     TasmotaClient::pollNow();
     SunSpecServer::rebuildMap();
     MqttHa::publishNow();
