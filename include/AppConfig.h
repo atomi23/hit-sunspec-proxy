@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include "KnxPoints.h"
+#include "UiPrefs.h"
 
 enum class HitLinkMode : uint8_t {
   Tcp = 0,
@@ -89,6 +90,10 @@ struct AppConfig {
   bool knxOnlyOnChange = true;
   uint16_t knxMinDeltaW = 50;
   KnxCh knxCh[KNX_CH_COUNT] = {};
+
+  // UI: Sprache + Farbschema (Web + Display)
+  UiLang uiLang = UiLang::De;
+  UiTheme uiTheme = UiTheme::Mint;
 
   char deviceName[32] = "HIT-SunSpec-Proxy";
 };

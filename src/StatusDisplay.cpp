@@ -1,8 +1,9 @@
-#include "StatusDisplay.h"
+﻿#include "StatusDisplay.h"
 
 #if defined(BOARD_T_CONNECT_PRO)
 #include "LgfxBoard.h"
 #include "DebugLog.h"
+#include "UiPrefs.h"
 static LgfxBoard lcd;
 static bool ready = false;
 static uint8_t page = 0;
@@ -10,17 +11,35 @@ static uint32_t nextPage = 0;
 static uint32_t nextDraw = 0;
 static AppConfig local;
 
-// Panel ist 480×222 — Layouts darauf abgestimmt (kein Phone-Mockup)
-static const uint16_t COL_BG = 0x0862;
-static const uint16_t COL_CARD = 0x10C4;
-static const uint16_t COL_ACCENT = 0x07E0;
-static const uint16_t COL_WARN = 0xFEC0;
-static const uint16_t COL_BAD = 0xF800;
-static const uint16_t COL_MUTED = 0x8C71;
-static const uint16_t COL_TEXT = 0xFFFF;
-static const uint16_t COL_CYAN = 0x07FF;
-static const uint16_t COL_BLUE = 0x3D7F;
-static const uint16_t COL_PURPLE = 0xB01F;
+// Panel 480×222 — Farben je Theme
+static uint16_t COL_BG = 0x0862;
+static uint16_t COL_CARD = 0x10C4;
+static uint16_t COL_ACCENT = 0x07E0;
+static uint16_t COL_WARN = 0xFEC0;
+static uint16_t COL_BAD = 0xF800;
+static uint16_t COL_MUTED = 0x8C71;
+static uint16_t COL_TEXT = 0xFFFF;
+static uint16_t COL_CYAN = 0x07FF;
+static uint16_t COL_BLUE = 0x3D7F;
+static uint16_t COL_PURPLE = 0xB01F;
+
+static void applyThemeColors() {
+  switch (local.uiTheme) {
+    case UiTheme::Ocean:
+      COL_BG = 0x0863; COL_CARD = 0x10A4; COL_ACCENT = 0x07FF; COL_CYAN = 0x07FF;
+      COL_BLUE = 0x34BF; COL_WARN = 0xFE60; COL_MUTED = 0x8430;
+      break;
+    case UiTheme::Ember:
+      COL_BG = 0x1881; COL_CARD = 0x20C3; COL_ACCENT = 0xFD20; COL_CYAN = 0xFDE0;
+      COL_BLUE = 0xFB40; COL_WARN = 0xFFE0; COL_MUTED = 0x9C71;
+      break;
+    default:
+      COL_BG = 0x0862; COL_CARD = 0x10C4; COL_ACCENT = 0x07E0; COL_CYAN = 0x07FF;
+      COL_BLUE = 0x3D7F; COL_WARN = 0xFEC0; COL_MUTED = 0x8C71;
+      break;
+  }
+  COL_TEXT = 0xFFFF; COL_BAD = 0xF800; COL_PURPLE = 0xB01F;
+}
 
 static void roundCard(int x, int y, int w, int h) {
   lcd.fillRoundRect(x, y, w, h, 10, COL_CARD);
@@ -102,7 +121,7 @@ static void drawHeader() {
 }
 
 static void drawPageLive() {
-  // Kompaktes Dashboard im Stil des Mockups — echte Panelhöhe 222 px
+  const UiLang lang = local.uiLang;
   lcd.fillRect(0, 0, 480, 30, COL_BG);
   lcd.setTextDatum(middle_left);
   lcd.setTextColor(COL_CYAN, COL_BG);
@@ -137,7 +156,7 @@ static void drawPageLive() {
   lcd.setTextDatum(top_left);
   lcd.setTextColor(COL_MUTED, COL_CARD);
   lcd.setTextSize(1);
-  lcd.drawString("PV LEISTUNG", x0 + 12, y0 + 8);
+  lcd.drawString(DispI18n::pv().get(lang), x0 + 12, y0 + 8);
   lcd.setTextColor(COL_TEXT, COL_CARD);
   lcd.setTextSize(3);
   lcd.drawString(String(gLive.pvW), x0 + 12, y0 + 28);
@@ -146,13 +165,16 @@ static void drawPageLive() {
   lcd.drawString("W", x0 + cw - 28, y0 + 42);
   lcd.setTextColor(COL_MUTED, COL_CARD);
   char sub[48];
-  snprintf(sub, sizeof(sub), "Erzeugung  %.0f kWh", gLive.energyPvKwh);
+  snprintf(sub, sizeof(sub), "%s  %.0f kWh", DispI18n::yield().get(lang), gLive.energyPvKwh);
+  lcd.setFont(&fonts::DejaVu9);
   lcd.drawString(sub, x0 + 12, y0 + 62);
+  lcd.setFont(&fonts::Font0);
+  lcd.setTextSize(1);
 
   // Batterie
   roundCardBorder(x1, y0, cw, ch, COL_ACCENT);
   lcd.setTextColor(COL_MUTED, COL_CARD);
-  lcd.drawString("BATTERIE", x1 + 12, y0 + 8);
+  lcd.drawString(DispI18n::bat().get(lang), x1 + 12, y0 + 8);
   lcd.setTextColor(COL_TEXT, COL_CARD);
   lcd.setTextSize(3);
   lcd.drawString(String(gLive.batW), x1 + 12, y0 + 28);
@@ -183,13 +205,14 @@ static void drawPageLive() {
   const bool sysOk = gLive.hitOk || gLive.dataOrigin != DataOrigin::None;
   roundCardBorder(x1, y1, cw, ch, sysOk ? COL_BLUE : COL_BAD);
   lcd.setTextColor(COL_MUTED, COL_CARD);
-  lcd.drawString("SYSTEM", x1 + 12, y1 + 8);
+  lcd.drawString(DispI18n::sys().get(lang), x1 + 12, y1 + 8);
   lcd.fillCircle(x1 + 36, y1 + 42, 14, sysOk ? 0x1A40 : 0x4000);
   lcd.fillCircle(x1 + 36, y1 + 42, 9, sysOk ? COL_ACCENT : COL_BAD);
   lcd.setTextDatum(middle_left);
   lcd.setTextColor(COL_TEXT, COL_CARD);
-  lcd.setTextSize(2);
-  lcd.drawString(sysOk ? "Laeuft" : "Fehler", x1 + 60, y1 + 36);
+  lcd.setFont(&fonts::DejaVu18);
+  lcd.drawString(sysOk ? DispI18n::running().get(lang) : DispI18n::fault().get(lang), x1 + 60, y1 + 36);
+  lcd.setFont(&fonts::Font0);
   lcd.setTextSize(1);
   lcd.setTextColor(COL_MUTED, COL_CARD);
   snprintf(sub, sizeof(sub), "SRC %s  KNX %s", dataOriginLabel(gLive.dataOrigin),
@@ -200,9 +223,12 @@ static void drawPageLive() {
   lcd.setTextDatum(middle_left);
   lcd.setTextColor(COL_MUTED, COL_BG);
   uint32_t age = gLive.lastHitMs ? (millis() - gLive.lastHitMs) / 1000 : 0;
-  snprintf(sub, sizeof(sub), "aktualisiert vor %lus   Tippen: naechste Seite  1/4",
-           (unsigned long)age);
+  snprintf(sub, sizeof(sub), "%s %lus   %s  1/4", DispI18n::updated().get(lang),
+           (unsigned long)age, DispI18n::tapNext().get(lang));
+  lcd.setFont(&fonts::DejaVu9);
   lcd.drawString(sub, 10, 214);
+  lcd.setFont(&fonts::Font0);
+  lcd.setTextSize(1);
 }
 
 static void drawFlowDots(int x0, int x1, int y, bool leftToRight, uint16_t col) {
@@ -262,9 +288,14 @@ static void drawPageFlow() {
   lcd.setTextColor(COL_MUTED, COL_CARD);
   char src[48];
   snprintf(src, sizeof(src), "Daten: %s%s", dataOriginLabel(gLive.dataOrigin),
-           gLive.tasmotaOk ? " · Zaehler Tasmota" : "");
+           gLive.tasmotaOk ? (local.uiLang == UiLang::En ? " · Meter Tasmota" : " · Zähler Tasmota") : "");
+  lcd.setFont(&fonts::DejaVu9);
   lcd.drawString(src, 240, 180);
-  lcd.drawString("Seite 2/4  Fluss", 400, 190);
+  char pg[32];
+  snprintf(pg, sizeof(pg), "2/4  %s", DispI18n::flow().get(local.uiLang));
+  lcd.drawString(pg, 360, 190);
+  lcd.setFont(&fonts::Font0);
+  lcd.setTextSize(1);
 }
 
 static void drawPageMeter() {
@@ -301,7 +332,14 @@ static void drawPageMeter() {
     lcd.drawString("Web-UI: One-Click Tasmota", 22, 178);
   }
   lcd.setTextColor(COL_MUTED, COL_CARD);
-  lcd.drawString("Seite 3/4  Zaehler", 360, 198);
+  lcd.setFont(&fonts::DejaVu9);
+  {
+    char pg[32];
+    snprintf(pg, sizeof(pg), "3/4  %s", DispI18n::meter().get(local.uiLang));
+    lcd.drawString(pg, 340, 198);
+  }
+  lcd.setFont(&fonts::Font0);
+  lcd.setTextSize(1);
 }
 
 static void drawPageStatus() {
@@ -420,6 +458,7 @@ namespace StatusDisplay {
 
 void begin(const AppConfig &cfg) {
   local = cfg;
+  applyThemeColors();
   gLive.setupScreen = !cfg.setupComplete;
   if (!cfg.displayEnabled) return;
   ready = lcd.init();
@@ -438,6 +477,7 @@ void setBrightness(uint8_t level) {
 
 void applyConfig(const AppConfig &cfg) {
   local = cfg;
+  applyThemeColors();
   gLive.setupScreen = !cfg.setupComplete;
   setBrightness(cfg.displayBrightness);
   if (ready) redraw();

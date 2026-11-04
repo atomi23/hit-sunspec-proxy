@@ -22,18 +22,52 @@ window.fetch=async(u,o)=>{
 };
 window.alert=()=>{};
 </script>
-<div class="wrap">
-<div class="top">
-  <div>
-    <p class="brand">HIT SunSpec Proxy</p>
-    <h1>Config</h1>
-    <p class="sub">HIT Pflicht · Tasmota / MQTT optional</p>
+<div class="app">
+<aside class="side">
+  <div class="logo"><div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy</span></div></div>
+  <nav>
+    <div class="nav-grp">System</div>
+    <a href="/"><i>◉</i> Live</a>
+    <div class="nav-grp">Anbindung</div>
+    <a href="/config#hit"><i>⚡</i> HIT</a>
+    <a href="/config#netz"><i>⊕</i> Netzwerk</a>
+    <a href="/config#sunspec"><i>≈</i> SunSpec</a>
+    <a href="/config#knx"><i>▦</i> KNX</a>
+    <div class="nav-grp">Dienste</div>
+    <a href="/config#mqtt"><i>☁</i> MQTT / Cloud</a>
+    <a href="/config#tasmota"><i>⌀</i> Tasmota</a>
+    <a href="/debug"><i>≡</i> Protokoll</a>
+    <div class="nav-grp">Gerät</div>
+    <a class="on" href="/config"><i>⚙</i> Einstellungen</a>
+    <a href="/ota"><i>↑</i> OTA</a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+      </select>
+    </div>
   </div>
-  <nav><a href="/">Live</a><a class="on" href="/config">Config</a><a href="/debug">Debug</a><a href="/ota">OTA</a></nav>
+</aside>
+<main class="main">
+<div class="page-head">
+  <div>
+    <p class="brand">Konfiguration</p>
+    <h1>Einstellungen</h1>
+    <p class="sub">HIT Pflicht · Tasmota / MQTT / KNX optional</p>
+  </div>
 </div>
 <div id="live" class="panel" style="margin-bottom:14px">Lade…</div>
 <form id="f" class="grid">
-<div class="card"><strong>HIT Quelle</strong>
+<div class="card" id="hit"><strong>HIT Quelle</strong>
 <label>Verbindung</label>
 <select name="hitMode"><option value="0">TCP (Modbus TCP)</option><option value="1">Kabel RS485 (RTU)</option></select>
 <label>HIT IP / Host</label><input name="hitHost" placeholder="192.0.2.50"/>
@@ -44,13 +78,13 @@ window.alert=()=>{};
 <label><input name="demoMode" type="checkbox"/> <b>Demo-Modus</b> (Fake-Daten, kein HIT-Schreiben)</label>
 <p class="hint">Für Board-/Web-/Display-Test ohne Hoymiles. SunSpec :1502 lokal ansprechbar; Consolinno nicht nötig.</p>
 </div>
-<div class="card"><strong>SunSpec / Consolinno</strong>
+<div class="card" id="sunspec"><strong>SunSpec / Consolinno</strong>
 <label>Listen-Port (Proxy)</label><input name="sunspecPort" type="number"/>
 <label>Unit-ID</label><input name="sunspecUnitId" type="number"/>
 <label><input name="invertPowerSign" type="checkbox"/> Leistung invertieren</label>
 <label>Gerätename</label><input name="deviceName"/>
 </div>
-<div class="card"><strong>Netz & Display</strong>
+<div class="card" id="netz"><strong>Netzwerk & Display</strong>
 <label><input name="useEthernet" type="checkbox"/> Ethernet</label>
 <label><input name="wifiEnabled" type="checkbox"/> WiFi</label>
 <label><input name="wifiApMode" type="checkbox"/> AP-Modus</label>
@@ -63,7 +97,7 @@ window.alert=()=>{};
 <label><input name="displayEnabled" type="checkbox"/> Display</label>
 <label>Helligkeit</label><input name="displayBrightness" type="number"/>
 </div>
-<div class="card"><strong>HIT Steuerung (Schreiben)</strong>
+<div class="card" id="ctrl"><strong>HIT Steuerung (Schreiben)</strong>
 <label><input name="hitWriteEnabled" type="checkbox"/> Schreiben an HIT erlauben</label>
 <label><input name="sunspecWriteToHit" type="checkbox"/> Consolinno Model-123 → HIT weiterleiten</label>
 <label>Max Laden % (Reg 306)</label><input name="batMaxChargePct" type="number" min="10" max="100"/>
@@ -75,7 +109,7 @@ window.alert=()=>{};
 <p class="hint">Default AUS. APC liegt im Safety-Bereich 101–299 — nur bewusst aktivieren.</p>
 <button class="sec" type="button" onclick="applyCtrl()">Jetzt an HIT schreiben</button>
 </div>
-<div class="card"><strong>Tasmota Zähler</strong>
+<div class="card" id="tasmota"><strong>Tasmota Zähler</strong>
 <label><input name="tasmotaEnabled" type="checkbox"/> aktiv (Display)</label>
 <label><input name="tasmotaMeterSpoof" type="checkbox"/> Meter-Spoof für Consolinno (optional)</label>
 <label>Tasmota IP</label><input name="tasmotaHost" placeholder="192.0.2.60"/>
@@ -87,7 +121,7 @@ window.alert=()=>{};
 <button class="sec" type="button" onclick="probeTas()" style="margin-top:10px">One-Click: Tasmota auslesen</button>
 <div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
 </div>
-<div class="card"><strong>MQTT → Home Assistant</strong>
+<div class="card" id="mqtt"><strong>MQTT → Home Assistant</strong>
 <label><input name="mqttEnabled" type="checkbox"/> Publish aktiv</label>
 <label><input name="mqttDiscovery" type="checkbox"/> HA Discovery</label>
 <label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
@@ -102,7 +136,7 @@ window.alert=()=>{};
 <label>Max Alter (ms)</label><input name="mqttIngestMaxAgeMs" type="number"/>
 <p class="hint">JSON-Keys: pv_w, bat_w, grid_w, soc, energy_pv_kwh, … Priorität: NATIVE → MQTT → CLOUD</p>
 </div>
-<div class="card"><strong>Hoymiles Cloud Fallback</strong>
+<div class="card" id="cloud"><strong>Hoymiles Cloud Fallback</strong>
 <label><input name="cloudEnabled" type="checkbox"/> aktiv (wenn HIT &amp; MQTT-in tot)</label>
 <label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
 <label>Cloud User / E-Mail</label><input name="cloudUser"/>
@@ -112,7 +146,7 @@ window.alert=()=>{};
 <label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
 <p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
-<div class="card"><strong>KNX IP — Datenpunkte</strong>
+<div class="card" id="knx"><strong>KNX IP — Datenpunkte</strong>
 <label><input name="knxEnabled" type="checkbox"/> aktiv (KNXnet/IP Routing Multicast 224.0.23.12:3671)</label>
 <label>Physische Sendeadresse (Quelle im Telegramm)</label>
 <input name="knxPa" placeholder="15.15.250" inputmode="decimal" autocomplete="off"/>
@@ -130,7 +164,35 @@ window.alert=()=>{};
 <button class="sec" type="button" onclick="load()">Neu laden</button>
 </div>
 <p class="sub">Consolinno: Proxy-IP vom Display, Port 1502, Unit 1. HIT Pflicht · Tasmota/MQTT/KNX optional.</p>
-</div>
+</main></div>
+
+<script>
+const I18N={
+ de:{live:'Live',settings:'Einstellungen',proto:'Protokoll',energy:'Energiefluss',batSoc:'Batterie SoC',poll:'Jetzt pollen',
+     pv:'PV',bat:'Batterie',grid:'Netz',soc:'SoC',enHit:'Energie HIT',yield:'PV Ertrag',imp:'Bezug',exp:'Einspeisung',
+     lpp:'Consolinno LPP',limit:'Limit',on:'aktiv',off:'aus',hems:'HEMS',conn:'verbunden',wait:'wartet',tas:'Tasmota',
+     online:'online',offline:'offline',ph:'Phasen Netz',freq:'Frequenz',sys:'System'},
+ en:{live:'Live',settings:'Settings',proto:'Log',energy:'Energy flow',batSoc:'Battery SoC',poll:'Poll now',
+     pv:'PV',bat:'Battery',grid:'Grid',soc:'SoC',enHit:'HIT Energy',yield:'PV yield',imp:'Import',exp:'Export',
+     lpp:'Consolinno LPP',limit:'Limit',on:'on',off:'off',hems:'HEMS',conn:'connected',wait:'waiting',tas:'Tasmota',
+     online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
+};
+let LANG='de';
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+' · '+(s.ipShown||'');
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
 <script>
 function dptOpts(kind,cur){
   const m={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14033,'14.033 A'],[9001,'9.001']],Hz:[[14035,'14.035 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.019 kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
@@ -156,11 +218,13 @@ function collectKnx(){
     out.push({ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0});
   } return out;
 }
+function hashScroll(){const id=location.hash.slice(1);if(!id)return;const el=document.getElementById(id);if(!el)return;document.querySelectorAll('.card').forEach(c=>c.style.outline='');el.style.outline='1px solid rgba(88,204,134,.45)';el.scrollIntoView({behavior:'smooth',block:'start'});}
+window.addEventListener('hashchange',hashScroll);
 async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); refresh();
+  renderKnx(meta.points||[], c.knxCh||[]); refresh(); hashScroll();
 }
 async function save(){const f=document.getElementById('f');const body={};
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
@@ -185,6 +249,7 @@ async function probeTas(){
   if(r.ok){f.tasmotaEnabled.checked=true;refresh();}
 }
 async function refresh(){const s=await(await fetch('/api/status')).json();
+applyThemeLang(s);
 const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
 document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.demoMode?' <span class="badge">DEMO</span>':''}</div>
 <div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.mqttIngestOk,'MQ-IN')}${chip(s.cloudOk,'CLOUD')}${chip(s.knxOk,'KNX')}${chip(s.ethOk||s.wifiOk,'NET')}<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span></div>

@@ -15,25 +15,90 @@ const char OTA_HTML[] PROGMEM = R"HTML(
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="color-scheme" content="dark"/><title>OTA Update · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
-<style>.wrap{max-width:640px}input[type=file]{width:100%;margin:14px 0;color:var(--txt)}</style>
-</head><body><div class="wrap">
-<div class="top">
-  <div>
-    <p class="brand">HIT SunSpec Proxy</p>
-    <h1>Firmware OTA</h1>
-    <p class="sub">Aktuell <b id="ver">…</b> · NVS-Config bleibt · <code>firmware.bin</code></p>
+<style>input[type=file]{width:100%;margin:14px 0;color:var(--txt)}.card{max-width:720px}</style>
+</head><body><div class="app">
+<aside class="side">
+  <div class="logo"><div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy</span></div></div>
+  <nav>
+    <div class="nav-grp">System</div>
+    <a href="/"><i>◉</i> Live</a>
+    <div class="nav-grp">Anbindung</div>
+    <a href="/config#hit"><i>⚡</i> HIT</a>
+    <a href="/config#netz"><i>⊕</i> Netzwerk</a>
+    <a href="/config#sunspec"><i>≈</i> SunSpec</a>
+    <a href="/config#knx"><i>▦</i> KNX</a>
+    <div class="nav-grp">Dienste</div>
+    <a href="/config#mqtt"><i>☁</i> MQTT / Cloud</a>
+    <a href="/config#tasmota"><i>⌀</i> Tasmota</a>
+    <a href="/debug"><i>≡</i> Protokoll</a>
+    <div class="nav-grp">Gerät</div>
+    <a href="/config"><i>⚙</i> Einstellungen</a>
+    <a class="on" href="/ota"><i>↑</i> OTA</a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+      </select>
+    </div>
   </div>
-  <nav><a href="/">Live</a><a href="/config">Config</a><a href="/debug">Debug</a><a class="on" href="/ota">OTA</a></nav>
+</aside>
+<main class="main">
+<div class="page-head">
+  <div>
+    <p class="brand">Update</p>
+    <h1>Firmware OTA</h1>
+    <p class="sub">Aktuell <b id="ver">…</b> · NVS-Config bleibt</p>
+  </div>
+  <span class="pill">Sicher</span>
 </div>
 <div class="card">
+<label>Firmware-Datei</label>
 <input type="file" id="f" accept=".bin,application/octet-stream"/>
-<button type="button" onclick="go()">Hochladen &amp; flashen</button>
+<button type="button" onclick="go()">Hochladen</button>
 <div id="bar"><div id="fill"></div></div>
 <div id="msg" class="muted" style="margin-top:10px"></div>
-<p class="hint">Partition: OTA dual-slot (16 MB)</p>
+<p class="hint">Nach Erfolg startet das Gerät neu. Strom nicht trennen. Partition: OTA dual-slot.</p>
 </div>
+</main></div>
+
 <script>
-async function boot(){const s=await(await fetch('/api/status')).json();document.getElementById('ver').textContent=s.version||'?';}
+const I18N={
+ de:{live:'Live',settings:'Einstellungen',proto:'Protokoll',energy:'Energiefluss',batSoc:'Batterie SoC',poll:'Jetzt pollen',
+     pv:'PV',bat:'Batterie',grid:'Netz',soc:'SoC',enHit:'Energie HIT',yield:'PV Ertrag',imp:'Bezug',exp:'Einspeisung',
+     lpp:'Consolinno LPP',limit:'Limit',on:'aktiv',off:'aus',hems:'HEMS',conn:'verbunden',wait:'wartet',tas:'Tasmota',
+     online:'online',offline:'offline',ph:'Phasen Netz',freq:'Frequenz',sys:'System'},
+ en:{live:'Live',settings:'Settings',proto:'Log',energy:'Energy flow',batSoc:'Battery SoC',poll:'Poll now',
+     pv:'PV',bat:'Battery',grid:'Grid',soc:'SoC',enHit:'HIT Energy',yield:'PV yield',imp:'Import',exp:'Export',
+     lpp:'Consolinno LPP',limit:'Limit',on:'on',off:'off',hems:'HEMS',conn:'connected',wait:'waiting',tas:'Tasmota',
+     online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
+};
+let LANG='de';
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+' · '+(s.ipShown||'');
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script>
+async function boot(){const s=await(await fetch('/api/status')).json();applyThemeLang(s);document.getElementById('ver').textContent=s.version||'?';}
 async function go(){
   const file=document.getElementById('f').files[0];
   if(!file){alert('Bitte firmware.bin wählen');return;}

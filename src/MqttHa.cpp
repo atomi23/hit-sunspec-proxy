@@ -58,9 +58,9 @@ void sendDiscovery() {
   publishDiscoveryOne("grid_w", "Netz Leistung HIT", "W", "power", "measurement", "grid_w");
   publishDiscoveryOne("soc", "Batterie SoC", "%", "battery", "measurement", "soc");
   publishDiscoveryOne("energy_pv", "PV Energie", "kWh", "energy", "total_increasing", "energy_pv_kwh");
-  publishDiscoveryOne("tas_w", "Zaehler Leistung", "W", "power", "measurement", "tasmota_w");
-  publishDiscoveryOne("tas_in", "Zaehler Bezug", "kWh", "energy", "total_increasing", "tasmota_in_kwh");
-  publishDiscoveryOne("tas_out", "Zaehler Einspeisung", "kWh", "energy", "total_increasing", "tasmota_out_kwh");
+  publishDiscoveryOne("tas_w", "Zähler Leistung", "W", "power", "measurement", "tasmota_w");
+  publishDiscoveryOne("tas_in", "Zähler Bezug", "kWh", "energy", "total_increasing", "tasmota_in_kwh");
+  publishDiscoveryOne("tas_out", "Zähler Einspeisung", "kWh", "energy", "total_increasing", "tasmota_out_kwh");
   publishDiscoveryOne("src", "Datenquelle", "", "", "", "data_origin");
   discoverySent = true;
 }

@@ -148,6 +148,9 @@ bool load() {
     }
   }
 
+  cfg.uiLang = static_cast<UiLang>(prefs.getUChar("uilang", static_cast<uint8_t>(cfg.uiLang)));
+  cfg.uiTheme = static_cast<UiTheme>(prefs.getUChar("uitheme", static_cast<uint8_t>(cfg.uiTheme)));
+
   strlcpy(cfg.deviceName, prefs.getString("name", cfg.deviceName).c_str(), sizeof(cfg.deviceName));
   return true;
 }
@@ -235,6 +238,9 @@ bool save() {
     serializeJson(d, blob);
     prefs.putString("knxch", blob);
   }
+
+  prefs.putUChar("uilang", static_cast<uint8_t>(cfg.uiLang));
+  prefs.putUChar("uitheme", static_cast<uint8_t>(cfg.uiTheme));
 
   prefs.putString("name", cfg.deviceName);
   return true;

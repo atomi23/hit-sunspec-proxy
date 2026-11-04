@@ -4,11 +4,9 @@ Autarker Modbus-Proxy: **Hoymiles HIT** → **Consolinno HEMS** (SunSpec GEN24 a
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch). **Kein PoE** — 12–24 V DC.
 
-Aktuelle Firmware: **v0.3.9**
+Aktuelle Firmware: **v0.3.11**
 
 ## Architektur
-
-![Architektur HIT → ESP Proxy → Consolinno](docs/screenshots/architecture.jpg)
 
 ```
 Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
@@ -30,64 +28,40 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
 
 ## Screenshots
 
-> **Echte UI aus der Firmware** (HTML/CSS gerendert, Demo-JSON RFC‑5737) — keine KI-Schätzungen.  
-> Display: pixelgetreue **480×222**-Vorschau aus `StatusDisplay.cpp` (Foto vom Board folgt nach Flash).
+> **Original-UI aus der Firmware** (HTML/CSS gerendert, Demo-JSON RFC‑5737) — keine KI-Mockups.  
+> Display: pixelgetreue **480×222**-Vorschau aus `StatusDisplay.cpp`.
 
 ### Live-Dashboard (`/`)
 
 ![Live Dashboard](docs/screenshots/live-dashboard.jpg)
 
-### Config · KNX (PA + GA manuell)
+### Einstellungen · KNX
 
-![Web Config KNX](docs/screenshots/web-config.jpg)
+![Web Config](docs/screenshots/web-config.jpg)
 
-![KNX Datenpunkte mit GA-Feldern](docs/screenshots/web-config-knx.jpg)
+![KNX Datenpunkte](docs/screenshots/web-config-knx.jpg)
 
-### Einrichtungsassistent (`/setup`)
-
-![Setup Wizard](docs/screenshots/setup-wizard.jpg)
-
-### Debug / SunSpec-Writes (`/debug`)
-
-![Debug](docs/screenshots/debug-page.jpg)
-
-### OTA Update (`/ota`)
-
-![OTA](docs/screenshots/ota-page.jpg)
-
-### Display Live (480×222 Panel)
+### Display Live (480×222)
 
 ![Display Live](docs/screenshots/display-live.jpg)
 
 ## Features
 
-- **Live-Dashboard** auf `/` (PV/Bat/Netz/SoC, Fluss, LPP, Tasmota, Phasen) — Auto-Refresh 2 s
-- Modernes Web-UI 2026 (gemeinsames `/a.css`, Glass-Panels, Chip-Status)
-- **Datenquellen-Priorität:** NATIVE (HIT) → MQTT-Ingest → Hoymiles Cloud — Anzeige Web + Display
-- **Watchdog:** Task-WDT (~45 s) + Soft-Restart nach langer Quellenlosigkeit
-- **KNX IP:** alle Live-Punkte einzeln wählbar (PV gesamt + MPPT1–4 W/V/A, Bat W/V/A, SoC/SoH, Netz gesamt + L1–3, AC V/I, Frequenz, Energien, Tasmota, LPP) — Multicast `224.0.23.12:3671`, GA + DPT je Punkt
+- **Live-Dashboard** mit Sidebar-Menü (HIT / Netzwerk / SunSpec / KNX / MQTT / Tasmota / Protokoll / OTA)
+- **Themes:** Mint · Ocean · Ember (Web + Display)
+- **Sprache:** Deutsch / English (Web + Display)
+- Karten mit Icons, MPPT-Tiles, Status-Pills
+- **KNX IP:** alle Live-Punkte wählbar, GA manuell, physische Sendeadresse
 - HIT Modbus TCP (MPPT, Bat, SoC/SoH, Netzphasen, Frequenz, Energien)
-- SunSpec GEN24-Map auf **:1502** inkl. Model **123** (LPP von Consolinno)
-- **Debug:** `/debug` — Log aller SunSpec-Writes (§14a-Test)
-- **OTA:** `/ota` — `firmware.bin` per Browser (NVS-Config bleibt)
-- **Demo-Modus** — Fake-Daten ohne HIT
-- Dual-Auth: Display-Code (random) + selbst gewähltes Web-Passwort
-- First-Boot: Setup-Assistent → danach autark HIT ↔ Consolinno
-- MQTT Home Assistant Discovery
-- Optional Tasmota E320 (`Power` / `E_in` / `E_out`)
-- Optional HIT-Schreiben (306–309, APC) hinter Web-Schalter
+- SunSpec GEN24 auf **:1502** inkl. Model **123**
+- Debug `/debug`, OTA `/ota`, Demo-Modus, Dual-Auth, First-Boot-Assistent
 
-## Erste Inbetriebnahme (Assistent)
+## Erste Inbetriebnahme
 
-1. `pio run -e t-connect-pro -t upload` (USB, einmalig)
-2. Display: IP + Display-Code + WLAN-QR (First Boot)
-3. Browser `http://<IP>/` → **Einrichtungsassistent** (`/setup`)
-   - Zugang (Passwort)
-   - HIT-IP (oder Demo) + Test-Poll
-   - Consolinno: Proxy-IP / Port **1502** / Unit **1**
-   - Abschließen → **Live-Dashboard**, Display-QR aus
-4. Config / MQTT / Tasmota optional unter `/config`
-5. OTA: `http://<IP>/ota`
+1. `pio run -e t-connect-pro -t upload`
+2. Display: IP + Display-Code
+3. Browser `http://<IP>/` → Assistent
+4. Consolinno: Proxy-IP, Port **1502**, Unit **1**
 
 Pins: [`PINS.md`](PINS.md)
 
@@ -97,18 +71,14 @@ Pins: [`PINS.md`](PINS.md)
 cd hit-sunspec-proxy
 pio run -e t-connect-pro
 pio run -e t-connect-pro -t upload
-pio device monitor
 ```
 
-Velxio-Smoke-Test (nur Serial/LED): [`velxio-demo/velxio-demo.ino`](velxio-demo/velxio-demo.ino)
+## Privatsphäre
 
-## Privatsphäre / Pseudodaten
-
-Im Repo liegen **nur Beispielwerte** (RFC‑5737 `192.0.2.x`, Demo-kWh). Keine echten LAN-IPs, Zählerstände oder Seriennummern einer Anlage. Defaults nach dem Flash bitte in der Web-UI auf deine Umgebung setzen.
+Nur Pseudodaten (RFC‑5737 `192.0.2.x`). Keine echten Anlagenwerte im Repo.
 
 ## Support & Donation
 
-Dieses Projekt wurde mit viel ❤️, ☕ und KI-Unterstützung entwickelt.  
 Lead Developer: [atomi23](https://github.com/atomi23)
 
 <a href="https://www.paypal.me/atomi23"><img src="https://img.shields.io/badge/Donate-PayPal-blue.svg?logo=paypal&style=for-the-badge" alt="Donate via PayPal" /></a>
