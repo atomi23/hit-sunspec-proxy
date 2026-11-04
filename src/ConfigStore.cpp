@@ -1,5 +1,6 @@
 #include "AppConfig.h"
 #include <Preferences.h>
+#include <ArduinoJson.h>
 #include <esp_system.h>
 
 namespace {
@@ -126,6 +127,27 @@ bool load() {
   cfg.cloudPollMs = prefs.getUInt("cldpoll", cfg.cloudPollMs);
   cfg.cloudMaxAgeMs = prefs.getUInt("clage", cfg.cloudMaxAgeMs);
 
+  cfg.knxEnabled = prefs.getBool("knxena", cfg.knxEnabled);
+  strlcpy(cfg.knxPa, prefs.getString("knxpa", cfg.knxPa).c_str(), sizeof(cfg.knxPa));
+  cfg.knxPublishMs = prefs.getUInt("knxpub", cfg.knxPublishMs);
+  cfg.knxOnlyOnChange = prefs.getBool("knxchg", cfg.knxOnlyOnChange);
+  cfg.knxMinDeltaW = prefs.getUShort("knxdlt", cfg.knxMinDeltaW);
+  {
+    String blob = prefs.getString("knxch", "");
+    if (blob.length()) {
+      JsonDocument d;
+      if (!deserializeJson(d, blob) && d.is<JsonArray>()) {
+        JsonArray a = d.as<JsonArray>();
+        for (size_t i = 0; i < KNX_CH_COUNT && i < a.size(); i++) {
+          cfg.knxCh[i].ena = a[i]["e"] | false;
+          if (a[i]["g"].is<const char *>())
+            strlcpy(cfg.knxCh[i].ga, a[i]["g"], sizeof(cfg.knxCh[i].ga));
+          cfg.knxCh[i].dpt = a[i]["d"] | 0;
+        }
+      }
+    }
+  }
+
   strlcpy(cfg.deviceName, prefs.getString("name", cfg.deviceName).c_str(), sizeof(cfg.deviceName));
   return true;
 }
@@ -194,6 +216,25 @@ bool save() {
   prefs.putString("cldsid", cfg.cloudStationId);
   prefs.putUInt("cldpoll", cfg.cloudPollMs);
   prefs.putUInt("clage", cfg.cloudMaxAgeMs);
+
+  prefs.putBool("knxena", cfg.knxEnabled);
+  prefs.putString("knxpa", cfg.knxPa);
+  prefs.putUInt("knxpub", cfg.knxPublishMs);
+  prefs.putBool("knxchg", cfg.knxOnlyOnChange);
+  prefs.putUShort("knxdlt", cfg.knxMinDeltaW);
+  {
+    JsonDocument d;
+    JsonArray a = d.to<JsonArray>();
+    for (size_t i = 0; i < KNX_CH_COUNT; i++) {
+      JsonObject o = a.add<JsonObject>();
+      o["e"] = cfg.knxCh[i].ena;
+      o["g"] = cfg.knxCh[i].ga;
+      o["d"] = cfg.knxCh[i].dpt;
+    }
+    String blob;
+    serializeJson(d, blob);
+    prefs.putString("knxch", blob);
+  }
 
   prefs.putString("name", cfg.deviceName);
   return true;

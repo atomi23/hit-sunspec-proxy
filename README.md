@@ -4,7 +4,7 @@ Autarker Modbus-Proxy: **Hoymiles HIT** → **Consolinno HEMS** (SunSpec GEN24 a
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch). **Kein PoE** — 12–24 V DC.
 
-Aktuelle Firmware: **v0.3.7**
+Aktuelle Firmware: **v0.3.9**
 
 ## Architektur
 
@@ -15,6 +15,7 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
                                       |
                                       +-- optional Tasmota (Display)
                                       +-- optional MQTT → Home Assistant
+                                      +-- optional KNX IP (Multicast)
                                       +-- optional HIT Write (Akku/APC)
 ```
 
@@ -22,7 +23,9 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
 |------|----------|--------|
 | HIT → SunSpec | ja | Consolinno HEMS |
 | Tasmota | nein | Display / optional Meter-Spoof |
-| MQTT | nein | HA-Anzeige + Discovery |
+| MQTT | nein | HA-Anzeige + Discovery / Ingest-Fallback |
+| Cloud | nein | Hoymiles S-Miles Lesen (Fallback) |
+| KNX IP | nein | Multicast-Routing aller wählbaren Live-Werte |
 | HIT Write | nein | Reg. 306–309 / APC (Web-Schalter) |
 
 ## Screenshots
@@ -59,7 +62,8 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
 - Modernes Web-UI 2026 (gemeinsames `/a.css`, Glass-Panels, Chip-Status)
 - **Datenquellen-Priorität:** NATIVE (HIT) → MQTT-Ingest → Hoymiles Cloud — Anzeige Web + Display
 - **Watchdog:** Task-WDT (~45 s) + Soft-Restart nach langer Quellenlosigkeit
-- HIT Modbus TCP (Reg. **2000** PV-Energie, PV/Bat/SoC/V/I)
+- **KNX IP:** alle Live-Punkte einzeln wählbar (PV gesamt + MPPT1–4 W/V/A, Bat W/V/A, SoC/SoH, Netz gesamt + L1–3, AC V/I, Frequenz, Energien, Tasmota, LPP) — Multicast `224.0.23.12:3671`, GA + DPT je Punkt
+- HIT Modbus TCP (MPPT, Bat, SoC/SoH, Netzphasen, Frequenz, Energien)
 - SunSpec GEN24-Map auf **:1502** inkl. Model **123** (LPP von Consolinno)
 - **Debug:** `/debug` — Log aller SunSpec-Writes (§14a-Test)
 - **OTA:** `/ota` — `firmware.bin` per Browser (NVS-Config bleibt)

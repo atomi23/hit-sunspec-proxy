@@ -10,6 +10,7 @@
 #include "MqttHa.h"
 #include "HitControl.h"
 #include "HoyCloud.h"
+#include "KnxIp.h"
 #include "DataSource.h"
 #include "Watchdog.h"
 
@@ -32,6 +33,7 @@ void setup() {
   SunSpecServer::begin(cfg);
   MqttHa::begin(cfg);
   HoyCloud::begin(cfg);
+  KnxIp::begin(cfg);
   DataBroker::begin();
   WebConfig::begin();
 
@@ -56,6 +58,7 @@ void setup() {
     Serial.printf("MQTT: %s:%u pub=%d ingest=%d topic=%s\n", cfg.mqttHost, cfg.mqttPort,
                   int(cfg.mqttEnabled), int(cfg.mqttIngestEnabled), cfg.mqttIngestTopic);
   if (cfg.cloudEnabled) Serial.printf("Cloud: %s sid=%s\n", cfg.cloudHost, cfg.cloudStationId);
+  if (cfg.knxEnabled) Serial.printf("KNX IP: PA %s every %lums\n", cfg.knxPa, (unsigned long)cfg.knxPublishMs);
 }
 
 void loop() {
@@ -67,6 +70,7 @@ void loop() {
   MqttHa::loop();
   HoyCloud::loop();
   DataBroker::reconcile();
+  KnxIp::loop();
   SunSpecServer::loop();
   StatusDisplay::loop();
   WebConfig::loop();

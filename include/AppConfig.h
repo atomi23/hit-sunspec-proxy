@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "KnxPoints.h"
 
 enum class HitLinkMode : uint8_t {
   Tcp = 0,
@@ -80,6 +81,14 @@ struct AppConfig {
   char cloudStationId[24] = ""; // sid / station_id
   uint32_t cloudPollMs = 60000;
   uint32_t cloudMaxAgeMs = 180000;
+
+  // KNX IP Routing — alle Live-Werte wählbar (siehe KnxPoints.h)
+  bool knxEnabled = false;
+  char knxPa[16] = "15.15.250";
+  uint32_t knxPublishMs = 10000;
+  bool knxOnlyOnChange = true;
+  uint16_t knxMinDeltaW = 50;
+  KnxCh knxCh[KNX_CH_COUNT] = {};
 
   char deviceName[32] = "HIT-SunSpec-Proxy";
 };

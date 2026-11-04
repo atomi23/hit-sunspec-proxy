@@ -228,8 +228,9 @@ static void drawPageStatus() {
            dataOriginLabel(gLive.dataOrigin), (unsigned long)age, (unsigned long)gLive.hitFails);
   lcd.drawString(buf, 22, 112);
 
-  snprintf(buf, sizeof(buf), "MQTT-in %s · Cloud %s",
-           gLive.mqttIngestOk ? "ok" : "—", gLive.cloudOk ? "ok" : "—");
+  snprintf(buf, sizeof(buf), "MQTT-in %s · Cloud %s · KNX %s",
+           gLive.mqttIngestOk ? "ok" : "—", gLive.cloudOk ? "ok" : "—",
+           gLive.knxOk ? "ok" : "—");
   lcd.drawString(buf, 22, 130);
   snprintf(buf, sizeof(buf), "LPP %s %.0f%%  Write %s",
            gLive.wMaxLimEna ? "AN" : "aus",

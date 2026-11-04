@@ -10,6 +10,8 @@
 #include "DebugLog.h"
 #include "OtaUpdate.h"
 #include "HoyCloud.h"
+#include "KnxIp.h"
+#include "KnxPoints.h"
 #include "DataSource.h"
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
@@ -143,7 +145,7 @@ async function refresh(){
   document.getElementById('ver').textContent='v'+(s.version||'');
   document.getElementById('ip').innerHTML=(s.ipShown||'-')+(s.demoMode?' <span class="badge">DEMO</span>':'');
   document.getElementById('dots').innerHTML=
-    chip(s.hitOk,'HIT')+chip(s.sunspecClient,'HEMS')+chip(s.mqttOk,'MQTT')+chip(s.mqttIngestOk,'MQ-IN')+chip(s.cloudOk,'CLOUD')+chip(s.ethOk||s.wifiOk,'NET')+
+    chip(s.hitOk,'HIT')+chip(s.sunspecClient,'HEMS')+chip(s.mqttOk,'MQTT')+chip(s.mqttIngestOk,'MQ-IN')+chip(s.cloudOk,'CLOUD')+chip(s.knxOk,'KNX')+chip(s.ethOk||s.wifiOk,'NET')+
     `<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span>`;
   document.getElementById('m').innerHTML=
     `<div class="panel metric"><div class="k">PV</div><div class="v">${s.pvW||0}<span class="u">W</span></div></div>
@@ -155,14 +157,14 @@ async function refresh(){
   document.getElementById('fGrid').textContent=w(s.gridW);
   const soc=Math.max(0,Math.min(100,Number(s.soc)||0));
   document.getElementById('socBar').style.width=soc+'%';
-  document.getElementById('socTxt').textContent=soc+' % · '+(s.status||'—');
-  document.getElementById('en').innerHTML=`PV ${Number(s.energyPvKwh||0).toFixed(1)} kWh<br>Bezug ${Number(s.energyImpKwh||0).toFixed(1)} · Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh`;
+  document.getElementById('socTxt').textContent=soc+' % · SoH '+(s.soh||0)+'% · '+(Number(s.batV||0).toFixed(1))+' V · '+(Number(s.batA||0).toFixed(1))+' A · '+(s.status||'—');
+  document.getElementById('en').innerHTML=`PV ${Number(s.energyPvKwh||0).toFixed(1)} kWh<br>Bezug ${Number(s.energyImpKwh||0).toFixed(1)} · Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh<br>MPPT ${s.pv1W||0}/${s.pv2W||0}/${s.pv3W||0}/${s.pv4W||0} W`;
   const lpp=(Number(s.wMaxLimPct||0)/100).toFixed(2);
-  document.getElementById('lpp').innerHTML=`WMaxLimPct ${lpp}% · ${s.wMaxLimEna?'aktiv':'aus'}<br>HEMS ${s.sunspecClient?'verbunden':'wartet'}<br>${s.lastWriteNote||''}`;
+  document.getElementById('lpp').innerHTML=`WMaxLimPct ${lpp}% · ${s.wMaxLimEna?'aktiv':'aus'}<br>HEMS ${s.sunspecClient?'verbunden':'wartet'} · KNX ${s.knxOk?'ok':'—'}<br>${s.lastWriteNote||''}`;
   document.getElementById('tas').innerHTML=s.tasmotaOk
     ? `${s.tasmotaSensorKey||'Zähler'}: ${s.tasmotaPowerW} W<br>E_in ${Number(s.tasmotaTotalKwh).toFixed(3)} · E_out ${Number(s.tasmotaExportKwh).toFixed(3)} kWh`
     : 'aus / offline';
-  document.getElementById('ph').innerHTML=`L1 ${Number(s.v1||0).toFixed(1)} · L2 ${Number(s.v2||0).toFixed(1)} · L3 ${Number(s.v3||0).toFixed(1)} V<br>${Number(s.i1||0).toFixed(1)} / ${Number(s.i2||0).toFixed(1)} / ${Number(s.i3||0).toFixed(1)} A`;
+  document.getElementById('ph').innerHTML=`L1 ${Number(s.v1||0).toFixed(1)} · L2 ${Number(s.v2||0).toFixed(1)} · L3 ${Number(s.v3||0).toFixed(1)} V<br>${Number(s.i1||0).toFixed(1)} / ${Number(s.i2||0).toFixed(1)} / ${Number(s.i3||0).toFixed(1)} A · ${Number(s.freqHz||0).toFixed(2)} Hz<br>P ${s.gridW1||0}/${s.gridW2||0}/${s.gridW3||0} W`;
   document.getElementById('age').textContent='HIT vor '+Math.floor((s.lastHitAgeMs||0)/1000)+'s · Eth '+(s.ipEth||'-')+' · WiFi '+(s.ipWifi||'-');
 }
 refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
@@ -265,19 +267,57 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
 <p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
+<div class="card"><strong>KNX IP — Datenpunkte</strong>
+<label><input name="knxEnabled" type="checkbox"/> aktiv (Multicast 224.0.23.12:3671)</label>
+<label>Physische Adresse</label><input name="knxPa" placeholder="15.15.250"/>
+<label>Intervall (ms)</label><input name="knxPublishMs" type="number"/>
+<label><input name="knxOnlyOnChange" type="checkbox"/> nur bei Änderung</label>
+<label>Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
+<p class="hint">Jeden Proxy-Wert einzeln aktivieren. DPT ist vorbelegt (W/V/A/%/Wh), optional änderbar.</p>
+<div id="knxRows" style="margin-top:10px;display:grid;gap:8px"></div>
+</div>
 </form>
 <div class="row">
 <button type="button" onclick="save()">Speichern</button>
 <button class="sec" type="button" onclick="poll()">Jetzt pollen</button>
 <button class="sec" type="button" onclick="load()">Neu laden</button>
 </div>
-<p class="sub">Consolinno: Proxy-IP vom Display, Port 1502, Unit 1. HIT Pflicht · Tasmota/MQTT optional.</p>
+<p class="sub">Consolinno: Proxy-IP vom Display, Port 1502, Unit 1. HIT Pflicht · Tasmota/MQTT/KNX optional.</p>
 </div>
 <script>
-async function load(){const c=await(await fetch('/api/config')).json();const f=document.getElementById('f');
-for(const[k,v] of Object.entries(c)){const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}refresh();}
+function dptOpts(kind,cur){
+  const m={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14033,'14.033 A'],[9001,'9.001']],Hz:[[14035,'14.035 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.019 kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
+  return (m[kind]||m.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
+}
+function renderKnx(meta,ch){
+  const box=document.getElementById('knxRows'); if(!box)return;
+  box.innerHTML=meta.map((m,i)=>{
+    const c=(ch&&ch[i])||{}; const dpt=c.dpt||m.dpt;
+    return `<div style="display:grid;grid-template-columns:28px 1fr 110px 130px;gap:6px;align-items:center">
+      <input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''}/>
+      <span style="font-size:.82rem">${m.label}<br><span class="hint">${m.id}</span></span>
+      <input data-knx="g" data-i="${i}" placeholder="1/2/${10+i}" value="${c.ga||''}"/>
+      <select data-knx="d" data-i="${i}">${dptOpts(m.kind,dpt)}</select></div>`;
+  }).join('');
+}
+function collectKnx(){
+  const n=document.querySelectorAll('#knxRows [data-knx=e]').length; const out=[];
+  for(let i=0;i<n;i++){
+    const e=document.querySelector(`#knxRows [data-knx=e][data-i="${i}"]`);
+    const g=document.querySelector(`#knxRows [data-knx=g][data-i="${i}"]`);
+    const d=document.querySelector(`#knxRows [data-knx=d][data-i="${i}"]`);
+    out.push({ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0});
+  } return out;
+}
+async function load(){
+  const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
+  const f=document.getElementById('f');
+  for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
+  renderKnx(meta.points||[], c.knxCh||[]); refresh();
+}
 async function save(){const f=document.getElementById('f');const body={};
-[...f.elements].forEach(el=>{if(!el.name)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
+[...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
+body.knxCh=collectKnx();
 await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});alert('Gespeichert');refresh();}
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
 async function applyCtrl(){
@@ -300,7 +340,7 @@ async function probeTas(){
 async function refresh(){const s=await(await fetch('/api/status')).json();
 const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
 document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.demoMode?' <span class="badge">DEMO</span>':''}</div>
-<div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.mqttIngestOk,'MQ-IN')}${chip(s.cloudOk,'CLOUD')}${chip(s.ethOk||s.wifiOk,'NET')}<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span></div>
+<div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.mqttIngestOk,'MQ-IN')}${chip(s.cloudOk,'CLOUD')}${chip(s.knxOk,'KNX')}${chip(s.ethOk||s.wifiOk,'NET')}<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span></div>
 <div class="meta" style="margin-top:8px"><b>${s.pvW} W</b> PV · Bat ${s.batW} W · Netz ${s.gridW} W · SoC ${s.soc}% · ${Number(s.energyPvKwh).toFixed(1)} kWh</div>
 <pre>HIT Bezug ${Number(s.energyImpKwh||0).toFixed(1)} / Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh
 Tasmota ${s.tasmotaSensorKey||''}: ${s.tasmotaOk? (s.tasmotaPowerW+' W · E_in '+Number(s.tasmotaTotalKwh).toFixed(3)+' · E_out '+Number(s.tasmotaExportKwh).toFixed(3)+' kWh') : 'aus'}
@@ -584,6 +624,19 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (o["cloudStationId"].is<const char *>()) strlcpy(c.cloudStationId, o["cloudStationId"], sizeof(c.cloudStationId));
   if (!o["cloudPollMs"].isNull()) c.cloudPollMs = o["cloudPollMs"];
   if (!o["cloudMaxAgeMs"].isNull()) c.cloudMaxAgeMs = o["cloudMaxAgeMs"];
+  if (!o["knxEnabled"].isNull()) c.knxEnabled = o["knxEnabled"];
+  if (o["knxPa"].is<const char *>()) strlcpy(c.knxPa, o["knxPa"], sizeof(c.knxPa));
+  if (!o["knxPublishMs"].isNull()) c.knxPublishMs = o["knxPublishMs"];
+  if (!o["knxOnlyOnChange"].isNull()) c.knxOnlyOnChange = o["knxOnlyOnChange"];
+  if (!o["knxMinDeltaW"].isNull()) c.knxMinDeltaW = o["knxMinDeltaW"];
+  if (o["knxCh"].is<JsonArrayConst>()) {
+    JsonArrayConst a = o["knxCh"].as<JsonArrayConst>();
+    for (size_t i = 0; i < KNX_CH_COUNT && i < a.size(); i++) {
+      if (!a[i]["ena"].isNull()) c.knxCh[i].ena = a[i]["ena"];
+      if (a[i]["ga"].is<const char *>()) strlcpy(c.knxCh[i].ga, a[i]["ga"], sizeof(c.knxCh[i].ga));
+      if (!a[i]["dpt"].isNull()) c.knxCh[i].dpt = a[i]["dpt"];
+    }
+  }
   if (o["deviceName"].is<const char *>()) strlcpy(c.deviceName, o["deviceName"], sizeof(c.deviceName));
 }
 } // namespace
@@ -675,6 +728,7 @@ void begin() {
               TasmotaClient::applyConfig(c);
               MqttHa::applyConfig(c);
               HoyCloud::applyConfig(c);
+              KnxIp::applyConfig(c);
               HitClient::pollNow();
               SunSpecServer::rebuildMap();
               req->send(200, "application/json", "{\"ok\":true}");
@@ -697,17 +751,26 @@ void begin() {
     doc["mqttOk"] = gLive.mqttOk;
     doc["mqttIngestOk"] = gLive.mqttIngestOk;
     doc["cloudOk"] = gLive.cloudOk;
+    doc["knxOk"] = gLive.knxOk;
     doc["dataOrigin"] = dataOriginLabel(gLive.dataOrigin);
     doc["pvW"] = gLive.pvW;
+    doc["pv1W"] = gLive.pv1W; doc["pv2W"] = gLive.pv2W; doc["pv3W"] = gLive.pv3W; doc["pv4W"] = gLive.pv4W;
+    doc["pv1V"] = gLive.pv1V; doc["pv2V"] = gLive.pv2V; doc["pv3V"] = gLive.pv3V; doc["pv4V"] = gLive.pv4V;
+    doc["pv1A"] = gLive.pv1A; doc["pv2A"] = gLive.pv2A; doc["pv3A"] = gLive.pv3A; doc["pv4A"] = gLive.pv4A;
     doc["batW"] = gLive.batW;
+    doc["batV"] = gLive.batV;
+    doc["batA"] = gLive.batA;
     doc["soc"] = gLive.soc;
+    doc["soh"] = gLive.soh;
     doc["gridW"] = gLive.gridW;
+    doc["gridW1"] = gLive.gridW1; doc["gridW2"] = gLive.gridW2; doc["gridW3"] = gLive.gridW3;
     doc["v1"] = gLive.v1;
     doc["v2"] = gLive.v2;
     doc["v3"] = gLive.v3;
     doc["i1"] = gLive.i1;
     doc["i2"] = gLive.i2;
     doc["i3"] = gLive.i3;
+    doc["freqHz"] = gLive.freqHz;
     doc["energyPvKwh"] = gLive.energyPvKwh;
     doc["energyImpKwh"] = gLive.energyImpKwh;
     doc["energyExpKwh"] = gLive.energyExpKwh;
@@ -786,7 +849,36 @@ void begin() {
     doc["cloudStationId"] = c.cloudStationId;
     doc["cloudPollMs"] = c.cloudPollMs;
     doc["cloudMaxAgeMs"] = c.cloudMaxAgeMs;
+    doc["knxEnabled"] = c.knxEnabled;
+    doc["knxPa"] = c.knxPa;
+    doc["knxPublishMs"] = c.knxPublishMs;
+    doc["knxOnlyOnChange"] = c.knxOnlyOnChange;
+    doc["knxMinDeltaW"] = c.knxMinDeltaW;
+    JsonArray ch = doc["knxCh"].to<JsonArray>();
+    for (size_t i = 0; i < KNX_CH_COUNT; i++) {
+      JsonObject o = ch.add<JsonObject>();
+      o["ena"] = c.knxCh[i].ena;
+      o["ga"] = c.knxCh[i].ga;
+      o["dpt"] = c.knxCh[i].dpt ? c.knxCh[i].dpt : knxMeta(i).defaultDpt;
+    }
     doc["deviceName"] = c.deviceName;
+    String out; serializeJson(doc, out);
+    req->send(200, "application/json", out);
+  });
+
+  server.on("/api/knx/meta", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    JsonDocument doc;
+    JsonArray pts = doc["points"].to<JsonArray>();
+    static const char *kinds[] = {"PowerW", "Percent", "Volt", "Amp", "Hz", "EnergyKwh", "RatioPct"};
+    for (size_t i = 0; i < KNX_CH_COUNT; i++) {
+      const auto &m = knxMeta(i);
+      JsonObject o = pts.add<JsonObject>();
+      o["id"] = m.id;
+      o["label"] = m.label;
+      o["dpt"] = m.defaultDpt;
+      o["kind"] = kinds[uint8_t(m.kind) < 7 ? uint8_t(m.kind) : 0];
+    }
     String out; serializeJson(doc, out);
     req->send(200, "application/json", out);
   });
@@ -812,6 +904,7 @@ void begin() {
               TasmotaClient::applyConfig(c);
               MqttHa::applyConfig(c);
               HoyCloud::applyConfig(c);
+              KnxIp::applyConfig(c);
               req->send(200, "application/json", "{\"ok\":true}");
             });
 
