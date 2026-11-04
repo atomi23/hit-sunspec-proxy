@@ -30,19 +30,22 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
 
 ## Screenshots
 
-> Mockups mit **Pseudodaten** (RFC‑5737 `192.0.2.x`) — keine echten Anlagenwerte.
+> **Echte UI aus der Firmware** (HTML/CSS gerendert, Demo-JSON RFC‑5737) — keine KI-Schätzungen.  
+> Display: pixelgetreue **480×222**-Vorschau aus `StatusDisplay.cpp` (Foto vom Board folgt nach Flash).
 
 ### Live-Dashboard (`/`)
 
 ![Live Dashboard](docs/screenshots/live-dashboard.jpg)
 
+### Config · KNX (PA + GA manuell)
+
+![Web Config KNX](docs/screenshots/web-config.jpg)
+
+![KNX Datenpunkte mit GA-Feldern](docs/screenshots/web-config-knx.jpg)
+
 ### Einrichtungsassistent (`/setup`)
 
 ![Setup Wizard](docs/screenshots/setup-wizard.jpg)
-
-### Config (`/config`)
-
-![Web Config](docs/screenshots/web-config.jpg)
 
 ### Debug / SunSpec-Writes (`/debug`)
 
@@ -52,7 +55,7 @@ Hoymiles HIT  --Modbus TCP-->  ESP Proxy (:1502 SunSpec)
 
 ![OTA](docs/screenshots/ota-page.jpg)
 
-### Display (Board)
+### Display Live (480×222 Panel)
 
 ![Display Live](docs/screenshots/display-live.jpg)
 

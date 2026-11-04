@@ -268,12 +268,14 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
 <div class="card"><strong>KNX IP — Datenpunkte</strong>
-<label><input name="knxEnabled" type="checkbox"/> aktiv (Multicast 224.0.23.12:3671)</label>
-<label>Physische Adresse</label><input name="knxPa" placeholder="15.15.250"/>
+<label><input name="knxEnabled" type="checkbox"/> aktiv (KNXnet/IP Routing Multicast 224.0.23.12:3671)</label>
+<label>Physische Sendeadresse (Quelle im Telegramm)</label>
+<input name="knxPa" placeholder="15.15.250" inputmode="decimal" autocomplete="off"/>
+<p class="hint">Frei wählbar, z.B. <code>1.1.240</code> — erscheint als Absender-PA auf dem Bus (ETS/Monitor).</p>
 <label>Intervall (ms)</label><input name="knxPublishMs" type="number"/>
 <label><input name="knxOnlyOnChange" type="checkbox"/> nur bei Änderung</label>
 <label>Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
-<p class="hint">Jeden Proxy-Wert einzeln aktivieren. DPT ist vorbelegt (W/V/A/%/Wh), optional änderbar.</p>
+<p class="hint">Pro Zeile: aktivieren → <strong>Gruppenadresse manuell</strong> als Text <code>H/M/L</code> (z.B. <code>1/2/10</code>) → DPT ggf. anpassen.</p>
 <div id="knxRows" style="margin-top:10px;display:grid;gap:8px"></div>
 </div>
 </form>
@@ -293,11 +295,11 @@ function renderKnx(meta,ch){
   const box=document.getElementById('knxRows'); if(!box)return;
   box.innerHTML=meta.map((m,i)=>{
     const c=(ch&&ch[i])||{}; const dpt=c.dpt||m.dpt;
-    return `<div style="display:grid;grid-template-columns:28px 1fr 110px 130px;gap:6px;align-items:center">
-      <input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''}/>
+    return `<div style="display:grid;grid-template-columns:28px minmax(120px,1.2fr) minmax(100px,.9fr) minmax(120px,.9fr);gap:6px;align-items:center">
+      <input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} title="aktivieren"/>
       <span style="font-size:.82rem">${m.label}<br><span class="hint">${m.id}</span></span>
-      <input data-knx="g" data-i="${i}" placeholder="1/2/${10+i}" value="${c.ga||''}"/>
-      <select data-knx="d" data-i="${i}">${dptOpts(m.kind,dpt)}</select></div>`;
+      <input data-knx="g" data-i="${i}" type="text" inputmode="text" autocomplete="off" placeholder="GA z.B. 1/2/${10+i}" value="${c.ga||''}" title="Gruppenadresse manuell H/M/L"/>
+      <select data-knx="d" data-i="${i}" title="DPT">${dptOpts(m.kind,dpt)}</select></div>`;
   }).join('');
 }
 function collectKnx(){

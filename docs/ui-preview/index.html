@@ -1,0 +1,85 @@
+
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title>Live · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+</head><body>
+<script>
+const MOCK={"version": "0.3.9", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{
+  u=String(u);
+  if(u.includes('/api/status')) return {ok:true,json:async()=>MOCK};
+  if(u.includes('/api/poll')) return {ok:true,json:async()=>({ok:true})};
+  return _f(u,o);
+};
+</script>
+<div class="wrap">
+<div class="top">
+  <div>
+    <p class="brand">HIT SunSpec Proxy</p>
+    <h1>Live <span id="ver" class="muted" style="font-size:.7rem;font-weight:500"></span></h1>
+    <p class="sub">HIT → Proxy :1502 → Consolinno · autark</p>
+  </div>
+  <nav><a class="on" href="/">Live</a><a href="/config">Config</a><a href="/debug">Debug</a><a href="/ota">OTA</a></nav>
+</div>
+<div class="ip" id="ip">…</div>
+<div class="chips" id="dots"></div>
+<div class="metrics" id="m"></div>
+<div class="panel">
+  <div class="k">Energiefluss</div>
+  <div class="flow">
+    <div class="box"><span>PV</span><b id="fPv">—</b></div><div class="arr">→</div>
+    <div class="box"><span>Akku / Haus</span><b id="fBat">—</b></div><div class="arr">→</div>
+    <div class="box"><span>Netz</span><b id="fGrid">—</b></div>
+  </div>
+  <div class="k">Batterie SoC</div>
+  <div class="bar"><div class="fill" id="socBar"></div></div>
+  <div class="meta" id="socTxt" style="margin-top:10px">—</div>
+</div>
+<div class="grid2">
+  <div class="panel"><div class="k">Energie HIT</div><div id="en" class="meta" style="margin-top:10px">—</div></div>
+  <div class="panel"><div class="k">Consolinno LPP</div><div id="lpp" class="meta" style="margin-top:10px">—</div></div>
+  <div class="panel"><div class="k">Tasmota</div><div id="tas" class="meta" style="margin-top:10px">—</div></div>
+  <div class="panel"><div class="k">Phasen</div><div id="ph" class="meta" style="margin-top:10px">—</div></div>
+</div>
+<div class="row">
+  <button class="sec" type="button" onclick="poll()">Jetzt pollen</button>
+  <span class="meta" id="age"></span>
+</div>
+</div>
+<script>
+const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
+const w=n=>`${Number(n)||0} W`;
+async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
+async function refresh(){
+  const s=await(await fetch('/api/status')).json();
+  if(s.setupComplete===false){location.href='/setup';return;}
+  document.getElementById('ver').textContent='v'+(s.version||'');
+  document.getElementById('ip').innerHTML=(s.ipShown||'-')+(s.demoMode?' <span class="badge">DEMO</span>':'');
+  document.getElementById('dots').innerHTML=
+    chip(s.hitOk,'HIT')+chip(s.sunspecClient,'HEMS')+chip(s.mqttOk,'MQTT')+chip(s.mqttIngestOk,'MQ-IN')+chip(s.cloudOk,'CLOUD')+chip(s.knxOk,'KNX')+chip(s.ethOk||s.wifiOk,'NET')+
+    `<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span>`;
+  document.getElementById('m').innerHTML=
+    `<div class="panel metric"><div class="k">PV</div><div class="v">${s.pvW||0}<span class="u">W</span></div></div>
+     <div class="panel metric"><div class="k">Batterie</div><div class="v">${s.batW||0}<span class="u">W</span></div></div>
+     <div class="panel metric"><div class="k">Netz</div><div class="v">${s.gridW||0}<span class="u">W</span></div></div>
+     <div class="panel metric"><div class="k">SoC</div><div class="v">${s.soc||0}<span class="u">%</span></div></div>`;
+  document.getElementById('fPv').textContent=w(s.pvW);
+  document.getElementById('fBat').textContent=w(s.batW);
+  document.getElementById('fGrid').textContent=w(s.gridW);
+  const soc=Math.max(0,Math.min(100,Number(s.soc)||0));
+  document.getElementById('socBar').style.width=soc+'%';
+  document.getElementById('socTxt').textContent=soc+' % · SoH '+(s.soh||0)+'% · '+(Number(s.batV||0).toFixed(1))+' V · '+(Number(s.batA||0).toFixed(1))+' A · '+(s.status||'—');
+  document.getElementById('en').innerHTML=`PV ${Number(s.energyPvKwh||0).toFixed(1)} kWh<br>Bezug ${Number(s.energyImpKwh||0).toFixed(1)} · Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh<br>MPPT ${s.pv1W||0}/${s.pv2W||0}/${s.pv3W||0}/${s.pv4W||0} W`;
+  const lpp=(Number(s.wMaxLimPct||0)/100).toFixed(2);
+  document.getElementById('lpp').innerHTML=`WMaxLimPct ${lpp}% · ${s.wMaxLimEna?'aktiv':'aus'}<br>HEMS ${s.sunspecClient?'verbunden':'wartet'} · KNX ${s.knxOk?'ok':'—'}<br>${s.lastWriteNote||''}`;
+  document.getElementById('tas').innerHTML=s.tasmotaOk
+    ? `${s.tasmotaSensorKey||'Zähler'}: ${s.tasmotaPowerW} W<br>E_in ${Number(s.tasmotaTotalKwh).toFixed(3)} · E_out ${Number(s.tasmotaExportKwh).toFixed(3)} kWh`
+    : 'aus / offline';
+  document.getElementById('ph').innerHTML=`L1 ${Number(s.v1||0).toFixed(1)} · L2 ${Number(s.v2||0).toFixed(1)} · L3 ${Number(s.v3||0).toFixed(1)} V<br>${Number(s.i1||0).toFixed(1)} / ${Number(s.i2||0).toFixed(1)} / ${Number(s.i3||0).toFixed(1)} A · ${Number(s.freqHz||0).toFixed(2)} Hz<br>P ${s.gridW1||0}/${s.gridW2||0}/${s.gridW3||0} W`;
+  document.getElementById('age').textContent='HIT vor '+Math.floor((s.lastHitAgeMs||0)/1000)+'s · Eth '+(s.ipEth||'-')+' · WiFi '+(s.ipWifi||'-');
+}
+refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
+</script></body></html>

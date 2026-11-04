@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/>
+<title>Display Preview · T-Connect-Pro 480×222</title>
+<style>
+  html,body{margin:0;background:#1a1d1b;color:#c8d0cb;font:14px/1.4 system-ui,sans-serif}
+  .wrap{max-width:720px;margin:24px auto;padding:0 16px}
+  h1{font-size:1rem;font-weight:650;margin:0 0 6px}
+  .note{color:#8b9a90;font-size:.85rem;margin:0 0 16px}
+  .frame{display:inline-block;padding:12px;border-radius:12px;background:#0a0c0b;border:1px solid #2a332e}
+  canvas{display:block;width:480px;height:222px;image-rendering:pixelated;border-radius:4px}
+  .meta{margin-top:10px;font-size:.8rem;color:#8b9a90}
+</style>
+</head><body><div class="wrap">
+<h1>Board-Display (pixelgetreu aus StatusDisplay.cpp)</h1>
+<p class="note">ST7796 Panel <strong>480×222</strong> · Demo-Werte RFC‑5737 · kein KI-Mockup, gleiche Koordinaten/Farben wie Firmware.</p>
+<div class="frame"><canvas id="c" width="480" height="222"></canvas></div>
+<p class="meta">Seite 1/4 Live · Touch wechselt Seiten (hier nur Live-Preview)</p>
+</div>
+<script>
+// 16-bit RGB565 → CSS
+function rgb565(c){
+  const r=((c>>11)&0x1f)*255/31|0, g=((c>>5)&0x3f)*255/63|0, b=(c&0x1f)*255/31|0;
+  return `rgb(${r},${g},${b})`;
+}
+const COL_BG=0x0862, COL_CARD=0x10C4, COL_ACCENT=0x07E0, COL_WARN=0xFEC0, COL_BAD=0xF800,
+      COL_MUTED=0x8C71, COL_TEXT=0xFFFF, COL_CYAN=0x07FF, COL_BLUE=0x3D7F;
+
+const data={
+  demo:true, ip:'192.0.2.80', netOk:true,
+  pvW:4820, batW:-620, batV:51.2, batA:-12.1, soc:74, soh:98,
+  energyPvKwh:12840.5, hitOk:true, knxOk:true, src:'NATIVE', ageS:1
+};
+
+const cv=document.getElementById('c');
+const ctx=cv.getContext('2d');
+
+function fillRound(x,y,w,h,r,col){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  ctx.fillStyle=rgb565(col); ctx.fill();
+}
+function strokeRound(x,y,w,h,r,col){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  ctx.strokeStyle=rgb565(col); ctx.lineWidth=1; ctx.stroke();
+}
+function cardBorder(x,y,w,h,border){
+  fillRound(x,y,w,h,10,border);
+  fillRound(x+2,y+2,w-4,h-4,8,COL_CARD);
+}
+function pill(x,y,w,h,fill,border){
+  fillRound(x,y,w,h,h/2,fill);
+  strokeRound(x,y,w,h,h/2,border);
+}
+function text(str,x,y,col,size,align='left',baseline='top'){
+  ctx.fillStyle=rgb565(col);
+  ctx.font=`${size}px "Segoe UI",system-ui,sans-serif`;
+  ctx.textAlign=align; ctx.textBaseline=baseline;
+  ctx.fillText(str,x,y);
+}
+function circle(x,y,r,col){
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=rgb565(col); ctx.fill();
+}
+function socGauge(cx,cy,r,pct){
+  pct=Math.max(0,Math.min(1,pct));
+  const track=0x2124;
+  ctx.beginPath();
+  ctx.arc(cx,cy,r-3.5,Math.PI,0,false);
+  ctx.strokeStyle=rgb565(track); ctx.lineWidth=7; ctx.lineCap='butt'; ctx.stroke();
+  const col=pct<0.2?COL_BAD:(pct<0.4?COL_WARN:COL_ACCENT);
+  ctx.beginPath();
+  ctx.arc(cx,cy,r-3.5,Math.PI,Math.PI+Math.PI*pct,false);
+  ctx.strokeStyle=rgb565(col); ctx.lineWidth=7; ctx.stroke();
+}
+
+function draw(){
+  ctx.fillStyle=rgb565(COL_BG); ctx.fillRect(0,0,480,222);
+
+  text('HIT-SunSpec-Proxy',10,4,COL_CYAN,12);
+  text('HIT → Consolinno',10,16,COL_MUTED,11);
+
+  if(data.demo){
+    pill(148,6,52,18,0x1A40,COL_ACCENT);
+    text('DEMO',174,15,COL_ACCENT,11,'center','middle');
+  }
+  pill(320,5,150,20,0x1082,data.netOk?COL_ACCENT:COL_BAD);
+  circle(332,15,3,data.netOk?COL_ACCENT:COL_BAD);
+  text(`${data.ip}  OK`,340,15,COL_TEXT,11,'left','middle');
+
+  const cw=226, ch=78, gap=8, x0=10, x1=10+cw+gap, y0=34, y1=34+ch+gap;
+
+  cardBorder(x0,y0,cw,ch,COL_BLUE);
+  text('PV LEISTUNG',x0+12,y0+8,COL_MUTED,11);
+  text(String(data.pvW),x0+12,y0+26,COL_TEXT,28);
+  text('W',x0+cw-28,y0+40,COL_CYAN,12);
+  text(`Erzeugung  ${data.energyPvKwh.toFixed(0)} kWh`,x0+12,y0+60,COL_MUTED,11);
+
+  cardBorder(x1,y0,cw,ch,COL_ACCENT);
+  text('BATTERIE',x1+12,y0+8,COL_MUTED,11);
+  text(String(data.batW),x1+12,y0+26,COL_TEXT,28);
+  text('W',x1+cw-28,y0+40,COL_CYAN,12);
+  text(`${data.batV.toFixed(1)} V  ${data.batA.toFixed(1)} A`,x1+12,y0+60,COL_MUTED,11);
+
+  cardBorder(x0,y1,cw,ch,COL_WARN);
+  text('SOC',x0+12,y1+8,COL_MUTED,11);
+  socGauge(x0+168,y1+48,32,data.soc/100);
+  text(`${data.soc}%`,x0+168,y1+48,COL_TEXT,18,'center','middle');
+  text(`SoH ${data.soh}%`,x0+12,y1+56,COL_MUTED,11);
+
+  cardBorder(x1,y1,cw,ch,COL_BLUE);
+  text('SYSTEM',x1+12,y1+8,COL_MUTED,11);
+  circle(x1+36,y1+42,14,0x1A40);
+  circle(x1+36,y1+42,9,COL_ACCENT);
+  text('Laeuft',x1+60,y1+28,COL_TEXT,18);
+  text(`SRC ${data.src}  KNX ${data.knxOk?'ok':'--'}`,x1+60,y1+54,COL_MUTED,11);
+
+  text(`aktualisiert vor ${data.ageS}s   Tippen: naechste Seite  1/4`,10,208,COL_MUTED,11);
+}
+draw();
+</script>
+</body></html>

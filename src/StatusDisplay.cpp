@@ -10,18 +10,40 @@ static uint32_t nextPage = 0;
 static uint32_t nextDraw = 0;
 static AppConfig local;
 
-static const uint16_t COL_BG = 0x0841;
-static const uint16_t COL_CARD = 0x10A2;
+// Panel ist 480×222 — Layouts darauf abgestimmt (kein Phone-Mockup)
+static const uint16_t COL_BG = 0x0862;
+static const uint16_t COL_CARD = 0x10C4;
 static const uint16_t COL_ACCENT = 0x07E0;
-static const uint16_t COL_WARN = 0xFD20;
+static const uint16_t COL_WARN = 0xFEC0;
 static const uint16_t COL_BAD = 0xF800;
-static const uint16_t COL_MUTED = 0x8410;
+static const uint16_t COL_MUTED = 0x8C71;
 static const uint16_t COL_TEXT = 0xFFFF;
 static const uint16_t COL_CYAN = 0x07FF;
+static const uint16_t COL_BLUE = 0x3D7F;
 static const uint16_t COL_PURPLE = 0xB01F;
 
 static void roundCard(int x, int y, int w, int h) {
   lcd.fillRoundRect(x, y, w, h, 10, COL_CARD);
+}
+
+static void roundCardBorder(int x, int y, int w, int h, uint16_t border) {
+  lcd.fillRoundRect(x, y, w, h, 10, border);
+  lcd.fillRoundRect(x + 2, y + 2, w - 4, h - 4, 8, COL_CARD);
+}
+
+static void pill(int x, int y, int w, int h, uint16_t fill, uint16_t border) {
+  lcd.fillRoundRect(x, y, w, h, h / 2, fill);
+  lcd.drawRoundRect(x, y, w, h, h / 2, border);
+}
+
+static void drawSocGauge(int cx, int cy, int r, float pct) {
+  if (pct < 0) pct = 0;
+  if (pct > 1) pct = 1;
+  // Halbkreis 180°→360° (unten offen wie Mockup)
+  lcd.fillArc(cx, cy, r, r - 7, 180, 360, 0x2124);
+  float span = 180.0f * pct;
+  uint16_t col = pct < 0.2f ? COL_BAD : (pct < 0.4f ? COL_WARN : COL_ACCENT);
+  if (span > 1.0f) lcd.fillArc(cx, cy, r, r - 7, 180, 180 + span, col);
 }
 
 static void badge(int x, int y, bool ok, const char *label) {
@@ -80,34 +102,107 @@ static void drawHeader() {
 }
 
 static void drawPageLive() {
-  drawHeader();
-  metric(12, 52, 148, "PV", String(gLive.pvW), "W");
-  metric(168, 52, 148, "Batterie", String(gLive.batW), "W");
-  metric(324, 52, 144, "SoC", String(gLive.soc), "%");
-
-  roundCard(12, 120, 456, 90);
-  lcd.setTextColor(COL_MUTED, COL_CARD);
+  // Kompaktes Dashboard im Stil des Mockups — echte Panelhöhe 222 px
+  lcd.fillRect(0, 0, 480, 30, COL_BG);
+  lcd.setTextDatum(middle_left);
+  lcd.setTextColor(COL_CYAN, COL_BG);
   lcd.setTextSize(1);
-  lcd.setTextDatum(top_left);
-  lcd.drawString("Auslastung WR (20 kW)", 22, 128);
-  float pct = fabsf(float(gLive.pvW)) / 20000.0f;
-  bar(22, 148, 436, 12, pct, COL_ACCENT);
+  lcd.drawString("HIT-SunSpec-Proxy", 10, 10);
+  lcd.setTextColor(COL_MUTED, COL_BG);
+  lcd.drawString("HIT → Consolinno", 10, 22);
 
-  // Puls-Punkte auf dem Balken
-  if (pct > 0.01f) {
-    int span = max(1, int(436 * pct));
-    int off = int((millis() / 30) % span);
-    lcd.fillCircle(22 + off, 154, 3, COL_CYAN);
+  if (local.demoMode || gLive.dataOrigin == DataOrigin::Demo) {
+    pill(148, 6, 52, 18, 0x1A40, COL_ACCENT);
+    lcd.setTextDatum(middle_center);
+    lcd.setTextColor(COL_ACCENT, 0x1A40);
+    lcd.drawString("DEMO", 174, 15);
   }
 
+  const bool netOk = gLive.ethOk || gLive.wifiOk;
+  pill(320, 5, 150, 20, 0x1082, netOk ? COL_ACCENT : COL_BAD);
+  lcd.fillCircle(332, 15, 3, netOk ? COL_ACCENT : COL_BAD);
+  lcd.setTextDatum(middle_left);
+  lcd.setTextColor(COL_TEXT, 0x1082);
+  lcd.setTextSize(1);
+  char ipLine[40];
+  snprintf(ipLine, sizeof(ipLine), "%s  %s", gLive.ipShown, netOk ? "OK" : "--");
+  lcd.drawString(ipLine, 340, 15);
+
+  const int cw = 226, ch = 78, gap = 8;
+  const int x0 = 10, x1 = 10 + cw + gap;
+  const int y0 = 34, y1 = 34 + ch + gap;
+
+  // PV
+  roundCardBorder(x0, y0, cw, ch, COL_BLUE);
+  lcd.setTextDatum(top_left);
+  lcd.setTextColor(COL_MUTED, COL_CARD);
+  lcd.setTextSize(1);
+  lcd.drawString("PV LEISTUNG", x0 + 12, y0 + 8);
+  lcd.setTextColor(COL_TEXT, COL_CARD);
+  lcd.setTextSize(3);
+  lcd.drawString(String(gLive.pvW), x0 + 12, y0 + 28);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COL_CYAN, COL_CARD);
+  lcd.drawString("W", x0 + cw - 28, y0 + 42);
+  lcd.setTextColor(COL_MUTED, COL_CARD);
+  char sub[48];
+  snprintf(sub, sizeof(sub), "Erzeugung  %.0f kWh", gLive.energyPvKwh);
+  lcd.drawString(sub, x0 + 12, y0 + 62);
+
+  // Batterie
+  roundCardBorder(x1, y0, cw, ch, COL_ACCENT);
+  lcd.setTextColor(COL_MUTED, COL_CARD);
+  lcd.drawString("BATTERIE", x1 + 12, y0 + 8);
+  lcd.setTextColor(COL_TEXT, COL_CARD);
+  lcd.setTextSize(3);
+  lcd.drawString(String(gLive.batW), x1 + 12, y0 + 28);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COL_CYAN, COL_CARD);
+  lcd.drawString("W", x1 + cw - 28, y0 + 42);
+  lcd.setTextColor(COL_MUTED, COL_CARD);
+  snprintf(sub, sizeof(sub), "%.1f V  %.1f A", gLive.batV, gLive.batA);
+  lcd.drawString(sub, x1 + 12, y0 + 62);
+
+  // SoC + Gauge
+  roundCardBorder(x0, y1, cw, ch, COL_WARN);
+  lcd.setTextColor(COL_MUTED, COL_CARD);
+  lcd.drawString("SOC", x0 + 12, y1 + 8);
+  drawSocGauge(x0 + 168, y1 + 48, 32, gLive.soc / 100.0f);
+  lcd.setTextDatum(middle_center);
   lcd.setTextColor(COL_TEXT, COL_CARD);
   lcd.setTextSize(2);
-  char line[64];
-  snprintf(line, sizeof(line), "%.1f kWh gesamt", gLive.energyPvKwh);
-  lcd.drawString(line, 22, 172);
+  snprintf(sub, sizeof(sub), "%u%%", unsigned(gLive.soc));
+  lcd.drawString(sub, x0 + 168, y1 + 48);
+  lcd.setTextDatum(top_left);
   lcd.setTextSize(1);
   lcd.setTextColor(COL_MUTED, COL_CARD);
-  lcd.drawString("Seite 1/4  Live", 360, 188);
+  snprintf(sub, sizeof(sub), "SoH %u%%", unsigned(gLive.soh));
+  lcd.drawString(sub, x0 + 12, y1 + 58);
+
+  // System
+  const bool sysOk = gLive.hitOk || gLive.dataOrigin != DataOrigin::None;
+  roundCardBorder(x1, y1, cw, ch, sysOk ? COL_BLUE : COL_BAD);
+  lcd.setTextColor(COL_MUTED, COL_CARD);
+  lcd.drawString("SYSTEM", x1 + 12, y1 + 8);
+  lcd.fillCircle(x1 + 36, y1 + 42, 14, sysOk ? 0x1A40 : 0x4000);
+  lcd.fillCircle(x1 + 36, y1 + 42, 9, sysOk ? COL_ACCENT : COL_BAD);
+  lcd.setTextDatum(middle_left);
+  lcd.setTextColor(COL_TEXT, COL_CARD);
+  lcd.setTextSize(2);
+  lcd.drawString(sysOk ? "Laeuft" : "Fehler", x1 + 60, y1 + 36);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COL_MUTED, COL_CARD);
+  snprintf(sub, sizeof(sub), "SRC %s  KNX %s", dataOriginLabel(gLive.dataOrigin),
+           gLive.knxOk ? "ok" : "--");
+  lcd.drawString(sub, x1 + 60, y1 + 56);
+
+  // Footer
+  lcd.setTextDatum(middle_left);
+  lcd.setTextColor(COL_MUTED, COL_BG);
+  uint32_t age = gLive.lastHitMs ? (millis() - gLive.lastHitMs) / 1000 : 0;
+  snprintf(sub, sizeof(sub), "aktualisiert vor %lus   Tippen: naechste Seite  1/4",
+           (unsigned long)age);
+  lcd.drawString(sub, 10, 214);
 }
 
 static void drawFlowDots(int x0, int x1, int y, bool leftToRight, uint16_t col) {

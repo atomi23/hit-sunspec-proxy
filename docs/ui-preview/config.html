@@ -1,0 +1,197 @@
+
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title>Config · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+</head><body>
+<script>
+const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14033, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14033, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14033, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14033, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14035, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}]};
+const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/38", "dpt": 14035}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
+const STATUS={"version": "0.3.9", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{
+  u=String(u);
+  if(u.includes('/api/knx/meta')) return {ok:true,json:async()=>META};
+  if(u.includes('/api/config') && (!o || !o.method || o.method==='GET'))
+    return {ok:true,json:async()=>CFG};
+  if(u.includes('/api/config')) return {ok:true,json:async()=>({ok:true})};
+  if(u.includes('/api/status')) return {ok:true,json:async()=>STATUS};
+  if(u.includes('/api/poll')) return {ok:true,json:async()=>({ok:true})};
+  return _f(u,o);
+};
+window.alert=()=>{};
+</script>
+<div class="wrap">
+<div class="top">
+  <div>
+    <p class="brand">HIT SunSpec Proxy</p>
+    <h1>Config</h1>
+    <p class="sub">HIT Pflicht · Tasmota / MQTT optional</p>
+  </div>
+  <nav><a href="/">Live</a><a class="on" href="/config">Config</a><a href="/debug">Debug</a><a href="/ota">OTA</a></nav>
+</div>
+<div id="live" class="panel" style="margin-bottom:14px">Lade…</div>
+<form id="f" class="grid">
+<div class="card"><strong>HIT Quelle</strong>
+<label>Verbindung</label>
+<select name="hitMode"><option value="0">TCP (Modbus TCP)</option><option value="1">Kabel RS485 (RTU)</option></select>
+<label>HIT IP / Host</label><input name="hitHost" placeholder="192.0.2.50"/>
+<label>HIT Port</label><input name="hitPort" type="number"/>
+<label>Unit-ID</label><input name="hitUnitId" type="number"/>
+<label>Poll (ms)</label><input name="hitPollMs" type="number"/>
+<label>RS485 Baud</label><input name="hitRtuBaud" type="number"/>
+<label><input name="demoMode" type="checkbox"/> <b>Demo-Modus</b> (Fake-Daten, kein HIT-Schreiben)</label>
+<p class="hint">Für Board-/Web-/Display-Test ohne Hoymiles. SunSpec :1502 lokal ansprechbar; Consolinno nicht nötig.</p>
+</div>
+<div class="card"><strong>SunSpec / Consolinno</strong>
+<label>Listen-Port (Proxy)</label><input name="sunspecPort" type="number"/>
+<label>Unit-ID</label><input name="sunspecUnitId" type="number"/>
+<label><input name="invertPowerSign" type="checkbox"/> Leistung invertieren</label>
+<label>Gerätename</label><input name="deviceName"/>
+</div>
+<div class="card"><strong>Netz & Display</strong>
+<label><input name="useEthernet" type="checkbox"/> Ethernet</label>
+<label><input name="wifiEnabled" type="checkbox"/> WiFi</label>
+<label><input name="wifiApMode" type="checkbox"/> AP-Modus</label>
+<label><input name="setupComplete" type="checkbox"/> Setup abgeschlossen (QR-Screen aus)</label>
+<label>WiFi SSID</label><input name="wifiSsid"/>
+<label>WiFi / Display-Code (random, auf Display)</label><input name="wifiPass" readonly/>
+<label>Web-User</label><input name="webUser"/>
+<label>Web-Passwort (selbst gewählt, gemerkt)</label><input name="webPass" type="password" placeholder="leer = nur Display-Code"/>
+<p class="hint">Login: User + Web-Passwort <b>oder</b> Display-Code. Display-Code bleibt auf dem Display sichtbar.</p>
+<label><input name="displayEnabled" type="checkbox"/> Display</label>
+<label>Helligkeit</label><input name="displayBrightness" type="number"/>
+</div>
+<div class="card"><strong>HIT Steuerung (Schreiben)</strong>
+<label><input name="hitWriteEnabled" type="checkbox"/> Schreiben an HIT erlauben</label>
+<label><input name="sunspecWriteToHit" type="checkbox"/> Consolinno Model-123 → HIT weiterleiten</label>
+<label>Max Laden % (Reg 306)</label><input name="batMaxChargePct" type="number" min="10" max="100"/>
+<label>Max Entladen % (Reg 307)</label><input name="batMaxDischargePct" type="number" min="10" max="100"/>
+<label>Max SoC % (308)</label><input name="batMaxSoc" type="number" min="10" max="100"/>
+<label>Min SoC % (309)</label><input name="batMinSoc" type="number" min="10" max="90"/>
+<label><input name="apcEnabled" type="checkbox"/> APC Einspeiselimit (Reg 279)</label>
+<label>APC Limit %×10 (280, 1000=100%)</label><input name="apcPwrLmtPct10" type="number" min="0" max="1000"/>
+<p class="hint">Default AUS. APC liegt im Safety-Bereich 101–299 — nur bewusst aktivieren.</p>
+<button class="sec" type="button" onclick="applyCtrl()">Jetzt an HIT schreiben</button>
+</div>
+<div class="card"><strong>Tasmota Zähler</strong>
+<label><input name="tasmotaEnabled" type="checkbox"/> aktiv (Display)</label>
+<label><input name="tasmotaMeterSpoof" type="checkbox"/> Meter-Spoof für Consolinno (optional)</label>
+<label>Tasmota IP</label><input name="tasmotaHost" placeholder="192.0.2.60"/>
+<label>Port</label><input name="tasmotaPort" type="number"/>
+<label>Poll (ms)</label><input name="tasmotaPollMs" type="number"/>
+<label>User (optional)</label><input name="tasmotaUser"/>
+<label>Passwort (optional)</label><input name="tasmotaPass" type="password"/>
+<p class="hint">E320: Power / E_in / E_out. Meter-Spoof hängt SunSpec Model 201 an :1502.</p>
+<button class="sec" type="button" onclick="probeTas()" style="margin-top:10px">One-Click: Tasmota auslesen</button>
+<div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
+</div>
+<div class="card"><strong>MQTT → Home Assistant</strong>
+<label><input name="mqttEnabled" type="checkbox"/> Publish aktiv</label>
+<label><input name="mqttDiscovery" type="checkbox"/> HA Discovery</label>
+<label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
+<label>Port</label><input name="mqttPort" type="number"/>
+<label>User</label><input name="mqttUser"/>
+<label>Passwort</label><input name="mqttPass" type="password"/>
+<label>Topic-Basis</label><input name="mqttBase" placeholder="hitproxy"/>
+<label>Publish (ms)</label><input name="mqttPublishMs" type="number"/>
+<p class="hint">State: &lt;basis&gt;/state · inkl. data_origin</p>
+<label><input name="mqttIngestEnabled" type="checkbox"/> <b>Ingest-Fallback</b> (wenn HIT tot)</label>
+<label>Ingest-Topic (JSON)</label><input name="mqttIngestTopic" placeholder="hitproxy/in"/>
+<label>Max Alter (ms)</label><input name="mqttIngestMaxAgeMs" type="number"/>
+<p class="hint">JSON-Keys: pv_w, bat_w, grid_w, soc, energy_pv_kwh, … Priorität: NATIVE → MQTT → CLOUD</p>
+</div>
+<div class="card"><strong>Hoymiles Cloud Fallback</strong>
+<label><input name="cloudEnabled" type="checkbox"/> aktiv (wenn HIT &amp; MQTT-in tot)</label>
+<label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
+<label>Cloud User / E-Mail</label><input name="cloudUser"/>
+<label>Passwort</label><input name="cloudPass" type="password"/>
+<label>Station / Plant ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567"/>
+<label>Poll (ms)</label><input name="cloudPollMs" type="number"/>
+<label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
+<p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
+</div>
+<div class="card"><strong>KNX IP — Datenpunkte</strong>
+<label><input name="knxEnabled" type="checkbox"/> aktiv (KNXnet/IP Routing Multicast 224.0.23.12:3671)</label>
+<label>Physische Sendeadresse (Quelle im Telegramm)</label>
+<input name="knxPa" placeholder="15.15.250" inputmode="decimal" autocomplete="off"/>
+<p class="hint">Frei wählbar, z.B. <code>1.1.240</code> — erscheint als Absender-PA auf dem Bus (ETS/Monitor).</p>
+<label>Intervall (ms)</label><input name="knxPublishMs" type="number"/>
+<label><input name="knxOnlyOnChange" type="checkbox"/> nur bei Änderung</label>
+<label>Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
+<p class="hint">Pro Zeile: aktivieren → <strong>Gruppenadresse manuell</strong> als Text <code>H/M/L</code> (z.B. <code>1/2/10</code>) → DPT ggf. anpassen.</p>
+<div id="knxRows" style="margin-top:10px;display:grid;gap:8px"></div>
+</div>
+</form>
+<div class="row">
+<button type="button" onclick="save()">Speichern</button>
+<button class="sec" type="button" onclick="poll()">Jetzt pollen</button>
+<button class="sec" type="button" onclick="load()">Neu laden</button>
+</div>
+<p class="sub">Consolinno: Proxy-IP vom Display, Port 1502, Unit 1. HIT Pflicht · Tasmota/MQTT/KNX optional.</p>
+</div>
+<script>
+function dptOpts(kind,cur){
+  const m={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14033,'14.033 A'],[9001,'9.001']],Hz:[[14035,'14.035 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.019 kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
+  return (m[kind]||m.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
+}
+function renderKnx(meta,ch){
+  const box=document.getElementById('knxRows'); if(!box)return;
+  box.innerHTML=meta.map((m,i)=>{
+    const c=(ch&&ch[i])||{}; const dpt=c.dpt||m.dpt;
+    return `<div style="display:grid;grid-template-columns:28px minmax(120px,1.2fr) minmax(100px,.9fr) minmax(120px,.9fr);gap:6px;align-items:center">
+      <input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} title="aktivieren"/>
+      <span style="font-size:.82rem">${m.label}<br><span class="hint">${m.id}</span></span>
+      <input data-knx="g" data-i="${i}" type="text" inputmode="text" autocomplete="off" placeholder="GA z.B. 1/2/${10+i}" value="${c.ga||''}" title="Gruppenadresse manuell H/M/L"/>
+      <select data-knx="d" data-i="${i}" title="DPT">${dptOpts(m.kind,dpt)}</select></div>`;
+  }).join('');
+}
+function collectKnx(){
+  const n=document.querySelectorAll('#knxRows [data-knx=e]').length; const out=[];
+  for(let i=0;i<n;i++){
+    const e=document.querySelector(`#knxRows [data-knx=e][data-i="${i}"]`);
+    const g=document.querySelector(`#knxRows [data-knx=g][data-i="${i}"]`);
+    const d=document.querySelector(`#knxRows [data-knx=d][data-i="${i}"]`);
+    out.push({ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0});
+  } return out;
+}
+async function load(){
+  const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
+  const f=document.getElementById('f');
+  for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
+  renderKnx(meta.points||[], c.knxCh||[]); refresh();
+}
+async function save(){const f=document.getElementById('f');const body={};
+[...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
+body.knxCh=collectKnx();
+await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});alert('Gespeichert');refresh();}
+async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
+async function applyCtrl(){
+  const f=document.getElementById('f');
+  await save();
+  const r=await(await fetch('/api/control/apply',{method:'POST'})).json();
+  alert(r.ok?'An HIT geschrieben':('Fehler: '+(r.error||'?')));
+}
+async function probeTas(){
+  const f=document.getElementById('f');
+  const body={tasmotaHost:f.tasmotaHost.value,tasmotaPort:Number(f.tasmotaPort.value),
+    tasmotaUser:f.tasmotaUser.value,tasmotaPass:f.tasmotaPass.value};
+  const r=await(await fetch('/api/tasmota/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  document.getElementById('probeBox').style.display='block';
+  document.getElementById('probeSum').textContent=r.summary|| (r.ok?'OK':'Fehler');
+  document.getElementById('probeSum').style.color=r.ok?'#3dde7d':'#ff5a5a';
+  document.getElementById('probeRaw').textContent=r.raw||'';
+  if(r.ok){f.tasmotaEnabled.checked=true;refresh();}
+}
+async function refresh(){const s=await(await fetch('/api/status')).json();
+const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
+document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.demoMode?' <span class="badge">DEMO</span>':''}</div>
+<div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.mqttIngestOk,'MQ-IN')}${chip(s.cloudOk,'CLOUD')}${chip(s.knxOk,'KNX')}${chip(s.ethOk||s.wifiOk,'NET')}<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span></div>
+<div class="meta" style="margin-top:8px"><b>${s.pvW} W</b> PV · Bat ${s.batW} W · Netz ${s.gridW} W · SoC ${s.soc}% · ${Number(s.energyPvKwh).toFixed(1)} kWh</div>
+<pre>HIT Bezug ${Number(s.energyImpKwh||0).toFixed(1)} / Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh
+Tasmota ${s.tasmotaSensorKey||''}: ${s.tasmotaOk? (s.tasmotaPowerW+' W · E_in '+Number(s.tasmotaTotalKwh).toFixed(3)+' · E_out '+Number(s.tasmotaExportKwh).toFixed(3)+' kWh') : 'aus'}
+HIT ${s.hitHost||''} · ${s.status||''}</pre>`;}
+async function boot(){const s=await(await fetch('/api/status')).json();if(s.setupComplete===false)location.href='/setup';else load();}
+boot();setInterval(()=>{if(document.hidden)return;refresh();},5000);
+</script></body></html>
