@@ -16,6 +16,9 @@ struct AppConfig {
   char wifiPass[65] = "hitproxy1"; // = Display-Code (AP)
   bool wifiApMode = true;
   bool setupComplete = false;
+  // Heim-WLAN (Client); das Geräte-WLAN oben bleibt davon getrennt
+  char staSsid[33] = "";
+  char staPass[65] = "";
 
   // Auth: Display-Code (random, immer auf Display) + selbst gewähltes Web-Passwort
   char webUser[32] = "admin";

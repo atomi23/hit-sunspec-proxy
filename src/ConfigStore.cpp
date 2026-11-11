@@ -73,6 +73,8 @@ bool load() {
   cfg.setupComplete = prefs.getBool("setup", cfg.setupComplete);
   strlcpy(cfg.wifiSsid, prefs.getString("ssid", cfg.wifiSsid).c_str(), sizeof(cfg.wifiSsid));
   strlcpy(cfg.wifiPass, prefs.getString("wpass", cfg.wifiPass).c_str(), sizeof(cfg.wifiPass));
+  strlcpy(cfg.staSsid, prefs.getString("stassid", cfg.staSsid).c_str(), sizeof(cfg.staSsid));
+  strlcpy(cfg.staPass, prefs.getString("stapass", cfg.staPass).c_str(), sizeof(cfg.staPass));
   strlcpy(cfg.webUser, prefs.getString("webuser", cfg.webUser).c_str(), sizeof(cfg.webUser));
   strlcpy(cfg.webPass, prefs.getString("webpass", cfg.webPass).c_str(), sizeof(cfg.webPass));
   strlcpy(cfg.displayCode, prefs.getString("dcode", cfg.displayCode).c_str(), sizeof(cfg.displayCode));
@@ -171,6 +173,8 @@ bool save() {
   prefs.putBool("setup", cfg.setupComplete);
   prefs.putString("ssid", cfg.wifiSsid);
   prefs.putString("wpass", cfg.wifiPass);
+  prefs.putString("stassid", cfg.staSsid);
+  prefs.putString("stapass", cfg.staPass);
   prefs.putString("webuser", cfg.webUser);
   prefs.putString("webpass", cfg.webPass);
   prefs.putString("dcode", cfg.displayCode);

@@ -15,6 +15,7 @@
 #include "DataSource.h"
 #include "UiFonts.h"
 #include "HitBus.h"
+#include "NetBoot.h"
 #include "ModbusGateway.h"
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
@@ -528,9 +529,14 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <label>Gerätename</label><input name="deviceName"/>
 <label><input name="useEthernet" type="checkbox"/> Ethernet verwenden</label>
 <label><input name="wifiEnabled" type="checkbox"/> WLAN verwenden</label>
-<label><input name="wifiApMode" type="checkbox"/> Eigenes WLAN aufspannen (Access Point)</label>
-<label>WLAN-Name (SSID)</label><input name="wifiSsid"/>
-<label>Zugangscode (WLAN-Passwort, steht auf dem Display)</label><input name="wifiPass" readonly/>
+<label>Heim-WLAN: Name (SSID)</label><input name="staSsid" autocomplete="off" placeholder="leer = kein Heim-WLAN"/>
+<label>Heim-WLAN: Passwort</label><input name="staPass" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert"/>
+<p class="hint">Mit Heim-WLAN ist der ESP auch ohne Kabel im Netz und hat Internet, zum Beispiel für die Hoymiles-Cloud.
+Die neue Adresse steht danach auf dem Display (Seite System).</p>
+<label><input name="wifiApMode" type="checkbox"/> Geräte-WLAN zusätzlich anlassen (Notzugang)</label>
+<label>Name des Geräte-WLANs</label><input name="wifiSsid"/>
+<label>Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input name="wifiPass" readonly/>
+<p class="hint">Ohne Heim-WLAN und ohne Kabel bleibt das Geräte-WLAN immer an, damit das Gerät erreichbar bleibt.</p>
 <label>Benutzername</label><input name="webUser"/>
 <label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
@@ -1045,6 +1051,11 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["wifiApMode"].isNull()) c.wifiApMode = o["wifiApMode"];
   if (!o["setupComplete"].isNull()) c.setupComplete = o["setupComplete"];
   if (o["wifiSsid"].is<const char *>()) strlcpy(c.wifiSsid, o["wifiSsid"], sizeof(c.wifiSsid));
+  if (o["staSsid"].is<const char *>()) strlcpy(c.staSsid, o["staSsid"], sizeof(c.staSsid));
+  // Passwort wird nie ausgeliefert; leeres Feld heißt unverändert
+  if (o["staPass"].is<const char *>() && o["staPass"].as<const char *>()[0])
+    strlcpy(c.staPass, o["staPass"], sizeof(c.staPass));
+  if (o["staSsid"].is<const char *>() && !c.staSsid[0]) c.staPass[0] = '\0';
   // wifiPass / displayCode: random — nicht aus Form überschreiben außer explizit
   if (o["webUser"].is<const char *>()) strlcpy(c.webUser, o["webUser"], sizeof(c.webUser));
   if (o["webPass"].is<const char *>()) strlcpy(c.webPass, o["webPass"], sizeof(c.webPass));
@@ -1208,6 +1219,7 @@ void begin() {
               else c.wifiApMode = false;
               ConfigStore::save();
               gLive.setupScreen = false;
+              NetBoot::applyConfig(c);
               HitBus::applyConfig(c);
               HitClient::applyConfig(c);
               ModbusGateway::applyConfig(c);
@@ -1294,6 +1306,9 @@ void begin() {
     doc["wifiApMode"] = c.wifiApMode;
     doc["setupComplete"] = c.setupComplete;
     doc["wifiSsid"] = c.wifiSsid;
+    doc["staSsid"] = c.staSsid;
+    doc["staPass"] = "";
+    doc["staPassSet"] = c.staPass[0] != 0;
     doc["wifiPass"] = c.displayCode[0] ? c.displayCode : c.wifiPass; // UI zeigt Display-Code
     doc["webUser"] = c.webUser;
     doc["webPass"] = c.webPass;
@@ -1399,6 +1414,7 @@ void begin() {
               if (doc["setupComplete"].isNull()) c.setupComplete = true;
               ConfigStore::save();
               gLive.setupScreen = !c.setupComplete;
+              NetBoot::applyConfig(c);
               HitBus::applyConfig(c);
               HitClient::applyConfig(c);
               ModbusGateway::applyConfig(c);

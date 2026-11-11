@@ -16,6 +16,13 @@
 
 namespace NetBoot {
 
+static AppConfig pending;
+static volatile bool wifiDirty = false;
+static char activeSta[33] = "";
+static char activeStaPass[65] = "";
+static bool activeAp = false;
+static bool activeWifi = false;
+
 static void refreshIps(const AppConfig &cfg) {
   strlcpy(gLive.ipEth, "-", sizeof(gLive.ipEth));
   strlcpy(gLive.ipWifi, "-", sizeof(gLive.ipWifi));
@@ -32,19 +39,17 @@ static void refreshIps(const AppConfig &cfg) {
   gLive.ethOk = false;
 #endif
 
-  if (WiFi.getMode() != WIFI_OFF) {
-    if (cfg.wifiApMode) {
-      gLive.wifiOk = true;
-      strlcpy(gLive.ipWifi, WiFi.softAPIP().toString().c_str(), sizeof(gLive.ipWifi));
-    } else if (WiFi.status() == WL_CONNECTED) {
-      gLive.wifiOk = true;
-      strlcpy(gLive.ipWifi, WiFi.localIP().toString().c_str(), sizeof(gLive.ipWifi));
-    } else {
-      gLive.wifiOk = false;
-    }
+  gLive.wifiOk = false;
+  const wifi_mode_t mode = WiFi.getMode();
+  if ((mode == WIFI_STA || mode == WIFI_AP_STA) && WiFi.status() == WL_CONNECTED) {
+    gLive.wifiOk = true;
+    strlcpy(gLive.ipWifi, WiFi.localIP().toString().c_str(), sizeof(gLive.ipWifi));
+  } else if (mode == WIFI_AP || mode == WIFI_AP_STA) {
+    gLive.wifiOk = true;
+    strlcpy(gLive.ipWifi, WiFi.softAPIP().toString().c_str(), sizeof(gLive.ipWifi));
   }
 
-  // Prefer Ethernet IP on display (Consolinno bind target)
+  // Ethernet zuerst (Consolinno), dann Heim-WLAN, zuletzt Geräte-WLAN
   if (gLive.ethOk && strcmp(gLive.ipEth, "-") != 0) {
     strlcpy(gLive.ipShown, gLive.ipEth, sizeof(gLive.ipShown));
   } else if (gLive.wifiOk && strcmp(gLive.ipWifi, "-") != 0) {
@@ -52,16 +57,30 @@ static void refreshIps(const AppConfig &cfg) {
   }
 }
 
-void begin(const AppConfig &cfg) {
-  if (cfg.wifiEnabled) {
-    if (cfg.wifiApMode) {
-      WiFi.mode(WIFI_AP);
-      WiFi.softAP(cfg.wifiSsid, cfg.wifiPass);
-    } else {
-      WiFi.mode(WIFI_STA);
-      WiFi.begin(cfg.wifiSsid, cfg.wifiPass);
-    }
+static void startWifi(const AppConfig &cfg) {
+  WiFi.disconnect(true);
+  WiFi.softAPdisconnect(true);
+  activeWifi = cfg.wifiEnabled;
+  strlcpy(activeSta, cfg.staSsid, sizeof(activeSta));
+  strlcpy(activeStaPass, cfg.staPass, sizeof(activeStaPass));
+  if (!cfg.wifiEnabled) {
+    WiFi.mode(WIFI_OFF);
+    activeAp = false;
+    return;
   }
+  const bool sta = cfg.staSsid[0] != 0;
+  // ohne Heim-WLAN immer Geräte-WLAN, sonst wäre das Gerät ohne Kabel nicht erreichbar
+  activeAp = cfg.wifiApMode || !sta;
+  WiFi.mode(activeAp && sta ? WIFI_AP_STA : (sta ? WIFI_STA : WIFI_AP));
+  if (activeAp) WiFi.softAP(cfg.wifiSsid, cfg.wifiPass);
+  if (sta) {
+    WiFi.setAutoReconnect(true);
+    WiFi.begin(cfg.staSsid, cfg.staPass);
+  }
+}
+
+void begin(const AppConfig &cfg) {
+  startWifi(cfg);
 
 #if defined(BOARD_T_CONNECT_PRO)
   if (cfg.useEthernet) {
@@ -79,7 +98,22 @@ void begin(const AppConfig &cfg) {
   refreshIps(cfg);
 }
 
+// aus dem Web-Task: WLAN erst im loop() neu aufbauen, und nur wenn sich daran etwas geändert hat
+void applyConfig(const AppConfig &cfg) {
+  const bool apWanted = cfg.wifiApMode || !cfg.staSsid[0];
+  if (cfg.wifiEnabled == activeWifi && apWanted == activeAp && strcmp(cfg.staSsid, activeSta) == 0 &&
+      strcmp(cfg.staPass, activeStaPass) == 0)
+    return;
+  pending = cfg;
+  wifiDirty = true;
+}
+
 void loop(const AppConfig &cfg) {
+  if (wifiDirty) {
+    wifiDirty = false;
+    delay(300); // Antwort auf das Speichern noch ausliefern
+    startWifi(pending);
+  }
   static uint32_t next = 0;
   if (millis() < next) return;
   next = millis() + 2000;
