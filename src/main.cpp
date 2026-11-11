@@ -13,6 +13,8 @@
 #include "KnxIp.h"
 #include "DataSource.h"
 #include "Watchdog.h"
+#include "HitBus.h"
+#include "ModbusGateway.h"
 
 void setup() {
   Serial.begin(115200);
@@ -27,7 +29,9 @@ void setup() {
 
   NetBoot::begin(cfg);
   StatusDisplay::begin(cfg);
+  HitBus::begin(cfg);
   HitClient::begin(cfg);
+  ModbusGateway::begin(cfg);
   HitControl::begin(cfg);
   TasmotaClient::begin(cfg);
   SunSpecServer::begin(cfg);
@@ -52,7 +56,11 @@ void setup() {
   if (cfg.demoMode) Serial.println("*** DEMO MODE — kein HIT ***");
   if (cfg.hitWriteEnabled) Serial.println("HIT Write: AN");
   Serial.printf("SunSpec: %s:%u\n", gLive.ipShown, cfg.sunspecPort);
-  Serial.printf("HIT Ziel: %s:%u mode=%d\n", cfg.hitHost, cfg.hitPort, int(cfg.hitMode));
+  if (cfg.hitMode == HitLinkMode::RtuRs485)
+    Serial.printf("HIT: RS485 %lu Baud, Unit %u\n", (unsigned long)cfg.hitRtuBaud, cfg.hitUnitId);
+  else
+    Serial.printf("HIT: %s:%u Unit %u\n", cfg.hitHost, cfg.hitPort, cfg.hitUnitId);
+  if (cfg.gatewayEnabled) Serial.printf("Modbus-Gateway: Port %u\n", cfg.gatewayPort);
   if (cfg.tasmotaEnabled) Serial.printf("Tasmota: %s spoof=%d\n", cfg.tasmotaHost, int(cfg.tasmotaMeterSpoof));
   if (cfg.mqttEnabled || cfg.mqttIngestEnabled)
     Serial.printf("MQTT: %s:%u pub=%d ingest=%d topic=%s\n", cfg.mqttHost, cfg.mqttPort,
@@ -72,6 +80,7 @@ void loop() {
   DataBroker::reconcile();
   KnxIp::loop();
   SunSpecServer::loop();
+  ModbusGateway::loop();
   StatusDisplay::loop();
   WebConfig::loop();
   Watchdog::checkSoft();

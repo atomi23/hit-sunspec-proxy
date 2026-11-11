@@ -10,8 +10,7 @@ class LgfxBoard : public lgfx::LGFX_Device {
   lgfx::Panel_ST7796 _panel;
   lgfx::Bus_SPI _bus;
   lgfx::Light_PWM _light;
-  // CST226SE: RST=47, INT=3 — Klasse CST816S oft kompatibel, ggf. auf CST226 wechseln
-  lgfx::Touch_CST816S _touch;
+  lgfx::Touch_CST226 _touch;
 
 public:
   LgfxBoard() {
@@ -32,15 +31,16 @@ public:
       _panel.setBus(&_bus);
     }
     {
+      // ST7796 GRAM 320×480, sichtbares Panel 222×480, zentriert (offset 49)
       auto cfg = _panel.config();
       cfg.pin_cs = 21;
       cfg.pin_rst = -1;
       cfg.pin_busy = -1;
-      cfg.memory_width = 480;
-      cfg.memory_height = 320;
-      cfg.panel_width = 480;
-      cfg.panel_height = 222;
-      cfg.offset_x = 0;
+      cfg.memory_width = 320;
+      cfg.memory_height = 480;
+      cfg.panel_width = 222;
+      cfg.panel_height = 480;
+      cfg.offset_x = 49;
       cfg.offset_y = 0;
       cfg.offset_rotation = 0;
       cfg.readable = false;
@@ -70,7 +70,7 @@ public:
       cfg.bus_shared = true;
       cfg.offset_rotation = 0;
       cfg.i2c_port = 0;
-      cfg.i2c_addr = 0x15;
+      cfg.i2c_addr = 0x5A;
       cfg.pin_sda = 39;
       cfg.pin_scl = 40;
       cfg.freq = 400000;

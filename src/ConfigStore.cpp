@@ -21,6 +21,11 @@ namespace ConfigStore {
 
 void resetDefaults() { cfg = AppConfig{}; }
 
+void factoryReset() {
+  prefs.clear();
+  resetDefaults();
+}
+
 AppConfig &get() { return cfg; }
 
 void provisionFirstBoot() {
@@ -83,6 +88,8 @@ bool load() {
   cfg.sunspecPort = prefs.getUShort("ssport", cfg.sunspecPort);
   cfg.sunspecUnitId = prefs.getUChar("ssuid", cfg.sunspecUnitId);
   cfg.invertPowerSign = prefs.getBool("invpwr", cfg.invertPowerSign);
+  cfg.gatewayEnabled = prefs.getBool("gwena", cfg.gatewayEnabled);
+  cfg.gatewayPort = prefs.getUShort("gwport", cfg.gatewayPort);
 
   cfg.hitWriteEnabled = prefs.getBool("hwrena", cfg.hitWriteEnabled);
   cfg.sunspecWriteToHit = prefs.getBool("ss2hit", cfg.sunspecWriteToHit);
@@ -96,6 +103,7 @@ bool load() {
   cfg.displayEnabled = prefs.getBool("disp", cfg.displayEnabled);
   cfg.displayBrightness = prefs.getUChar("bright", cfg.displayBrightness);
   cfg.displayPageMs = prefs.getUInt("pageMs", cfg.displayPageMs);
+  cfg.displayTimeoutS = prefs.getUShort("dispTo", cfg.displayTimeoutS);
 
   cfg.tasmotaEnabled = prefs.getBool("tasena", cfg.tasmotaEnabled);
   strlcpy(cfg.tasmotaHost, prefs.getString("tashost", cfg.tasmotaHost).c_str(), sizeof(cfg.tasmotaHost));
@@ -178,6 +186,8 @@ bool save() {
   prefs.putUShort("ssport", cfg.sunspecPort);
   prefs.putUChar("ssuid", cfg.sunspecUnitId);
   prefs.putBool("invpwr", cfg.invertPowerSign);
+  prefs.putBool("gwena", cfg.gatewayEnabled);
+  prefs.putUShort("gwport", cfg.gatewayPort);
 
   prefs.putBool("hwrena", cfg.hitWriteEnabled);
   prefs.putBool("ss2hit", cfg.sunspecWriteToHit);
@@ -191,6 +201,7 @@ bool save() {
   prefs.putBool("disp", cfg.displayEnabled);
   prefs.putUChar("bright", cfg.displayBrightness);
   prefs.putUInt("pageMs", cfg.displayPageMs);
+  prefs.putUShort("dispTo", cfg.displayTimeoutS);
 
   prefs.putBool("tasena", cfg.tasmotaEnabled);
   prefs.putString("tashost", cfg.tasmotaHost);

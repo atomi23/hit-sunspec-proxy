@@ -7,9 +7,20 @@
 namespace {
 AppConfig local;
 WiFiServer server(1502);
-uint16_t holding[512];
+constexpr uint16_t REGS = 800; // wie holdingBufferSize in Node-RED
+uint16_t holding[REGS];
 uint32_t nextRebuild = 0;
 bool started = false;
+constexpr int MAX_CLIENTS = 2;
+WiFiClient clients[MAX_CLIENTS];
+
+// Gleiches Abbild ab 0 (wie Node-RED-Buffer) und auf den SunSpec-Standardbasen 40000/50000
+int toLocal(uint32_t addr) {
+  if (addr < REGS) return int(addr);
+  if (addr >= 40000 && addr < 40000u + REGS) return int(addr - 40000);
+  if (addr >= 50000 && addr < 50000u + REGS) return int(addr - 50000);
+  return -1;
+}
 
 // Model 123 base in our map
 constexpr uint16_t M123 = 228;
@@ -33,8 +44,10 @@ void noteForAddr(uint16_t addr, uint16_t value, char *out, size_t n) {
   }
 }
 
-void onHoldingWrite(uint16_t addr, uint16_t value, uint8_t fc) {
-  if (addr >= 512) return;
+void onHoldingWrite(uint16_t wireAddr, uint16_t value, uint8_t fc) {
+  int idx = toLocal(wireAddr);
+  if (idx < 0) return;
+  uint16_t addr = uint16_t(idx);
   holding[addr] = value;
 
   char note[40];
@@ -51,8 +64,18 @@ void onHoldingWrite(uint16_t addr, uint16_t value, uint8_t fc) {
   HitControl::onSunSpecPowerLimit(gLive.wMaxLimPct, gLive.wMaxLimEna);
 }
 
+void sendException(WiFiClient &c, const uint8_t *hdr, uint8_t fc, uint8_t code) {
+  uint8_t resp[9];
+  resp[0] = hdr[0]; resp[1] = hdr[1];
+  resp[2] = 0; resp[3] = 0;
+  writeU16(resp + 4, 3);
+  resp[6] = hdr[6];
+  resp[7] = fc | 0x80;
+  resp[8] = code;
+  c.write(resp, 9);
+}
+
 void handleClient(WiFiClient &c) {
-  gLive.sunspecClient = true;
   uint8_t hdr[8];
   if (c.readBytes(hdr, 8) != 8) return;
   uint16_t tid = (uint16_t(hdr[0]) << 8) | hdr[1];
@@ -71,7 +94,9 @@ void handleClient(WiFiClient &c) {
     if (rem < 4) return;
     uint16_t addr = (uint16_t(pdu[0]) << 8) | pdu[1];
     uint16_t qty = (uint16_t(pdu[2]) << 8) | pdu[3];
-    if (qty == 0 || qty > 125) return;
+    if (qty == 0 || qty > 125) { sendException(c, hdr, fc, 0x03); return; }
+    int base = toLocal(addr);
+    if (base < 0) { sendException(c, hdr, fc, 0x02); return; }
     uint8_t resp[9 + 250];
     writeU16(resp, tid);
     resp[2] = 0; resp[3] = 0;
@@ -80,7 +105,7 @@ void handleClient(WiFiClient &c) {
     resp[7] = fc;
     resp[8] = qty * 2;
     for (uint16_t i = 0; i < qty; i++) {
-      uint16_t v = (addr + i < 512) ? holding[addr + i] : 0;
+      uint16_t v = (base + i < REGS) ? holding[base + i] : 0;
       writeU16(resp + 9 + i * 2, v);
     }
     c.write(resp, 9 + qty * 2);
@@ -120,14 +145,7 @@ void handleClient(WiFiClient &c) {
     writeU16(resp + 10, qty);
     c.write(resp, 12);
   } else {
-    uint8_t resp[9];
-    writeU16(resp, tid);
-    resp[2] = 0; resp[3] = 0;
-    writeU16(resp + 4, 3);
-    resp[6] = hdr[6];
-    resp[7] = fc | 0x80;
-    resp[8] = 0x01;
-    c.write(resp, 9);
+    sendException(c, hdr, fc, 0x01);
   }
 }
 } // namespace
@@ -135,7 +153,7 @@ void handleClient(WiFiClient &c) {
 namespace SunSpecServer {
 
 void rebuildMap() {
-  SunSpecMap::build(holding, 512, gLive, local);
+  SunSpecMap::build(holding, REGS, gLive, local);
   // Control-Werte nach Rebuild wieder setzen
   holding[M123 + OFF_WMAX] = gLive.wMaxLimPct ? gLive.wMaxLimPct : 10000;
   holding[M123 + OFF_WMAX_ENA] = gLive.wMaxLimEna ? 1 : 0;
@@ -162,15 +180,32 @@ void loop() {
     nextRebuild = millis() + 2000;
     rebuildMap();
   }
-  WiFiClient c = server.available();
-  if (c) {
-    c.setTimeout(500);
-    while (c.connected() && c.available()) {
-      handleClient(c);
+  // HEMS hält die TCP-Verbindung offen und pollt darüber — nicht nach jeder Anfrage trennen
+  WiFiClient incoming = server.accept();
+  if (incoming) {
+    int slot = -1;
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+      if (!clients[i] || !clients[i].connected()) { slot = i; break; }
     }
-    delay(5);
-    if (!c.available()) c.stop();
+    if (slot < 0) {
+      clients[0].stop(); // ältesten Slot freigeben, z. B. nach Neustart des HEMS
+      slot = 0;
+    }
+    incoming.setTimeout(300);
+    incoming.setNoDelay(true);
+    clients[slot] = incoming;
   }
+
+  bool any = false;
+  for (int i = 0; i < MAX_CLIENTS; i++) {
+    WiFiClient &c = clients[i];
+    if (!c) continue;
+    if (!c.connected()) { c.stop(); continue; }
+    any = true;
+    int guard = 8; // max. Anfragen pro Durchlauf, damit Display/Web nicht verhungern
+    while (guard-- > 0 && c.available() >= 8) handleClient(c);
+  }
+  gLive.sunspecClient = any;
 }
 
 } // namespace SunSpecServer

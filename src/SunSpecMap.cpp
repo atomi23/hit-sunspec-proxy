@@ -155,8 +155,9 @@ void build(uint16_t *regs, size_t n, const LiveData &live, const AppConfig &cfg)
 
   const int32_t pvHalf = pvMppt / 2;
   const int32_t pvRem = pvMppt - pvHalf;
-  mppt(264, 1, max(1, int(lround(fabs(double(pvHalf)) / 40.0 * 10))), 4000, pvHalf, "PV1");
-  mppt(284, 2, max(1, int(lround(fabs(double(pvRem)) / 40.0 * 10))), 4000, pvRem, "PV2");
+  auto dcA = [](int32_t w) { return int(lround(fabs(double(w)) / 40.0 * 10)); };
+  mppt(264, 1, dcA(pvHalf), 4000, pvHalf, "PV1");
+  mppt(284, 2, dcA(pvRem), 4000, pvRem, "PV2");
   mppt(304, 3, chaW ? batA : 0, batV * 10, chaW, "StCha 3");
   mppt(324, 4, disW ? batA : 0, batV * 10, disW, "StDisCha 4");
 

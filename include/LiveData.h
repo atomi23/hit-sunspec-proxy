@@ -7,6 +7,7 @@ struct LiveData {
   bool ethOk = false;
   bool wifiOk = false;
   bool sunspecClient = false;
+  uint8_t gatewayClients = 0;
   bool mqttOk = false;
   bool mqttIngestOk = false;
   bool cloudOk = false;

@@ -1,29 +1,53 @@
 # -*- coding: utf-8 -*-
 from pathlib import Path
 
+ICONS = {
+    "live": '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
+    "hit": '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/>',
+    "netz": '<path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/>',
+    "sunspec": '<path d="M5 5h14M5 10h14M5 15h14M5 20h8"/>',
+    "knx": '<path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/>',
+    "mqtt": '<path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/>',
+    "gateway": '<path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/>',
+    "cloud": '<path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/>',
+    "tasmota": '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/>',
+    "display": '<rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/>',
+    "ctrl": '<rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/>',
+    "debug": '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+    "ota": '<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/>',
+}
+SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{}</svg>'
+LOGO = (
+    '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/>'
+    '<path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg>'
+)
+
+
 def side(active: str) -> str:
-    def a(key, href, icon, label):
-        cls = ' class="on"' if key == active else ""
-        return f'    <a{cls} href="{href}"><i>{icon}</i> {label}</a>'
+    def a(key, href, label):
+        cls = ' class="on" aria-current="page"' if key == active else ""
+        return f'    <a{cls} href="{href}">{SVG.format(ICONS[key])} {label}</a>'
 
     return "\n".join(
         [
-            '  <div class="logo"><div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy</span></div></div>',
+            f'  <div class="logo">{LOGO}<div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>',
             "  <nav>",
-            '    <div class="nav-grp">System</div>',
-            a("live", "/", "◉", "Live"),
-            '    <div class="nav-grp">Anbindung</div>',
-            a("hit", "/config#hit", "⚡", "HIT"),
-            a("netz", "/config#netz", "⊕", "Netzwerk"),
-            a("sunspec", "/config#sunspec", "≈", "SunSpec"),
-            a("knx", "/config#knx", "▦", "KNX"),
-            '    <div class="nav-grp">Dienste</div>',
-            a("mqtt", "/config#mqtt", "☁", "MQTT / Cloud"),
-            a("tasmota", "/config#tasmota", "⌀", "Tasmota"),
-            a("debug", "/debug", "≡", "Protokoll"),
+            a("live", "/", "Live"),
+            '    <div class="nav-grp">Datenquellen</div>',
+            a("hit", "/config#hit", "HIT-Wechselrichter"),
+            a("tasmota", "/config#tasmota", "Tasmota-Zähler"),
+            a("cloud", "/config#cloud", "Hoymiles-Cloud"),
+            '    <div class="nav-grp">Ausgänge</div>',
+            a("sunspec", "/config#sunspec", "Consolinno"),
+            a("mqtt", "/config#mqtt", "Home Assistant"),
+            a("gateway", "/config#gateway", "Modbus-Gateway"),
+            a("knx", "/config#knx", "KNX"),
             '    <div class="nav-grp">Gerät</div>',
-            a("config", "/config", "⚙", "Einstellungen"),
-            a("ota", "/ota", "↑", "OTA"),
+            a("netz", "/config#netz", "Netzwerk und Zugang"),
+            a("display", "/config#display", "Display"),
+            a("ctrl", "/config#ctrl", "Akku-Steuerung"),
+            a("debug", "/debug", "Protokoll"),
+            a("ota", "/ota", "Firmware und Reset"),
             "  </nav>",
             '  <div class="foot">',
             '    <div class="online"><span class="dot ok"></span> Online</div>',
@@ -64,7 +88,7 @@ function applyThemeLang(s){
   document.documentElement.dataset.theme=s.uiTheme||'mint';
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
-  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+' · '+(s.ipShown||'');
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};

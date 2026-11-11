@@ -12,6 +12,55 @@ bool started = false;
 uint32_t nextPoll = 0;
 char token[196] = "";
 uint32_t tokenAt = 0;
+uint32_t loginBlockedUntil = 0; // nach Fehlversuch nicht dauernd anmelden, sonst sperrt S-Miles das Konto
+
+// neapi.hoymiles.com: GeoTrust G2 → DigiCert Global Root G2 (Cross-Sign über Global Root CA)
+const char HOY_CA[] PROGMEM = R"PEM(
+-----BEGIN CERTIFICATE-----
+MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI
+2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx
+1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ
+q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz
+tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0xZKBgyMUNGPHgm+F6HmIcr9g+UQ
+vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP
+BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV
+5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY
+1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4
+NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG
+Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91
+8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe
+pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl
+MrY=
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
+-----END CERTIFICATE-----
+)PEM";
 
 String md5Hex(const char *s) {
   MD5Builder b;
@@ -23,7 +72,7 @@ String md5Hex(const char *s) {
 
 bool httpsPost(const String &url, const String &body, const char *auth, String &out) {
   NetworkClientSecure cli;
-  cli.setInsecure();
+  cli.setCACert(HOY_CA);
   HTTPClient http;
   if (!http.begin(cli, url)) return false;
   http.setTimeout(12000);
@@ -40,6 +89,7 @@ bool httpsPost(const String &url, const String &body, const char *auth, String &
 
 bool login() {
   if (!local.cloudUser[0] || !local.cloudPass[0]) return false;
+  if (loginBlockedUntil && int32_t(millis() - loginBlockedUntil) < 0) return false;
   const String host = local.cloudHost[0] ? local.cloudHost : "neapi.hoymiles.com";
   const String passMd5 = md5Hex(local.cloudPass);
 
@@ -70,17 +120,35 @@ bool login() {
     }
   }
   token[0] = 0;
+  loginBlockedUntil = millis() + 5UL * 60UL * 1000UL;
+  strlcpy(gLive.status, "Cloud-Login fehlgeschlagen", sizeof(gLive.status));
   return false;
 }
 
+// S-Miles liefert Zahlen teils als Text ("8642900")
+float num(JsonVariantConst x) {
+  if (x.is<float>() || x.is<int>() || x.is<long>() || x.is<double>()) return x.as<float>();
+  if (x.is<const char *>()) {
+    const char *s = x.as<const char *>();
+    char *end = nullptr;
+    float f = strtof(s, &end);
+    if (end && end != s && *end == '\0') return f;
+  }
+  return NAN;
+}
+
+// Speicheranlagen: Akku/Netz stehen in reflux_station_data, PV/Energie auf oberster Ebene
 float pickF(JsonVariantConst v, const char *k0, const char *k1 = nullptr, const char *k2 = nullptr,
             const char *k3 = nullptr) {
   const char *keys[4] = {k0, k1, k2, k3};
-  for (int i = 0; i < 4; i++) {
-    if (!keys[i]) continue;
-    if (v[keys[i]].is<float>() || v[keys[i]].is<int>() || v[keys[i]].is<long>() ||
-        v[keys[i]].is<double>())
-      return v[keys[i]].as<float>();
+  JsonVariantConst scopes[2] = {v, v["reflux_station_data"]};
+  for (JsonVariantConst s : scopes) {
+    if (s.isNull()) continue;
+    for (const char *k : keys) {
+      if (!k) continue;
+      float f = num(s[k]);
+      if (!isnan(f)) return f;
+    }
   }
   return NAN;
 }
@@ -123,10 +191,10 @@ bool fetchRealtime() {
       data = doc["data"].as<JsonVariantConst>();
     }
 
-    float pv = pickF(data, "real_power", "power", "pv_power", "generation_power");
-    float bat = pickF(data, "battery_power", "bms_power", "p_bat", "bat_power");
+    float pv = pickF(data, "pv_power", "real_power", "power", "generation_power");
+    float bat = pickF(data, "bms_power", "battery_power", "p_bat", "bat_power");
     float grid = pickF(data, "grid_power", "p_grid", "meter_power", "pgrid");
-    float soc = pickF(data, "soc", "battery_soc", "capacitor", "bms_soc");
+    float soc = pickF(data, "bms_soc", "soc", "battery_soc");
     float ePv = pickF(data, "total_eq", "energy_total", "eq", "pv_energy");
     float eImp = pickF(data, "grid_in", "import_eq", "energy_imp");
     float eExp = pickF(data, "grid_out", "export_eq", "energy_exp");
@@ -172,6 +240,7 @@ void applyConfig(const AppConfig &cfg) {
   local = cfg;
   nextPoll = 0;
   token[0] = 0;
+  loginBlockedUntil = 0;
   gLive.cloudOk = false;
 }
 

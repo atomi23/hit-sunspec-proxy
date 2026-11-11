@@ -13,132 +13,188 @@
 #include "KnxIp.h"
 #include "KnxPoints.h"
 #include "DataSource.h"
+#include "UiFonts.h"
+#include "HitBus.h"
+#include "ModbusGateway.h"
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
-#include <mbedtls/base64.h>
 
 namespace {
 AsyncWebServer server(80);
 
 // Shared UI — sidebar + mint accents (all pages link /a.css)
 const char UI_CSS[] PROGMEM = R"CSS(
+@font-face{font-family:Barlow;font-weight:400;font-display:swap;src:url(/f/barlow-400.woff) format("woff")}
+@font-face{font-family:Barlow;font-weight:600;font-display:swap;src:url(/f/barlow-600.woff) format("woff")}
 :root,:root[data-theme=mint]{
-  --bg:#0b0f0d;--side:#0c1210;--panel:#121a16;--line:rgba(88,204,134,.16);
-  --txt:#e8f0eb;--muted:#7f9186;--acc:#58cc86;--acc2:#3dbf74;--warn:#f0b429;--danger:#ff6b6b;--cyan:#7dd3c0;
-  --r:14px;--side-w:220px;--ease:cubic-bezier(.22,1,.36,1);
-  --font:"Segoe UI Variable Text","Segoe UI","SF Pro Text",system-ui,sans-serif;
-  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
+  --bg:#15191b;--side:#111416;--plate:#1d2225;--plate2:#232a2d;--well:#191d1f;--rule:#2c3337;--rule2:#3a4247;
+  --ink:#edefec;--dim:#8f9893;--acc:#8ed8b4;--on-acc:#0d2419;
+  --sun:#f1c453;--grid:#8ab8e6;--warn:#f0a35e;--fault:#ef6f62;--home:#c9b8f0;
+  --font:Barlow,"Segoe UI",system-ui,sans-serif;
+  --side-w:236px;--r:18px;--r-s:12px;
 }
 :root[data-theme=ocean]{
-  --bg:#0a1016;--side:#0c141c;--panel:#121c26;--line:rgba(56,189,248,.18);
-  --txt:#e8f2f8;--muted:#7e93a3;--acc:#38bdf8;--acc2:#0ea5e9;--warn:#fbbf24;--danger:#fb7185;--cyan:#67e8f9;
+  --bg:#111821;--side:#0d131b;--plate:#18222d;--plate2:#1e2a37;--well:#141c25;--rule:#263443;--rule2:#33445a;
+  --ink:#e8eef4;--dim:#8d9eb0;--acc:#79c7f2;--on-acc:#08202f;
 }
 :root[data-theme=ember]{
-  --bg:#120e0b;--side:#18120e;--panel:#1c1612;--line:rgba(251,146,60,.18);
-  --txt:#f5efe8;--muted:#a08b7a;--acc:#fb923c;--acc2:#f97316;--warn:#facc15;--danger:#f87171;--cyan:#fdba74;
+  --bg:#1b1615;--side:#161211;--plate:#241d1c;--plate2:#2c2422;--well:#1f1918;--rule:#382e2b;--rule2:#4a3d39;
+  --ink:#f3ece6;--dim:#a39389;--acc:#f0a35e;--on-acc:#2e1806;--warn:#f1c453;
 }
-.side .prefs{display:grid;gap:6px;margin:10px 0 0}
-.side .prefs select{padding:8px 10px;font-size:.78rem}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;min-height:100vh;font:15px/1.45 var(--font);color:var(--txt);background:var(--bg);letter-spacing:-.01em}
+body{margin:0;min-height:100vh;font:400 15px/1.5 var(--font);color:var(--ink);background:var(--bg);
+  font-variant-numeric:tabular-nums lining-nums;-webkit-font-smoothing:antialiased}
 a{color:var(--acc)}
-.app{display:flex;min-height:100vh;width:100%}
-.side{width:var(--side-w);flex-shrink:0;background:var(--side);border-right:1px solid var(--line);
-  padding:22px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;z-index:5}
-.logo{display:flex;gap:10px;align-items:center;padding:4px 8px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
-.logo .mark{width:34px;height:34px;border-radius:10px;background:rgba(88,204,134,.14);border:1px solid rgba(88,204,134,.35);
-  display:grid;place-items:center;color:var(--acc);font:700 .85rem/1 var(--font)}
-.logo b{display:block;font-size:.78rem;letter-spacing:.02em}.logo span{display:block;font-size:.68rem;color:var(--acc);margin-top:2px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* Seitengerüst */
+.app{display:flex;min-height:100vh}
+.side{width:var(--side-w);flex-shrink:0;background:var(--side);padding:22px 12px 16px;display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;z-index:5}
+.logo{display:flex;gap:12px;align-items:center;padding:0 10px 22px}
+.logo svg{width:34px;height:34px;flex-shrink:0;color:var(--acc)}
+.logo b{display:block;font-weight:600;font-size:16px;line-height:1.1}
+.logo span{display:block;font-size:12px;color:var(--dim);margin-top:3px}
 .side nav{display:flex;flex-direction:column;gap:2px;flex:1;overflow:auto}
-.side .nav-grp{margin:12px 8px 4px;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(127,145,134,.85)}
-.side .nav-grp:first-child{margin-top:0}
-.side nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;color:var(--muted);
-  text-decoration:none;font-size:.86rem;font-weight:550;border:1px solid transparent;transition:.2s var(--ease)}
-.side nav a:hover{color:var(--txt);background:rgba(255,255,255,.04)}
-.side nav a.on{color:var(--acc);background:rgba(88,204,134,.1);border-color:rgba(88,204,134,.35)}
-.side nav a i{width:20px;text-align:center;opacity:.9;font-style:normal;font-size:1rem;line-height:1}
-.side .foot{margin-top:auto;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25)}
-.side .foot .online{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;color:var(--acc)}
-.side .foot .meta{margin-top:6px;font-size:.72rem;color:var(--muted)}
-.main{flex:1;min-width:0;width:100%;padding:28px 36px 48px}
-.page-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-bottom:20px}
-.brand{font-size:.68rem;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin:0 0 6px}
-h1{margin:0;font-size:clamp(1.35rem,2.6vw,1.75rem);font-weight:650;letter-spacing:-.03em;line-height:1.15}
-.sub,.muted,.meta,.hint{color:var(--muted)}.sub{margin:6px 0 0;font-size:.92rem}
-.panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;scroll-margin-top:24px}
-.metrics{display:grid;gap:12px;grid-template-columns:repeat(4,1fr);margin:16px 0}
-@media(max-width:1100px){.metrics{grid-template-columns:repeat(2,1fr)}}
-.metric .k,.k{font-size:.68rem;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.metric .v,.v{font:650 1.65rem/1.1 var(--mono);font-variant-numeric:tabular-nums;margin-top:8px;letter-spacing:-.02em}
-.u{font:600 .8rem/1 var(--font);color:var(--muted);margin-left:2px}
-.ip{font:650 clamp(1.25rem,3vw,1.7rem)/1.1 var(--mono);color:var(--cyan);letter-spacing:-.03em}
-.badge{display:inline-block;margin-left:8px;padding:3px 9px;border-radius:8px;border:1px solid rgba(240,180,41,.35);
-  background:rgba(240,180,41,.12);color:var(--warn);font:650 .68rem/1.2 var(--font);letter-spacing:.06em;vertical-align:middle}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
-.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);
-  background:rgba(0,0,0,.28);color:var(--muted);font-size:.78rem;font-weight:550}
-.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.dot.ok{background:var(--acc);box-shadow:0 0 8px rgba(88,204,134,.45)}.dot.bad{background:var(--danger)}
-.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:stretch;margin:12px 0 16px}
-.box{text-align:center;padding:14px 10px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.28)}
-.box span{display:block;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
-.box b{display:block;margin-top:8px;font:650 1.05rem/1 var(--mono);font-variant-numeric:tabular-nums}
-.arr{color:rgba(88,204,134,.5);align-self:center;font-size:1.1rem}
-.bar{height:8px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;margin-top:10px}
-.fill{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .5s var(--ease)}
-.grid,.grid2{display:grid;gap:14px;width:100%}
+.side .nav-grp{margin:18px 12px 6px;font-size:12px;color:var(--dim)}
+.side nav a{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:10px;color:var(--dim);
+  text-decoration:none;font-size:15px;transition:background .15s,color .15s}
+.side nav a:hover{color:var(--ink);background:rgba(255,255,255,.04)}
+.side nav a.on{color:var(--ink);background:var(--plate2)}
+.side nav a svg{width:18px;height:18px;flex-shrink:0}
+.side nav a.on svg{color:var(--acc)}
+.side .foot{margin-top:auto;padding:14px 10px 0}
+.side .foot .online{display:flex;align-items:center;gap:8px;font-size:13px}
+.side .foot .meta{margin-top:4px;font-size:12px;color:var(--dim);white-space:pre-line}
+.side .prefs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+.side .prefs select{padding:7px 9px;font-size:13px;border-radius:10px}
+.main{flex:1;min-width:0;padding:32px 44px 64px;max-width:1280px}
+.page-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:24px}
+.brand{display:none}
+h1{margin:0;font-size:32px;font-weight:600;line-height:1.1;letter-spacing:-.01em}
+h2{margin:0 0 12px;font-size:17px;font-weight:600}
+.sub{margin:8px 0 0;font-size:15px;color:var(--dim);max-width:68ch}
+.muted,.meta,.hint{color:var(--dim)}
+.ip{font-size:17px;color:var(--ink);text-align:right}
+.ip small{display:block;font-size:13px;color:var(--dim)}
+.tag{display:inline-block;margin-left:12px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;
+  color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);vertical-align:6px}
+
+/* Flächen */
+.panel,.card{background:var(--plate);border-radius:var(--r);padding:22px 24px}
+.card>strong{display:block;font-size:17px;font-weight:600;margin-bottom:4px}
+.grid,.grid2{display:grid;gap:16px}
 .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .grid2{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:12px}
-@media(max-width:1200px){.grid2{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:900px){.grid,.grid2{grid-template-columns:1fr}}
-.tile{display:flex;flex-direction:column;gap:12px;min-height:168px}
-.tile-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.tile-h .k{margin:0}.tile-ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
-  background:rgba(88,204,134,.12);border:1px solid rgba(88,204,134,.28);color:var(--acc);font-size:1rem}
-.tile-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
-.tile-row:last-child{border-bottom:0;padding-bottom:0}.tile-row .lab{font-size:.78rem;color:var(--muted);font-weight:550}
-.tile-row .num{font:650 1.05rem/1.1 var(--mono);font-variant-numeric:tabular-nums;color:var(--txt)}
-.tile-row .num small{font:600 .72rem/1 var(--font);color:var(--muted);margin-left:4px}
-.mppt{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
-.mppt div{text-align:center;padding:8px 4px;border-radius:10px;background:rgba(0,0,0,.28);border:1px solid var(--line)}
-.mppt b{display:block;font:650 .85rem/1.1 var(--mono);color:var(--acc);margin-top:4px}
-.mppt span{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650}
-.stat-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font:650 .68rem/1 var(--font);
-  border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--muted)}
-.stat-pill.on{color:var(--acc);border-color:rgba(88,204,134,.4);background:rgba(88,204,134,.1)}
-.stat-pill.off{color:var(--danger);border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.08)}
-.card strong{display:block;font-size:.95rem;font-weight:650;letter-spacing:-.01em;margin-bottom:2px;color:var(--txt)}
-label{display:block;font-size:.72rem;font-weight:650;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
-input,select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.35);
-  color:var(--txt);font:450 .95rem/1.3 var(--font);outline:none}
-input:focus,select:focus{border-color:rgba(88,204,134,.5);box-shadow:0 0 0 3px rgba(88,204,134,.12)}
-input[type=checkbox]{width:auto;margin-right:8px;accent-color:var(--acc)}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
-button,.btn{appearance:none;border:0;cursor:pointer;padding:11px 16px;border-radius:10px;font:650 .9rem/1 var(--font);
-  background:linear-gradient(180deg,#7be0a8,var(--acc));color:#062416}
-button:hover,.btn:hover{filter:brightness(1.05)}button:active{transform:scale(.98)}
-button.sec,.btn.sec{background:transparent;color:var(--txt);border:1px solid var(--line)}
-.hint{font-size:.78rem;margin:8px 0 0;line-height:1.45}
-.ok{color:var(--acc)}.bad{color:var(--danger)}
-code{font-family:var(--mono);font-size:.86em;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
-pre{color:var(--muted);white-space:pre-wrap;font:450 .78rem/1.4 var(--mono);max-height:220px;overflow:auto;margin:8px 0 0}
-.steps{display:flex;gap:0;margin:18px 0 8px;align-items:center}.steps i{flex:1;height:3px;border-radius:99px;background:rgba(255,255,255,.08)}
-.steps i.on{background:var(--acc)}
-.stepper{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 8px}.stepper span{font-size:.72rem;color:var(--muted);padding:4px 0;border-bottom:2px solid transparent}
-.stepper span.on{color:var(--acc);border-color:var(--acc)}.stepper span.done{color:var(--acc)}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid rgba(88,204,134,.35);
-  background:rgba(88,204,134,.1);color:var(--acc);font:650 .68rem/1.2 var(--font);letter-spacing:.04em;text-transform:uppercase}
-.hide{display:none}ul{margin:10px 0 0 18px;color:var(--muted);font-size:.9rem;line-height:1.5}
-.big{font:650 clamp(1.5rem,3.5vw,2rem)/1.1 var(--mono);color:var(--acc);letter-spacing:-.03em}
-table{width:100%;border-collapse:collapse;font-size:.82rem}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}
-th{color:var(--muted);font-weight:650;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase}
-.wizard{max-width:640px;margin:40px auto;padding:0 20px 48px}
-#probeBox{margin-top:12px;display:none}#bar{height:8px;background:rgba(0,0,0,.4);border-radius:99px;overflow:hidden;margin-top:14px}
-#fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc2),var(--acc));transition:width .15s}
+
+/* Formulare */
+label{display:block;font-size:13px;color:var(--dim);margin:16px 0 6px}
+label:has(input[type=checkbox]){display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px}
+input,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--well);
+  color:var(--ink);font:400 15px/1.3 var(--font);font-variant-numeric:tabular-nums;transition:border-color .15s}
+input:hover,select:hover{border-color:var(--rule2)}
+input:focus,select:focus{border-color:var(--acc);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+input[readonly]{color:var(--dim)}
+input[type=checkbox]{width:18px;height:18px;margin:0;accent-color:var(--acc)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;align-items:center}
+button,.btn{appearance:none;cursor:pointer;padding:10px 18px;border-radius:999px;border:0;
+  font:600 15px/1.2 var(--font);background:var(--acc);color:var(--on-acc);transition:filter .15s,background .15s}
+button:hover,.btn:hover{filter:brightness(1.08)}
+button.sec,.btn.sec{background:var(--plate2);color:var(--ink)}
+button.sec:hover{background:var(--rule)}
+.hint{font-size:13px;margin:8px 0 0;line-height:1.5;max-width:68ch}
+.ok{color:var(--acc)}.bad{color:var(--fault)}
+code{font:400 13px ui-monospace,Consolas,monospace;padding:2px 6px;border-radius:6px;background:var(--well)}
+pre{color:var(--dim);white-space:pre-wrap;font:400 13px/1.5 ui-monospace,Consolas,monospace;max-height:260px;overflow:auto;margin:10px 0 0}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{padding:9px 0;border-bottom:1px solid var(--rule);text-align:left}
+tr:last-child td{border-bottom:0}
+th{color:var(--dim);font-weight:400;font-size:13px}
+td.n,th.n{text-align:right}
+ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
+.hide{display:none}
+.big{font-size:30px;color:var(--acc)}
+.k{font-size:13px;color:var(--dim)}
+.v{font-size:30px;line-height:1.1;margin-top:4px}
+.u{font-size:15px;color:var(--dim);margin-left:3px}
+
+/* Status-Pillen */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 10px;border-radius:999px;background:var(--plate);
+  font-size:13px;color:var(--dim)}
+.chip.on{color:var(--ink)}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--rule2)}
+.dot.ok,.chip.on .dot{background:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+.dot.bad,.chip.off .dot{background:var(--fault)}
+.chip.idle .dot{background:var(--rule2)}
+.stat-pill,.pill{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--plate2);font-size:13px;color:var(--dim)}
+.stat-pill.on,.pill{color:var(--acc)}
+.stat-pill.off{color:var(--dim)}
+.bar,#bar{height:8px;background:var(--well);border-radius:999px;overflow:hidden;margin-top:12px}
+.fill,#fill{height:100%;width:0;background:var(--acc);border-radius:999px;transition:width .3s}
+.steps{display:flex;gap:6px;margin:18px 0 8px}.steps i{flex:1;height:4px;border-radius:999px;background:var(--rule)}.steps i.on{background:var(--acc)}
+.stepper{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 8px}
+.stepper span{font-size:13px;color:var(--dim);padding:5px 12px;border-radius:999px;background:var(--plate)}
+.stepper span.on{color:var(--on-acc);background:var(--acc)}.stepper span.done{color:var(--acc)}
+.wizard{max-width:620px;margin:40px auto;padding:0 20px 48px}
+#probeBox{margin-top:12px;display:none}
+
+/* Live: Energiefluss */
+.flow{background:radial-gradient(120% 90% at 50% 0%,var(--plate2),var(--plate) 70%);border-radius:24px;padding:12px 12px 4px}
+.flow svg{display:block;width:100%;height:auto;overflow:visible}
+.flow .lbl{fill:var(--dim);font:400 15px var(--font)}
+.flow .val{fill:var(--ink);font:600 36px var(--font);letter-spacing:-.01em}
+.flow .val tspan{font-size:17px;font-weight:400;fill:var(--dim)}
+.flow .dir{fill:var(--dim);font:400 13px var(--font)}
+.flow .track{fill:none;stroke:var(--rule);stroke-width:2}
+.flow .run{fill:none;stroke-width:5;stroke-linecap:round;stroke-dasharray:.1 22;opacity:0;transition:opacity .4s}
+.flow .run.on{opacity:1;animation:flow 1.2s linear infinite}
+.flow .run.rev{animation-direction:reverse}
+.flow .c-pv{stroke:var(--sun);filter:drop-shadow(0 0 4px var(--sun))}
+.flow .c-bt{stroke:var(--acc);filter:drop-shadow(0 0 4px var(--acc))}
+.flow .c-gr{stroke:var(--grid);filter:drop-shadow(0 0 4px var(--grid))}
+.flow .c-ho{stroke:var(--home);filter:drop-shadow(0 0 4px var(--home))}
+.flow .node{stroke-width:1.5}
+.flow .n-pv{fill:color-mix(in srgb,var(--sun) 12%,var(--plate));stroke:color-mix(in srgb,var(--sun) 45%,transparent)}
+.flow .n-bt{fill:color-mix(in srgb,var(--acc) 12%,var(--plate));stroke:color-mix(in srgb,var(--acc) 30%,transparent)}
+.flow .n-gr{fill:color-mix(in srgb,var(--grid) 12%,var(--plate));stroke:color-mix(in srgb,var(--grid) 45%,transparent)}
+.flow .n-ho{fill:color-mix(in srgb,var(--home) 12%,var(--plate));stroke:color-mix(in srgb,var(--home) 45%,transparent)}
+.flow .ico{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.flow .i-pv{stroke:var(--sun)}.flow .i-bt{stroke:var(--acc)}.flow .i-gr{stroke:var(--grid)}.flow .i-ho{stroke:var(--home)}
+.flow .hub{fill:var(--well);stroke:var(--rule2);stroke-width:1.5}
+.flow .hub-i{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.flow .ring-bg{fill:none;stroke:var(--rule);stroke-width:4}
+.flow .ring{fill:none;stroke:var(--acc);stroke-width:4;stroke-linecap:round;transition:stroke-dasharray .6s}
+.flow .chipbox{fill:var(--well);stroke:var(--rule2);stroke-width:1.5}
+.flow .chipbox.live{stroke:var(--acc)}
+.flow .data{fill:none;stroke:var(--rule2);stroke-width:1.5;stroke-dasharray:4 6}
+.flow .data.live{stroke:var(--acc);animation:flow 1.6s linear infinite reverse}
+@keyframes flow{to{stroke-dashoffset:-22.1}}
+@media (prefers-reduced-motion:reduce){.flow .run.on,.flow .data.live{animation:none}}
+
+/* Live: Kennzahlen */
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+.cards.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cards .panel{padding:20px 22px 14px}
+.cards td:first-child{color:var(--dim)}
+.note{font-size:13px;color:var(--dim);margin:10px 0 6px}
+.foot-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:24px}
+
+/* Einstellungen: ein Bereich je Menüpunkt */
+.cfg,.main:has(.cfg) .page-head{max-width:780px}
+.cfg .card{display:none}
+.cfg .card.show{display:block}
+.cfg .card>strong{display:none}
+.cfg .card>label:first-of-type{margin-top:0}
+
+@media(max-width:1100px){.grid2{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr 1fr}}
 @media(max-width:860px){
-  .app{flex-direction:column}.side{width:100%;height:auto;position:relative;border-right:0;border-bottom:1px solid var(--line)}
-  .side nav{flex-direction:row;flex-wrap:wrap}.side .foot{display:none}.logo{border:0;margin:0;padding:0 4px 8px}
-  .flow{grid-template-columns:1fr}.arr{display:none}
+  .app{flex-direction:column}
+  .side{width:100%;height:auto;position:relative;padding:14px 10px 8px}
+  .side nav{flex-direction:row;flex-wrap:wrap;gap:4px}.side nav a{padding:6px 10px}
+  .side .nav-grp{display:none}.side .foot{display:none}.logo{padding:0 8px 10px}
+  .main{padding:20px 16px 40px}.grid,.grid2,.cards,.cards.two{grid-template-columns:1fr}
+  .flow{overflow-x:auto}.flow svg{min-width:640px}
 }
 )CSS";
 
@@ -147,25 +203,28 @@ const char DASH_HTML[] PROGMEM = R"HTML(
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="color-scheme" content="dark"/><title>Live · HIT Proxy</title>
+<link rel="preload" href="/f/barlow-600.woff" as="font" type="font/woff" crossorigin/>
 <link rel="stylesheet" href="/a.css"/>
 </head><body><div class="app">
 <aside class="side">
-  <div class="logo"><div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy</span></div></div>
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
   <nav>
-    <div class="nav-grp">System</div>
-    <a class="on" href="/"><i>◉</i> Live</a>
-    <div class="nav-grp">Anbindung</div>
-    <a href="/config#hit"><i>⚡</i> HIT</a>
-    <a href="/config#netz"><i>⊕</i> Netzwerk</a>
-    <a href="/config#sunspec"><i>≈</i> SunSpec</a>
-    <a href="/config#knx"><i>▦</i> KNX</a>
-    <div class="nav-grp">Dienste</div>
-    <a href="/config#mqtt"><i>☁</i> MQTT / Cloud</a>
-    <a href="/config#tasmota"><i>⌀</i> Tasmota</a>
-    <a href="/debug"><i>≡</i> Protokoll</a>
+    <a class="on" aria-current="page" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <div class="nav-grp">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <div class="nav-grp">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
-    <a href="/config"><i>⚙</i> Einstellungen</a>
-    <a href="/ota"><i>↑</i> OTA</a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
@@ -186,47 +245,104 @@ const char DASH_HTML[] PROGMEM = R"HTML(
 <main class="main">
 <div class="page-head">
   <div>
-    <p class="brand">System</p>
-    <h1>Live <span id="ver" class="muted" style="font-size:.7rem;font-weight:500"></span></h1>
-    <p class="sub">HIT → Proxy :1502 → Consolinno</p>
+    <h1><span data-t="live">Live</span><span id="demo" class="tag hide" data-t="demo">Demo-Daten</span></h1>
+    <div class="chips" id="chips" style="margin-top:14px"></div>
   </div>
-  <div class="ip" id="ip">…</div>
+  <div class="ip"><span id="ip">…</span><small data-t="port">Modbus-Port 1502</small></div>
 </div>
-<div class="chips" id="dots"></div>
-<div class="metrics" id="m"></div>
-<div class="panel">
-  <div class="k">Energiefluss</div>
-  <div class="flow">
-    <div class="box"><span>PV</span><b id="fPv">—</b></div><div class="arr">→</div>
-    <div class="box"><span>Akku / Haus</span><b id="fBat">—</b></div><div class="arr">→</div>
-    <div class="box"><span>Netz</span><b id="fGrid">—</b></div>
-  </div>
-  <div class="k">Batterie SoC</div>
-  <div class="bar"><div class="fill" id="socBar"></div></div>
-  <div class="meta" id="socTxt" style="margin-top:10px">—</div>
+
+<div class="flow" role="img" aria-labelledby="flowDesc">
+<p id="flowDesc" class="hide"></p>
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <path class="track" d="M344 110C400 110 400 192 436 192"/>
+  <path class="track" d="M344 310C400 310 400 228 436 228"/>
+  <path class="track" d="M524 192C560 192 560 110 616 110"/>
+  <path class="track" d="M524 228C560 228 560 310 616 310"/>
+  <path id="fPv" class="run c-pv" d="M344 110C400 110 400 192 436 192"/>
+  <path id="fBat" class="run c-bt" d="M344 310C400 310 400 228 436 228"/>
+  <path id="fGrid" class="run c-gr" d="M524 192C560 192 560 110 616 110"/>
+  <path id="fHouse" class="run c-ho" d="M524 228C560 228 560 310 616 310"/>
+  <path id="wData" class="data" d="M480 64V166"/>
+
+  <rect id="hemsBox" class="chipbox" x="370" y="24" width="220" height="40" rx="20"/>
+  <text x="480" y="49" text-anchor="middle" class="lbl"><tspan style="fill:var(--ink)">Consolinno</tspan><tspan dx="8" id="hemsTxt">wartet</tspan></text>
+
+  <rect class="hub" x="436" y="166" width="88" height="88" rx="26"/>
+  <path class="hub-i" d="M462 194h36M462 201h36" style="stroke-dasharray:6 4"/>
+  <path class="hub-i" d="M462 224c4.5-8 7.5-8 12 0s7.5 8 12 0 7.5-8 12 0"/>
+  <text x="480" y="284" text-anchor="middle" class="lbl" style="fill:var(--ink)">Hoymiles HIT</text>
+  <text x="480" y="304" text-anchor="middle" class="dir" id="dHit">—</text>
+
+  <circle class="node n-pv" cx="300" cy="110" r="44"/>
+  <g class="ico i-pv" transform="translate(283 93) scale(1.42)"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></g>
+
+  <circle class="ring-bg" cx="300" cy="310" r="52"/>
+  <circle id="socRing" class="ring" cx="300" cy="310" r="52" transform="rotate(-90 300 310)" stroke-dasharray="0 327"/>
+  <circle class="node n-bt" cx="300" cy="310" r="44"/>
+  <g class="ico i-bt" transform="translate(283 293) scale(1.42)"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></g>
+
+  <circle class="node n-gr" cx="660" cy="110" r="44"/>
+  <g class="ico i-gr" transform="translate(643 93) scale(1.42)"><path d="M8 21 12 3l4 18M9.6 14h4.8M10.6 9h2.8M5 7h14"/></g>
+
+  <circle class="node n-ho" cx="660" cy="310" r="44"/>
+  <g class="ico i-ho" transform="translate(643 293) scale(1.42)"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></g>
+
+  <text x="228" y="96" text-anchor="end" class="lbl" data-t="pv">PV-Leistung</text>
+  <text x="228" y="134" text-anchor="end" class="val" id="vPv">—</text>
+  <text x="228" y="158" text-anchor="end" class="dir" id="dPv"></text>
+
+  <text x="228" y="296" text-anchor="end" class="lbl" data-t="bat">Akku</text>
+  <text x="228" y="334" text-anchor="end" class="val" id="vBat">—</text>
+  <text x="228" y="358" text-anchor="end" class="dir" id="dBat"></text>
+
+  <text x="732" y="96" class="lbl" data-t="grid">Netz</text>
+  <text x="732" y="134" class="val" id="vGrid">—</text>
+  <text x="732" y="158" class="dir" id="dGrid"></text>
+
+  <text x="732" y="296" class="lbl" data-t="house">Haus</text>
+  <text x="732" y="334" class="val" id="vHouse">—</text>
+  <text x="732" y="358" class="dir" data-t="calc">aus PV, Akku und Netz</text>
+</svg>
 </div>
-<div class="grid2">
-  <div class="panel tile" id="en"></div>
-  <div class="panel tile" id="lpp"></div>
-  <div class="panel tile" id="tas"></div>
-  <div class="panel tile" id="ph"></div>
+
+<div class="cards">
+  <section class="panel">
+    <h2 data-t="strings">PV-Strings</h2>
+    <table id="tStr"></table>
+  </section>
+  <section class="panel">
+    <h2 data-t="phases">Netz je Phase</h2>
+    <table id="tPh"></table>
+    <p class="note" id="nHz"></p>
+  </section>
+  <section class="panel">
+    <h2 data-t="meters">Zähler und Akku</h2>
+    <table id="tEn"></table>
+  </section>
 </div>
-<div class="row">
-  <button class="sec" type="button" onclick="poll()">Jetzt pollen</button>
+<div class="cards two">
+  <section class="panel">
+    <h2 data-t="limit">Leistungsbegrenzung durch Consolinno</h2>
+    <table id="tLim"></table>
+    <p class="note" id="nLim"></p>
+  </section>
+  <section class="panel">
+    <h2 data-t="tas">Tasmota-Zähler</h2>
+    <table id="tTas"></table>
+    <p class="note" id="nTas"></p>
+  </section>
+</div>
+
+<div class="foot-row">
+  <button class="sec" type="button" onclick="poll()" data-t="poll">HIT jetzt abfragen</button>
   <span class="meta" id="age"></span>
 </div>
 </main></div>
 
 <script>
 const I18N={
- de:{live:'Live',settings:'Einstellungen',proto:'Protokoll',energy:'Energiefluss',batSoc:'Batterie SoC',poll:'Jetzt pollen',
-     pv:'PV',bat:'Batterie',grid:'Netz',soc:'SoC',enHit:'Energie HIT',yield:'PV Ertrag',imp:'Bezug',exp:'Einspeisung',
-     lpp:'Consolinno LPP',limit:'Limit',on:'aktiv',off:'aus',hems:'HEMS',conn:'verbunden',wait:'wartet',tas:'Tasmota',
-     online:'online',offline:'offline',ph:'Phasen Netz',freq:'Frequenz',sys:'System'},
- en:{live:'Live',settings:'Settings',proto:'Log',energy:'Energy flow',batSoc:'Battery SoC',poll:'Poll now',
-     pv:'PV',bat:'Battery',grid:'Grid',soc:'SoC',enHit:'HIT Energy',yield:'PV yield',imp:'Import',exp:'Export',
-     lpp:'Consolinno LPP',limit:'Limit',on:'on',off:'off',hems:'HEMS',conn:'connected',wait:'waiting',tas:'Tasmota',
-     online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
+ de:{live:'Live',settings:'Einstellungen',proto:'Protokoll'},
+ en:{live:'Live',settings:'Settings',proto:'Log'}
 };
 let LANG='de';
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
@@ -236,7 +352,7 @@ function applyThemeLang(s){
   document.documentElement.dataset.theme=s.uiTheme||'mint';
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
-  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+' · '+(s.ipShown||'');
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -245,65 +361,92 @@ async function saveUiPrefs(){
 }
 </script>
 <script>
-const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
-const w=n=>`${Number(n)||0} W`;
+const TX={
+ de:{live:'Live',demo:'Demo-Daten',port:'Modbus-Port 1502',pv:'PV-Leistung',bat:'Akku',grid:'Netz',house:'Haus',
+   calc:'aus PV, Akku und Netz',strings:'PV-Strings',phases:'Netz je Phase',meters:'Zähler und Akku',
+   limit:'Leistungsbegrenzung durch Consolinno',tas:'Tasmota-Zähler',poll:'HIT jetzt abfragen',
+   charge:'lädt',discharge:'entlädt',idle:'ruht',imp:'Bezug',exp:'Einspeisung',soc:'Ladestand',
+   hitOk:'antwortet',hitBad:'keine Antwort',hemsOk:'fragt ab',hemsWait:'wartet',
+   string:'String',total:'Summe',phase:'Phase',freq:'Netzfrequenz',yield:'PV-Ertrag gesamt',eimp:'Netzbezug gesamt',
+   eexp:'Einspeisung gesamt',batv:'Akkuspannung',bata:'Akkustrom',soh:'Akkuzustand (SoH)',
+   lim:'Begrenzung',limOn:'aktiv',limOff:'keine',limVal:'Grenzwert',noWrite:'Consolinno hat noch nichts geschrieben.',
+   tasOff:'Kein Tasmota-Zähler verbunden. Einrichten unter Datenquellen, Tasmota-Zähler.',power:'Leistung',
+   src:'Quelle',srcN:'HIT direkt',srcM:'MQTT',srcC:'Hoymiles-Cloud',srcD:'Demo',srcX:'keine',
+   age:s=>'Letzte Antwort vom HIT vor '+s+' s',net:'Netzwerk',hems:'Consolinno',mqin:'MQTT-Eingang',
+   today:'Ertrag gesamt',flow:'Energiefluss zwischen PV, Akku, HIT, Netz und Haus'},
+ en:{live:'Live',demo:'Demo data',port:'Modbus port 1502',pv:'Solar power',bat:'Battery',grid:'Grid',house:'Home',
+   calc:'from solar, battery and grid',strings:'PV strings',phases:'Grid per phase',meters:'Meters and battery',
+   limit:'Power limit set by Consolinno',tas:'Tasmota meter',poll:'Poll HIT now',
+   charge:'charging',discharge:'discharging',idle:'idle',imp:'import',exp:'export',soc:'Charge',
+   hitOk:'responding',hitBad:'no response',hemsOk:'polling',hemsWait:'waiting',
+   string:'String',total:'Total',phase:'Phase',freq:'Grid frequency',yield:'PV yield total',eimp:'Grid import total',
+   eexp:'Export total',batv:'Battery voltage',bata:'Battery current',soh:'Battery health (SoH)',
+   lim:'Limit',limOn:'active',limOff:'none',limVal:'Setpoint',noWrite:'Consolinno has not written anything yet.',
+   tasOff:'No Tasmota meter connected. Set it up under Data sources, Tasmota meter.',power:'Power',
+   src:'Source',srcN:'HIT direct',srcM:'MQTT',srcC:'Hoymiles cloud',srcD:'Demo',srcX:'none',
+   age:s=>'Last HIT response '+s+' s ago',net:'Network',hems:'Consolinno',mqin:'MQTT input',
+   today:'Total yield',flow:'Energy flow between solar, battery, HIT, grid and home'}
+};
+const T=k=>(TX[LANG]||TX.de)[k];
+const $=id=>document.getElementById(id);
+const num=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
+const rows=r=>r.map(([k,v])=>`<tr><td>${k}</td><td class="n">${v}</td></tr>`).join('');
+function run(id,w,forward){const e=$(id);const on=Math.abs(w)>20;e.classList.toggle('on',on);e.classList.toggle('rev',on&&!forward);}
+const chip=(state,label)=>`<span class="chip ${state}"><span class="dot"></span>${label}</span>`;
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
 async function refresh(){
   const s=await(await fetch('/api/status')).json();
   if(s.setupComplete===false){location.href='/setup';return;}
   applyThemeLang(s);
-  document.getElementById('ver').textContent='v'+(s.version||'');
-  document.getElementById('ip').innerHTML=(s.ipShown||'-')+(s.demoMode?' <span class="badge">DEMO</span>':'');
-  document.getElementById('dots').innerHTML=
-    chip(s.hitOk,'HIT')+chip(s.sunspecClient,'HEMS')+chip(s.mqttOk,'MQTT')+chip(s.mqttIngestOk,'MQ-IN')+chip(s.cloudOk,'CLOUD')+chip(s.knxOk,'KNX')+chip(s.ethOk||s.wifiOk,'NET')+
-    `<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span>`;
-  document.getElementById('m').innerHTML=
-    `<div class="panel metric"><div class="tile-h"><div class="k">PV</div><div class="tile-ico">☀</div></div><div class="v">${s.pvW||0}<span class="u">W</span></div></div>
-     <div class="panel metric"><div class="tile-h"><div class="k">Batterie</div><div class="tile-ico">▣</div></div><div class="v">${s.batW||0}<span class="u">W</span></div></div>
-     <div class="panel metric"><div class="tile-h"><div class="k">Netz</div><div class="tile-ico">⚡</div></div><div class="v">${s.gridW||0}<span class="u">W</span></div></div>
-     <div class="panel metric"><div class="tile-h"><div class="k">SoC</div><div class="tile-ico">●</div></div><div class="v">${s.soc||0}<span class="u">%</span></div></div>`;
-  document.getElementById('fPv').textContent=w(s.pvW);
-  document.getElementById('fBat').textContent=w(s.batW);
-  document.getElementById('fGrid').textContent=w(s.gridW);
+  document.querySelectorAll('[data-t]').forEach(e=>{const v=T(e.dataset.t);if(typeof v==='string')e.textContent=v;});
+  $('flowDesc').textContent=T('flow');
+  $('ip').textContent=s.ipShown||'—';
+  $('demo').classList.toggle('hide',!s.demoMode);
+
+  const pv=Number(s.pvW)||0, bat=Number(s.batW)||0, grid=Number(s.gridW)||0;
+  const house=Math.max(0,pv+bat+grid);
+  $('vPv').innerHTML=watt(pv);
+  $('dPv').textContent=T('today')+' '+num(s.energyPvKwh)+' kWh';
+  $('vBat').innerHTML=watt(bat);
   const soc=Math.max(0,Math.min(100,Number(s.soc)||0));
-  document.getElementById('socBar').style.width=soc+'%';
-  document.getElementById('socTxt').textContent=soc+' % · SoH '+(s.soh||0)+'% · '+(Number(s.batV||0).toFixed(1))+' V · '+(Number(s.batA||0).toFixed(1))+' A · '+(s.status||'—');
-  const epv=Number(s.energyPvKwh||0).toFixed(1), eimp=Number(s.energyImpKwh||0).toFixed(1), eexp=Number(s.energyExpKwh||0).toFixed(1);
-  document.getElementById('en').innerHTML=`
-    <div class="tile-h"><div class="k">Energie HIT</div><div class="tile-ico">☀</div></div>
-    <div class="tile-row"><span class="lab">PV Ertrag</span><span class="num">${epv}<small>kWh</small></span></div>
-    <div class="tile-row"><span class="lab">Bezug</span><span class="num">${eimp}<small>kWh</small></span></div>
-    <div class="tile-row"><span class="lab">Einspeisung</span><span class="num">${eexp}<small>kWh</small></span></div>
-    <div class="mppt">
-      <div><span>MPPT1</span><b>${s.pv1W||0}</b></div>
-      <div><span>MPPT2</span><b>${s.pv2W||0}</b></div>
-      <div><span>MPPT3</span><b>${s.pv3W||0}</b></div>
-      <div><span>MPPT4</span><b>${s.pv4W||0}</b></div>
-    </div>`;
-  const lpp=(Number(s.wMaxLimPct||0)/100).toFixed(1);
-  document.getElementById('lpp').innerHTML=`
-    <div class="tile-h"><div class="k">Consolinno LPP</div><div class="tile-ico">◎</div></div>
-    <div class="tile-row"><span class="lab">WMaxLim</span><span class="num">${lpp}<small>%</small></span></div>
-    <div class="tile-row"><span class="lab">Limit</span><span class="stat-pill ${s.wMaxLimEna?'on':'off'}">${s.wMaxLimEna?'aktiv':'aus'}</span></div>
-    <div class="tile-row"><span class="lab">HEMS</span><span class="stat-pill ${s.sunspecClient?'on':'off'}">${s.sunspecClient?'verbunden':'wartet'}</span></div>
-    <div class="tile-row"><span class="lab">KNX</span><span class="stat-pill ${s.knxOk?'on':'off'}">${s.knxOk?'ok':'—'}</span></div>
-    <div class="meta">${s.lastWriteNote||'Kein Write bisher'}</div>`;
-  document.getElementById('tas').innerHTML=s.tasmotaOk?`
-    <div class="tile-h"><div class="k">Tasmota</div><div class="tile-ico">⌀</div></div>
-    <div class="tile-row"><span class="lab">${s.tasmotaSensorKey||'Zähler'}</span><span class="num">${s.tasmotaPowerW||0}<small>W</small></span></div>
-    <div class="tile-row"><span class="lab">E_in</span><span class="num">${Number(s.tasmotaTotalKwh||0).toFixed(2)}<small>kWh</small></span></div>
-    <div class="tile-row"><span class="lab">E_out</span><span class="num">${Number(s.tasmotaExportKwh||0).toFixed(2)}<small>kWh</small></span></div>
-    <span class="stat-pill on">online</span>`:`
-    <div class="tile-h"><div class="k">Tasmota</div><div class="tile-ico">⌀</div></div>
-    <div class="tile-row"><span class="lab">Status</span><span class="stat-pill off">offline</span></div>
-    <div class="meta">Optional unter Dienste → Tasmota</div>`;
-  document.getElementById('ph').innerHTML=`
-    <div class="tile-h"><div class="k">Phasen Netz</div><div class="tile-ico">∿</div></div>
-    <div class="tile-row"><span class="lab">L1</span><span class="num">${Number(s.v1||0).toFixed(1)}<small>V</small> · ${Number(s.i1||0).toFixed(1)}<small>A</small> · ${s.gridW1||0}<small>W</small></span></div>
-    <div class="tile-row"><span class="lab">L2</span><span class="num">${Number(s.v2||0).toFixed(1)}<small>V</small> · ${Number(s.i2||0).toFixed(1)}<small>A</small> · ${s.gridW2||0}<small>W</small></span></div>
-    <div class="tile-row"><span class="lab">L3</span><span class="num">${Number(s.v3||0).toFixed(1)}<small>V</small> · ${Number(s.i3||0).toFixed(1)}<small>A</small> · ${s.gridW3||0}<small>W</small></span></div>
-    <div class="tile-row"><span class="lab">Frequenz</span><span class="num">${Number(s.freqHz||0).toFixed(2)}<small>Hz</small></span></div>`;
-  document.getElementById('age').textContent='HIT vor '+Math.floor((s.lastHitAgeMs||0)/1000)+'s · Eth '+(s.ipEth||'-')+' · WiFi '+(s.ipWifi||'-');
+  $('dBat').textContent=(bat>20?T('discharge'):(bat<-20?T('charge'):T('idle')))+', '+num(soc)+' %';
+  $('socRing').setAttribute('stroke-dasharray',(326.7*soc/100).toFixed(1)+' 327');
+  $('socRing').style.stroke=soc<15?'var(--fault)':(soc<30?'var(--warn)':'var(--acc)');
+  $('vGrid').innerHTML=watt(grid);
+  $('dGrid').textContent=grid>20?T('imp'):(grid<-20?T('exp'):'');
+  $('vHouse').innerHTML=watt(house);
+  run('fPv',pv,true); run('fBat',bat,bat>0); run('fGrid',grid,grid<0); run('fHouse',house,true);
+  $('dHit').textContent=s.hitOk?T('hitOk'):T('hitBad');
+  $('dHit').style.fill=s.hitOk?'var(--dim)':'var(--fault)';
+  $('hemsTxt').textContent=s.sunspecClient?T('hemsOk'):T('hemsWait');
+  $('wData').classList.toggle('live',!!s.sunspecClient);
+  $('hemsBox').classList.toggle('live',!!s.sunspecClient);
+
+  const src={NATIVE:T('srcN'),MQTT:T('srcM'),CLOUD:T('srcC'),DEMO:T('srcD')}[s.dataOrigin]||T('srcX');
+  const opt=ok=>ok?'on':'idle';
+  $('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+chip(opt(s.sunspecClient),T('hems'))+
+    chip((s.ethOk||s.wifiOk)?'on':'off',T('net'))+chip(opt(s.mqttOk),'MQTT')+chip(opt(s.mqttIngestOk),T('mqin'))+
+    chip(opt(s.cloudOk),'Cloud')+chip(opt(s.knxOk),'KNX')+
+    (s.gatewayEnabled?chip(opt(s.gatewayClients>0),'Gateway'+(s.gatewayClients?' ('+s.gatewayClients+')':'')):'')+
+    `<span class="chip">${T('src')}: <b style="color:var(--ink);font-weight:600">${src}</b></span>`;
+
+  const str=[1,2,3,4].map(i=>[T('string')+' '+i,num(s['pv'+i+'W'])+' W']);
+  str.push([T('total'),`<b>${num(pv)} W</b>`]);
+  $('tStr').innerHTML=rows(str);
+  $('tPh').innerHTML=`<tr><th>${T('phase')}</th><th class="n">V</th><th class="n">A</th><th class="n">W</th></tr>`+
+    [1,2,3].map(i=>`<tr><td>L${i}</td><td class="n">${num(s['v'+i],1)}</td><td class="n">${num(s['i'+i],1)}</td><td class="n">${num(s['gridW'+i])}</td></tr>`).join('');
+  $('nHz').textContent=T('freq')+' '+num(s.freqHz,2)+' Hz';
+  $('tEn').innerHTML=rows([
+    [T('yield'),num(s.energyPvKwh,1)+' kWh'],[T('eimp'),num(s.energyImpKwh,1)+' kWh'],[T('eexp'),num(s.energyExpKwh,1)+' kWh'],
+    [T('batv'),num(s.batV,1)+' V'],[T('bata'),num(s.batA,1)+' A'],[T('soh'),num(s.soh)+' %']]);
+  $('tLim').innerHTML=rows([[T('lim'),s.wMaxLimEna?T('limOn'):T('limOff')],[T('limVal'),num((Number(s.wMaxLimPct)||0)/100,1)+' %']]);
+  $('nLim').textContent=s.lastWriteNote||T('noWrite');
+  if(s.tasmotaOk){
+    $('tTas').innerHTML=rows([[T('power'),num(s.tasmotaPowerW)+' W'],[T('eimp'),num(s.tasmotaTotalKwh,2)+' kWh'],[T('eexp'),num(s.tasmotaExportKwh,2)+' kWh']]);
+    $('nTas').textContent=s.tasmotaSensorKey||'';
+  }else{$('tTas').innerHTML='';$('nTas').textContent=T('tasOff');}
+  $('age').textContent=T('age')(Math.floor((s.lastHitAgeMs||0)/1000));
 }
 refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
 </script></body></html>
@@ -317,22 +460,24 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <link rel="stylesheet" href="/a.css"/>
 </head><body><div class="app">
 <aside class="side">
-  <div class="logo"><div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy</span></div></div>
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
   <nav>
-    <div class="nav-grp">System</div>
-    <a href="/"><i>◉</i> Live</a>
-    <div class="nav-grp">Anbindung</div>
-    <a href="/config#hit"><i>⚡</i> HIT</a>
-    <a href="/config#netz"><i>⊕</i> Netzwerk</a>
-    <a href="/config#sunspec"><i>≈</i> SunSpec</a>
-    <a href="/config#knx"><i>▦</i> KNX</a>
-    <div class="nav-grp">Dienste</div>
-    <a href="/config#mqtt"><i>☁</i> MQTT / Cloud</a>
-    <a href="/config#tasmota"><i>⌀</i> Tasmota</a>
-    <a href="/debug"><i>≡</i> Protokoll</a>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <div class="nav-grp">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <div class="nav-grp">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
-    <a class="on" href="/config"><i>⚙</i> Einstellungen</a>
-    <a href="/ota"><i>↑</i> OTA</a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
@@ -353,56 +498,65 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <main class="main">
 <div class="page-head">
   <div>
-    <p class="brand">Konfiguration</p>
-    <h1>Einstellungen</h1>
-    <p class="sub">HIT Pflicht · Tasmota / MQTT / KNX optional</p>
+    <h1 id="cfgTitle">Einstellungen</h1>
+    <p class="sub" id="cfgSub"></p>
   </div>
+  <div class="chips" id="chips"></div>
 </div>
-<div id="live" class="panel" style="margin-bottom:14px">Lade…</div>
-<form id="f" class="grid">
-<div class="card" id="hit"><strong>HIT Quelle</strong>
+<form id="f" class="cfg">
+<div class="card" id="hit" data-sub="Pflicht. Von hier kommen alle Messwerte."><strong>HIT-Wechselrichter</strong>
 <label>Verbindung</label>
 <select name="hitMode"><option value="0">TCP (Modbus TCP)</option><option value="1">Kabel RS485 (RTU)</option></select>
 <label>HIT IP / Host</label><input name="hitHost" placeholder="192.0.2.50"/>
 <label>HIT Port</label><input name="hitPort" type="number"/>
 <label>Unit-ID</label><input name="hitUnitId" type="number"/>
 <label>Poll (ms)</label><input name="hitPollMs" type="number"/>
-<label>RS485 Baud</label><input name="hitRtuBaud" type="number"/>
+<label>RS485-Baudrate (nur bei Kabel)</label><input name="hitRtuBaud" type="number"/>
+<p class="hint">TCP: IP des HIT, Port 502. Der HIT erlaubt nur eine Verbindung, also vorher den Modbus-Proxy in Home Assistant abschalten oder hier dessen Adresse eintragen.</p>
+<p class="hint">RS485: Anschluss am HIT meist PARA2, RJ45 Pin 8 = A, Pin 7 = B, 8N1, Unit-ID 1. Am HIT eingestellte Baudrate übernehmen (Werk oft 115200, häufig auf 9600 gestellt).</p>
 <label><input name="demoMode" type="checkbox"/> <b>Demo-Modus</b> (Fake-Daten, kein HIT-Schreiben)</label>
 <p class="hint">Für Board-/Web-/Display-Test ohne Hoymiles. SunSpec :1502 lokal ansprechbar; Consolinno nicht nötig.</p>
+<button class="sec" type="button" onclick="poll()" style="margin-top:16px">HIT jetzt abfragen</button>
 </div>
-<div class="card" id="sunspec"><strong>SunSpec / Consolinno</strong>
-<label>Listen-Port (Proxy)</label><input name="sunspecPort" type="number"/>
+<div class="card" id="sunspec" data-sub="Consolinno liest den Proxy als SunSpec-Wechselrichter über Modbus TCP."><strong>Consolinno</strong>
+<label>Modbus-Port</label><input name="sunspecPort" type="number"/>
 <label>Unit-ID</label><input name="sunspecUnitId" type="number"/>
-<label><input name="invertPowerSign" type="checkbox"/> Leistung invertieren</label>
+<label><input name="invertPowerSign" type="checkbox"/> Vorzeichen der Leistung umkehren</label>
+<p class="hint">In Consolinno als SunSpec-Gerät eintragen: IP vom Display, Port 1502, Unit-ID 1. Die Registerkarte liegt ab Adresse 0, 40000 und 50000.</p>
+</div>
+<div class="card" id="netz" data-sub="Verbindung ins Heimnetz und Anmeldung an dieser Oberfläche."><strong>Netzwerk und Zugang</strong>
 <label>Gerätename</label><input name="deviceName"/>
+<label><input name="useEthernet" type="checkbox"/> Ethernet verwenden</label>
+<label><input name="wifiEnabled" type="checkbox"/> WLAN verwenden</label>
+<label><input name="wifiApMode" type="checkbox"/> Eigenes WLAN aufspannen (Access Point)</label>
+<label>WLAN-Name (SSID)</label><input name="wifiSsid"/>
+<label>Zugangscode (WLAN-Passwort, steht auf dem Display)</label><input name="wifiPass" readonly/>
+<label>Benutzername</label><input name="webUser"/>
+<label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
+<p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 </div>
-<div class="card" id="netz"><strong>Netzwerk & Display</strong>
-<label><input name="useEthernet" type="checkbox"/> Ethernet</label>
-<label><input name="wifiEnabled" type="checkbox"/> WiFi</label>
-<label><input name="wifiApMode" type="checkbox"/> AP-Modus</label>
-<label><input name="setupComplete" type="checkbox"/> Setup abgeschlossen (QR-Screen aus)</label>
-<label>WiFi SSID</label><input name="wifiSsid"/>
-<label>WiFi / Display-Code (random, auf Display)</label><input name="wifiPass" readonly/>
-<label>Web-User</label><input name="webUser"/>
-<label>Web-Passwort (selbst gewählt, gemerkt)</label><input name="webPass" type="password" placeholder="leer = nur Display-Code"/>
-<p class="hint">Login: User + Web-Passwort <b>oder</b> Display-Code. Display-Code bleibt auf dem Display sichtbar.</p>
-<label><input name="displayEnabled" type="checkbox"/> Display</label>
-<label>Helligkeit</label><input name="displayBrightness" type="number"/>
+<div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite."><strong>Display</strong>
+<label><input name="displayEnabled" type="checkbox"/> Display eingeschaltet</label>
+<label>Helligkeit (0 bis 255)</label><input name="displayBrightness" type="number" min="0" max="255"/>
+<label>Seitenwechsel alle (Sekunden)</label><input name="displayPageS" type="number" min="3" max="600"/>
+<label>Ausschalten nach (Sekunden ohne Berührung, 0 = immer an)</label><input name="displayTimeoutS" type="number" min="0" max="36000"/>
+<p class="hint">Antippen schaltet das Display wieder ein. Bei einer Störung (HIT antwortet nicht) geht es von selbst an.</p>
+<label><input name="setupComplete" type="checkbox"/> Einrichtung abgeschlossen (QR-Code-Seite ausblenden)</label>
+<p class="hint">Seiten: Live, Strings und Netz, System.</p>
 </div>
-<div class="card" id="ctrl"><strong>HIT Steuerung (Schreiben)</strong>
+<div class="card" id="ctrl" data-sub="Schreibt Grenzwerte an den HIT. Standardmäßig aus."><strong>Akku-Steuerung</strong>
 <label><input name="hitWriteEnabled" type="checkbox"/> Schreiben an HIT erlauben</label>
 <label><input name="sunspecWriteToHit" type="checkbox"/> Consolinno Model-123 → HIT weiterleiten</label>
-<label>Max Laden % (Reg 306)</label><input name="batMaxChargePct" type="number" min="10" max="100"/>
-<label>Max Entladen % (Reg 307)</label><input name="batMaxDischargePct" type="number" min="10" max="100"/>
-<label>Max SoC % (308)</label><input name="batMaxSoc" type="number" min="10" max="100"/>
-<label>Min SoC % (309)</label><input name="batMinSoc" type="number" min="10" max="90"/>
-<label><input name="apcEnabled" type="checkbox"/> APC Einspeiselimit (Reg 279)</label>
-<label>APC Limit %×10 (280, 1000=100%)</label><input name="apcPwrLmtPct10" type="number" min="0" max="1000"/>
-<p class="hint">Default AUS. APC liegt im Safety-Bereich 101–299 — nur bewusst aktivieren.</p>
+<label>Max. Ladeleistung in % (Reg. 306)</label><input name="batMaxChargePct" type="number" min="10" max="100"/>
+<label>Max. Entladeleistung in % (Reg. 307)</label><input name="batMaxDischargePct" type="number" min="10" max="100"/>
+<label>Max. Ladestand in % (Reg. 308)</label><input name="batMaxSoc" type="number" min="10" max="100"/>
+<label>Min. Ladestand in % (Reg. 309)</label><input name="batMinSoc" type="number" min="10" max="90"/>
+<label><input name="apcEnabled" type="checkbox"/> Wirkleistungsbegrenzung APC (Reg. 279)</label>
+<label>APC-Grenze in 0,1 % (Reg. 280, 1000 = 100 %)</label><input name="apcPwrLmtPct10" type="number" min="0" max="1000"/>
+<p class="hint">Alles standardmäßig aus. 279/280 liegen im Netzschutz-Bereich 101 bis 299: Der ESP schreibt dort nur mit FC16, weil ein FC6-Befehl laut Hoymiles alle Netzschutz-Werte auf Werkseinstellung setzt. Eine Consolinno-Begrenzung (Model 123) geht nur auf APC, nicht auf den Akku.</p>
 <button class="sec" type="button" onclick="applyCtrl()">Jetzt an HIT schreiben</button>
 </div>
-<div class="card" id="tasmota"><strong>Tasmota Zähler</strong>
+<div class="card" id="tasmota" data-sub="Optionaler Netzzähler mit Tasmota-Lesekopf."><strong>Tasmota-Zähler</strong>
 <label><input name="tasmotaEnabled" type="checkbox"/> aktiv (Display)</label>
 <label><input name="tasmotaMeterSpoof" type="checkbox"/> Meter-Spoof für Consolinno (optional)</label>
 <label>Tasmota IP</label><input name="tasmotaHost" placeholder="192.0.2.60"/>
@@ -414,7 +568,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <button class="sec" type="button" onclick="probeTas()" style="margin-top:10px">One-Click: Tasmota auslesen</button>
 <div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
 </div>
-<div class="card" id="mqtt"><strong>MQTT → Home Assistant</strong>
+<div class="card" id="mqtt" data-sub="Messwerte per MQTT an Home Assistant, optional auch als Datenquelle."><strong>Home Assistant</strong>
 <label><input name="mqttEnabled" type="checkbox"/> Publish aktiv</label>
 <label><input name="mqttDiscovery" type="checkbox"/> HA Discovery</label>
 <label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
@@ -429,7 +583,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <label>Max Alter (ms)</label><input name="mqttIngestMaxAgeMs" type="number"/>
 <p class="hint">JSON-Keys: pv_w, bat_w, grid_w, soc, energy_pv_kwh, … Priorität: NATIVE → MQTT → CLOUD</p>
 </div>
-<div class="card" id="cloud"><strong>Hoymiles Cloud Fallback</strong>
+<div class="card" id="cloud" data-sub="Ersatzquelle, wenn HIT und MQTT-Eingang ausfallen. Nur lesen."><strong>Hoymiles-Cloud</strong>
 <label><input name="cloudEnabled" type="checkbox"/> aktiv (wenn HIT &amp; MQTT-in tot)</label>
 <label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
 <label>Cloud User / E-Mail</label><input name="cloudUser"/>
@@ -439,7 +593,16 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
 <p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
-<div class="card" id="knx"><strong>KNX IP — Datenpunkte</strong>
+<div class="card" id="gateway" data-sub="Andere Programme lesen den HIT über den ESP, statt selbst eine Verbindung aufzubauen."><strong>Modbus-Gateway</strong>
+<label><input name="gatewayEnabled" type="checkbox"/> Gateway einschalten</label>
+<label>Port</label><input name="gatewayPort" type="number" min="1" max="65535"/>
+<p class="hint">Der HIT erlaubt nur eine Verbindung, und die hält der ESP. Home Assistant, Node-RED oder andere Tools
+tragen statt des HIT die IP des ESP mit diesem Port ein; Register und Unit-ID bleiben gleich.
+Damit ersetzt der ESP den Modbus-Proxy in Home Assistant.</p>
+<p class="hint">Lesen geht immer. Schreiben reicht der ESP nur durch, wenn unter Akku-Steuerung „Schreiben an HIT erlauben“ aktiv ist,
+sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht im Protokoll.</p>
+</div>
+<div class="card" id="knx" data-sub="Messwerte als Gruppentelegramme über KNXnet/IP Routing."><strong>KNX</strong>
 <label><input name="knxEnabled" type="checkbox"/> aktiv (KNXnet/IP Routing Multicast 224.0.23.12:3671)</label>
 <label>Physische Sendeadresse (Quelle im Telegramm)</label>
 <input name="knxPa" placeholder="15.15.250" inputmode="decimal" autocomplete="off"/>
@@ -453,10 +616,9 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 </form>
 <div class="row">
 <button type="button" onclick="save()">Speichern</button>
-<button class="sec" type="button" onclick="poll()">Jetzt pollen</button>
-<button class="sec" type="button" onclick="load()">Neu laden</button>
+<button class="sec" type="button" onclick="load()">Änderungen verwerfen</button>
+<span class="meta" id="saved"></span>
 </div>
-<p class="sub">Consolinno: Proxy-IP vom Display, Port 1502, Unit 1. HIT Pflicht · Tasmota/MQTT/KNX optional.</p>
 </main></div>
 
 <script>
@@ -478,7 +640,7 @@ function applyThemeLang(s){
   document.documentElement.dataset.theme=s.uiTheme||'mint';
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
-  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+' · '+(s.ipShown||'');
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -511,18 +673,29 @@ function collectKnx(){
     out.push({ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0});
   } return out;
 }
-function hashScroll(){const id=location.hash.slice(1);if(!id)return;const el=document.getElementById(id);if(!el)return;document.querySelectorAll('.card').forEach(c=>c.style.outline='');el.style.outline='1px solid rgba(88,204,134,.45)';el.scrollIntoView({behavior:'smooth',block:'start'});}
-window.addEventListener('hashchange',hashScroll);
+function route(){
+  const cards=[...document.querySelectorAll('#f > .card')];
+  const id=location.hash.slice(1);
+  const cur=cards.find(c=>c.id===id)||cards[0];
+  cards.forEach(c=>c.classList.toggle('show',c===cur));
+  document.getElementById('cfgTitle').textContent=cur.querySelector('strong').textContent;
+  document.getElementById('cfgSub').textContent=cur.dataset.sub||'';
+  document.title=cur.querySelector('strong').textContent+' · HIT Proxy';
+  document.querySelectorAll('.side nav a').forEach(a=>{const on=a.getAttribute('href')==='/config#'+cur.id;
+    a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
 async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); refresh(); hashScroll();
+  renderKnx(meta.points||[], c.knxCh||[]); refresh(); route();
 }
 async function save(){const f=document.getElementById('f');const body={};
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
 body.knxCh=collectKnx();
-await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});alert('Gespeichert');refresh();}
+await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const m=document.getElementById('saved');m.textContent='Gespeichert';setTimeout(()=>m.textContent='',2500);refresh();}
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
 async function applyCtrl(){
   const f=document.getElementById('f');
@@ -537,19 +710,15 @@ async function probeTas(){
   const r=await(await fetch('/api/tasmota/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
   document.getElementById('probeBox').style.display='block';
   document.getElementById('probeSum').textContent=r.summary|| (r.ok?'OK':'Fehler');
-  document.getElementById('probeSum').style.color=r.ok?'#3dde7d':'#ff5a5a';
+  document.getElementById('probeSum').style.color=r.ok?'var(--acc)':'var(--fault)';
   document.getElementById('probeRaw').textContent=r.raw||'';
   if(r.ok){f.tasmotaEnabled.checked=true;refresh();}
 }
 async function refresh(){const s=await(await fetch('/api/status')).json();
 applyThemeLang(s);
-const chip=(ok,l)=>`<span class="chip"><span class="dot ${ok?'ok':'bad'}"></span>${l}</span>`;
-document.getElementById('live').innerHTML=`<div class="ip">${s.ipShown||'-'}${s.demoMode?' <span class="badge">DEMO</span>':''}</div>
-<div class="chips">${chip(s.hitOk,'HIT')}${chip(s.sunspecClient,'HEMS')}${chip(s.mqttOk,'MQTT')}${chip(s.mqttIngestOk,'MQ-IN')}${chip(s.cloudOk,'CLOUD')}${chip(s.knxOk,'KNX')}${chip(s.ethOk||s.wifiOk,'NET')}<span class="chip"><span class="dot ok"></span>SRC ${s.dataOrigin||'—'}</span></div>
-<div class="meta" style="margin-top:8px"><b>${s.pvW} W</b> PV · Bat ${s.batW} W · Netz ${s.gridW} W · SoC ${s.soc}% · ${Number(s.energyPvKwh).toFixed(1)} kWh</div>
-<pre>HIT Bezug ${Number(s.energyImpKwh||0).toFixed(1)} / Einsp. ${Number(s.energyExpKwh||0).toFixed(1)} kWh
-Tasmota ${s.tasmotaSensorKey||''}: ${s.tasmotaOk? (s.tasmotaPowerW+' W · E_in '+Number(s.tasmotaTotalKwh).toFixed(3)+' · E_out '+Number(s.tasmotaExportKwh).toFixed(3)+' kWh') : 'aus'}
-HIT ${s.hitHost||''} · ${s.status||''}</pre>`;}
+const chip=(st,l)=>`<span class="chip ${st}"><span class="dot"></span>${l}</span>`;
+document.getElementById('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+chip(s.sunspecClient?'on':'idle','Consolinno')+
+  chip((s.ethOk||s.wifiOk)?'on':'off',s.ipShown||'-')+(s.demoMode?'<span class="tag" style="margin:0;vertical-align:0">Demo</span>':'');}
 async function boot(){const s=await(await fetch('/api/status')).json();if(s.setupComplete===false)location.href='/setup';else load();}
 boot();setInterval(()=>{if(document.hidden)return;refresh();},5000);
 </script></body></html>
@@ -566,7 +735,6 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
 <div class="logo" style="border:0;margin-bottom:8px;padding:0">
   <div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy · Einrichtung</span></div>
 </div>
-<p class="brand">Assistent</p>
 <h1>Einrichtung</h1>
 <p class="sub">Hoymiles HIT → dieser Proxy → Consolinno</p>
 <div class="stepper" id="stepLabels">
@@ -708,22 +876,24 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 <style>.card{margin-bottom:12px}</style>
 </head><body><div class="app">
 <aside class="side">
-  <div class="logo"><div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy</span></div></div>
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
   <nav>
-    <div class="nav-grp">System</div>
-    <a href="/"><i>◉</i> Live</a>
-    <div class="nav-grp">Anbindung</div>
-    <a href="/config#hit"><i>⚡</i> HIT</a>
-    <a href="/config#netz"><i>⊕</i> Netzwerk</a>
-    <a href="/config#sunspec"><i>≈</i> SunSpec</a>
-    <a href="/config#knx"><i>▦</i> KNX</a>
-    <div class="nav-grp">Dienste</div>
-    <a href="/config#mqtt"><i>☁</i> MQTT / Cloud</a>
-    <a href="/config#tasmota"><i>⌀</i> Tasmota</a>
-    <a class="on" href="/debug"><i>≡</i> Protokoll</a>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <div class="nav-grp">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <div class="nav-grp">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
-    <a href="/config"><i>⚙</i> Einstellungen</a>
-    <a href="/ota"><i>↑</i> OTA</a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
+    <a class="on" aria-current="page" href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
@@ -744,7 +914,6 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 <main class="main">
 <div class="page-head">
   <div>
-    <p class="brand">Protokoll</p>
     <h1>§14a Write-Debug</h1>
     <p class="sub">SunSpec Model 123 Writes von Consolinno auf :1502</p>
   </div>
@@ -779,7 +948,7 @@ function applyThemeLang(s){
   document.documentElement.dataset.theme=s.uiTheme||'mint';
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
-  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+' · '+(s.ipShown||'');
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -812,47 +981,16 @@ refresh();setInterval(refresh,2000);
 </script></body></html>
 )HTML";
 
-bool passOk(const AppConfig &c, const String &pass) {
-  if (c.displayCode[0] && pass == c.displayCode) return true;
-  if (c.webPass[0] && pass == c.webPass) return true;
-  if (c.wifiPass[0] && pass == c.wifiPass) return true;
-  return false;
-}
-
 bool requireAuth(AsyncWebServerRequest *req) {
   auto &c = ConfigStore::get();
-  if (!req->hasHeader("Authorization")) {
-    req->requestAuthentication("HIT-Proxy");
-    return false;
-  }
-  String h = req->getHeader("Authorization")->value();
-  if (!h.startsWith("Basic ")) {
-    req->requestAuthentication("HIT-Proxy");
-    return false;
-  }
-  String b64 = h.substring(6);
-  b64.trim();
-  unsigned char decoded[128];
-  size_t olen = 0;
-  if (mbedtls_base64_decode(decoded, sizeof(decoded) - 1, &olen,
-                            (const unsigned char *)b64.c_str(), b64.length()) != 0) {
-    req->requestAuthentication("HIT-Proxy");
-    return false;
-  }
-  decoded[olen] = 0;
-  String cred = String((char *)decoded);
-  int colon = cred.indexOf(':');
-  if (colon < 0) {
-    req->requestAuthentication("HIT-Proxy");
-    return false;
-  }
-  String user = cred.substring(0, colon);
-  String pass = cred.substring(colon + 1);
-  if (user != c.webUser || !passOk(c, pass)) {
-    req->requestAuthentication("HIT-Proxy");
-    return false;
-  }
-  return true;
+  const char *user = c.webUser[0] ? c.webUser : "admin";
+  if (c.displayCode[0] && req->authenticate(user, c.displayCode)) return true;
+  if (c.webPass[0] && req->authenticate(user, c.webPass)) return true;
+  if (c.wifiPass[0] && req->authenticate(user, c.wifiPass)) return true;
+
+  Serial.printf("Auth fail user=%s\n", user);
+  req->requestAuthentication("HIT-Proxy", false); // Default wäre Digest
+  return false;
 }
 
 void applyJson(JsonObjectConst o, AppConfig &c) {
@@ -882,8 +1020,12 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["sunspecPort"].isNull()) c.sunspecPort = o["sunspecPort"];
   if (!o["sunspecUnitId"].isNull()) c.sunspecUnitId = o["sunspecUnitId"];
   if (!o["invertPowerSign"].isNull()) c.invertPowerSign = o["invertPowerSign"];
+  if (!o["gatewayEnabled"].isNull()) c.gatewayEnabled = o["gatewayEnabled"];
+  if (!o["gatewayPort"].isNull()) c.gatewayPort = o["gatewayPort"];
   if (!o["displayEnabled"].isNull()) c.displayEnabled = o["displayEnabled"];
   if (!o["displayBrightness"].isNull()) c.displayBrightness = o["displayBrightness"];
+  if (!o["displayPageS"].isNull()) c.displayPageMs = constrain(o["displayPageS"].as<uint32_t>(), 3u, 600u) * 1000;
+  if (!o["displayTimeoutS"].isNull()) c.displayTimeoutS = constrain(o["displayTimeoutS"].as<uint32_t>(), 0u, 36000u);
   if (!o["tasmotaEnabled"].isNull()) c.tasmotaEnabled = o["tasmotaEnabled"];
   if (!o["tasmotaMeterSpoof"].isNull()) c.tasmotaMeterSpoof = o["tasmotaMeterSpoof"];
   if (o["tasmotaHost"].is<const char *>()) strlcpy(c.tasmotaHost, o["tasmotaHost"], sizeof(c.tasmotaHost));
@@ -934,6 +1076,16 @@ void begin() {
   // Public stylesheet (no auth) — pages stay readable right after login
   server.on("/a.css", HTTP_GET, [](AsyncWebServerRequest *req) {
     req->send_P(200, "text/css", UI_CSS);
+  });
+  server.on("/f/barlow-400.woff", HTTP_GET, [](AsyncWebServerRequest *req) {
+    auto *r = req->beginResponse(200, "font/woff", FONT_BARLOW_400, FONT_BARLOW_400_LEN);
+    r->addHeader("Cache-Control", "public, max-age=31536000, immutable");
+    req->send(r);
+  });
+  server.on("/f/barlow-600.woff", HTTP_GET, [](AsyncWebServerRequest *req) {
+    auto *r = req->beginResponse(200, "font/woff", FONT_BARLOW_600, FONT_BARLOW_600_LEN);
+    r->addHeader("Cache-Control", "public, max-age=31536000, immutable");
+    req->send(r);
   });
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *req) {
@@ -1008,7 +1160,9 @@ void begin() {
               else c.wifiApMode = false;
               ConfigStore::save();
               gLive.setupScreen = false;
+              HitBus::applyConfig(c);
               HitClient::applyConfig(c);
+              ModbusGateway::applyConfig(c);
               HitControl::applyConfig(c);
               SunSpecServer::applyConfig(c);
               StatusDisplay::applyConfig(c);
@@ -1035,6 +1189,9 @@ void begin() {
     doc["ethOk"] = gLive.ethOk;
     doc["wifiOk"] = gLive.wifiOk;
     doc["sunspecClient"] = gLive.sunspecClient;
+    doc["gatewayEnabled"] = ConfigStore::get().gatewayEnabled;
+    doc["gatewayClients"] = gLive.gatewayClients;
+    doc["hitLink"] = ConfigStore::get().hitMode == HitLinkMode::RtuRs485 ? "RS485" : "TCP";
     doc["mqttOk"] = gLive.mqttOk;
     doc["mqttIngestOk"] = gLive.mqttIngestOk;
     doc["cloudOk"] = gLive.cloudOk;
@@ -1111,8 +1268,12 @@ void begin() {
     doc["sunspecPort"] = c.sunspecPort;
     doc["sunspecUnitId"] = c.sunspecUnitId;
     doc["invertPowerSign"] = c.invertPowerSign;
+    doc["gatewayEnabled"] = c.gatewayEnabled;
+    doc["gatewayPort"] = c.gatewayPort;
     doc["displayEnabled"] = c.displayEnabled;
     doc["displayBrightness"] = c.displayBrightness;
+    doc["displayPageS"] = c.displayPageMs / 1000;
+    doc["displayTimeoutS"] = c.displayTimeoutS;
     doc["tasmotaEnabled"] = c.tasmotaEnabled;
     doc["tasmotaMeterSpoof"] = c.tasmotaMeterSpoof;
     doc["tasmotaHost"] = c.tasmotaHost;
@@ -1188,7 +1349,9 @@ void begin() {
               if (doc["setupComplete"].isNull()) c.setupComplete = true;
               ConfigStore::save();
               gLive.setupScreen = !c.setupComplete;
+              HitBus::applyConfig(c);
               HitClient::applyConfig(c);
+              ModbusGateway::applyConfig(c);
               HitControl::applyConfig(c);
               SunSpecServer::applyConfig(c);
               StatusDisplay::applyConfig(c);

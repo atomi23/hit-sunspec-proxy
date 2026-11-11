@@ -26,7 +26,7 @@ idx = extract("INDEX_HTML")
 (OUT / "a.css").write_text(css, encoding="utf-8")
 
 mock_status = {
-    "version": "0.3.9",
+    "version": "0.4.0",
     "setupComplete": True,
     "demoMode": True,
     "ipShown": "192.0.2.80",
@@ -133,6 +133,10 @@ cfg = {
     "sunspecUnitId": 1,
     "displayEnabled": True,
     "displayBrightness": 80,
+    "displayPageS": 8,
+    "displayTimeoutS": 300,
+    "gatewayEnabled": True,
+    "gatewayPort": 502,
     "mqttEnabled": False,
     "cloudEnabled": False,
     "tasmotaEnabled": False,

@@ -1,5 +1,5 @@
 #include "HitClient.h"
-#include "ModbusTcpRaw.h"
+#include "HitBus.h"
 #include "DataSource.h"
 #include <math.h>
 
@@ -21,20 +21,20 @@ uint32_t asU32(uint16_t hi, uint16_t lo) {
 }
 
 bool rd(uint16_t addr, uint16_t qty, uint16_t *out) {
-  return ModbusTcpRaw::readInputRegs(local.hitHost, local.hitPort, local.hitUnitId, addr, qty, out);
+  return HitBus::readInput(addr, qty, out);
 }
 
-bool doPollTcp() {
-  // MPPT: typisch W / V*0.1 / I*0.01 je String ab Reg 29 (4×3)
+bool doPoll() {
+  // PV1..4 ab Reg 27, je String V×0.1 / I×0.01 / W (V2.8)
   uint16_t mppt[12] = {};
   uint16_t volt[3] = {}, ipb[14] = {}, freq[1] = {};
   uint16_t ePv[2] = {}, eImp[2] = {}, eExp[2] = {}, bat[2] = {};
   uint16_t batInfo[12] = {};
 
   bool ok = true;
-  ok &= rd(29, 12, mppt);  delay(60);
+  ok &= rd(27, 12, mppt);  delay(60);
   ok &= rd(62, 3, volt);    delay(40);
-  ok &= rd(70, 1, freq);    delay(40);
+  ok &= rd(66, 1, freq);    delay(40);
   ok &= rd(1804, 14, ipb);  delay(60);
   ok &= rd(2000, 2, ePv);   delay(40);
   ok &= rd(2040, 2, eImp);  delay(40);
@@ -51,9 +51,9 @@ bool doPollTcp() {
   }
 
   auto takeMppt = [&](int base, int32_t &w, float &v, float &a) {
-    w = int32_t(mppt[base]);
-    v = mppt[base + 1] * 0.1f;
-    a = asI16(mppt[base + 2]) * 0.01f;
+    v = mppt[base] * 0.1f;
+    a = asI16(mppt[base + 1]) * 0.01f;
+    w = int32_t(mppt[base + 2]);
   };
   takeMppt(0, gLive.pv1W, gLive.pv1V, gLive.pv1A);
   takeMppt(3, gLive.pv2W, gLive.pv2V, gLive.pv2A);
@@ -64,7 +64,9 @@ bool doPollTcp() {
   gLive.v1 = volt[0] * 0.1f;
   gLive.v2 = volt[1] * 0.1f;
   gLive.v3 = volt[2] * 0.1f;
-  gLive.freqHz = freq[0] > 4000 ? freq[0] * 0.01f : (freq[0] > 0 ? float(freq[0]) : 50.0f);
+  // 1807 Zähler / 66 Wechselrichter, beide Hz×100
+  auto plausibleHz = [](uint16_t raw) { return raw >= 4500 && raw <= 6500; };
+  gLive.freqHz = plausibleHz(ipb[3]) ? ipb[3] * 0.01f : (plausibleHz(freq[0]) ? freq[0] * 0.01f : 50.0f);
   gLive.i1 = asI16(ipb[0]) * 0.01f;
   gLive.i2 = asI16(ipb[1]) * 0.01f;
   gLive.i3 = asI16(ipb[2]) * 0.01f;
@@ -172,11 +174,7 @@ bool doDemo() {
 
 bool pollNow() {
   if (local.demoMode) return doDemo();
-  if (local.hitMode != HitLinkMode::Tcp) {
-    strlcpy(gLive.status, "RS485 bald", sizeof(gLive.status));
-    return false;
-  }
-  return doPollTcp();
+  return doPoll();
 }
 
 void loop() {

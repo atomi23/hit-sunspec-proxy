@@ -37,6 +37,10 @@ struct AppConfig {
   uint8_t sunspecUnitId = 1;
   bool invertPowerSign = false;
 
+  // Modbus-Gateway: andere Clients (z.B. Home Assistant) lesen den HIT über den ESP
+  bool gatewayEnabled = false;
+  uint16_t gatewayPort = 502;
+
   // HIT Schreib-Steuerung (optional, default AUS)
   bool hitWriteEnabled = false;
   bool sunspecWriteToHit = false; // Consolinno Model-123 → HIT APC/Akku
@@ -51,6 +55,7 @@ struct AppConfig {
   bool displayEnabled = true;
   uint8_t displayBrightness = 200;
   uint32_t displayPageMs = 8000;
+  uint16_t displayTimeoutS = 300; // Hintergrundlicht aus nach Inaktivität, 0 = immer an
 
   // Tasmota
   bool tasmotaEnabled = false;
@@ -105,4 +110,6 @@ namespace ConfigStore {
   bool save();
   void resetDefaults();
   void provisionFirstBoot();
+  // Löscht alle gespeicherten Einstellungen; danach neu starten → Erststart mit neuem Display-Code
+  void factoryReset();
 }

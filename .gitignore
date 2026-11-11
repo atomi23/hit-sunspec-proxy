@@ -17,3 +17,6 @@ secrets*
 # Keine echten Anlagen-Notizen
 *HANDOFF*
 *PRIVATE*
+
+# Schrift-Quellen, per tools/embed_fonts.py ladbar
+tools/fonts/
