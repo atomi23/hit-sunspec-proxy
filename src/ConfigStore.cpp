@@ -21,6 +21,13 @@ namespace ConfigStore {
 
 void resetDefaults() { cfg = AppConfig{}; }
 
+const char *newDisplayCode() {
+  randomPass(cfg.displayCode, sizeof(cfg.displayCode));
+  strlcpy(cfg.wifiPass, cfg.displayCode, sizeof(cfg.wifiPass)); // Geräte-WLAN = Zugangscode
+  save();
+  return cfg.displayCode;
+}
+
 void factoryReset() {
   prefs.clear();
   resetDefaults();
@@ -105,6 +112,7 @@ bool load() {
   cfg.displayEnabled = prefs.getBool("disp", cfg.displayEnabled);
   cfg.displayBrightness = prefs.getUChar("bright", cfg.displayBrightness);
   cfg.displayPageMs = prefs.getUInt("pageMs", cfg.displayPageMs);
+  cfg.displayAutoPage = prefs.getBool("dispAuto", cfg.displayAutoPage);
   cfg.displayTimeoutS = prefs.getUShort("dispTo", cfg.displayTimeoutS);
 
   cfg.tasmotaEnabled = prefs.getBool("tasena", cfg.tasmotaEnabled);
@@ -205,6 +213,7 @@ bool save() {
   prefs.putBool("disp", cfg.displayEnabled);
   prefs.putUChar("bright", cfg.displayBrightness);
   prefs.putUInt("pageMs", cfg.displayPageMs);
+  prefs.putBool("dispAuto", cfg.displayAutoPage);
   prefs.putUShort("dispTo", cfg.displayTimeoutS);
 
   prefs.putBool("tasena", cfg.tasmotaEnabled);

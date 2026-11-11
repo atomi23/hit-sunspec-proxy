@@ -2,6 +2,7 @@
 #include "LiveData.h"
 #include "AppConfig.h"
 #include <esp_task_wdt.h>
+#include <esp_system.h>
 
 namespace {
 bool ready = false;
@@ -75,6 +76,22 @@ void checkSoft(uint32_t maxNoSourceMs) {
     Serial.println("Watchdog soft: lange keine Quelle — restart");
     delay(200);
     ESP.restart();
+  }
+}
+
+const char *lastResetReason(bool en) {
+  switch (esp_reset_reason()) {
+    case ESP_RST_POWERON: return en ? "power on" : "Stromzufuhr";
+    case ESP_RST_SW: return en ? "software restart" : "Neustart per Software";
+    case ESP_RST_PANIC: return en ? "crash" : "Absturz";
+    case ESP_RST_TASK_WDT:
+    case ESP_RST_INT_WDT:
+    case ESP_RST_WDT: return en ? "watchdog" : "Watchdog";
+    case ESP_RST_BROWNOUT: return en ? "brownout" : "Unterspannung";
+    case ESP_RST_EXT: return en ? "reset pin" : "Reset-Taste";
+    case ESP_RST_USB: return en ? "USB" : "USB";
+    case ESP_RST_DEEPSLEEP: return en ? "deep sleep" : "Tiefschlaf";
+    default: return en ? "unknown" : "unbekannt";
   }
 }
 

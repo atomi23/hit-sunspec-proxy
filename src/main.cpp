@@ -26,6 +26,7 @@ void setup() {
   gLive.setupScreen = !cfg.setupComplete;
 
   Watchdog::begin(45);
+  Serial.printf("Letzter Neustart: %s\n", Watchdog::lastResetReason());
 
   NetBoot::begin(cfg);
   StatusDisplay::begin(cfg);

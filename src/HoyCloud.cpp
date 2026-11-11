@@ -2,6 +2,7 @@
 #include "LiveData.h"
 #include "Watchdog.h"
 #include <HTTPClient.h>
+#include <WiFi.h>
 #include <NetworkClientSecure.h>
 #include <ArduinoJson.h>
 #include <MD5Builder.h>
@@ -70,6 +71,8 @@ String md5Hex(const char *s) {
   return b.toString();
 }
 
+int lastHttpCode = 0;
+
 bool httpsPost(const String &url, const String &body, const char *auth, String &out) {
   NetworkClientSecure cli;
   cli.setCACert(HOY_CA);
@@ -80,6 +83,7 @@ bool httpsPost(const String &url, const String &body, const char *auth, String &
   if (auth && auth[0]) http.addHeader("Authorization", auth);
   Watchdog::feed();
   int code = http.POST(body);
+  lastHttpCode = code;
   Watchdog::feed();
   out = http.getString();
   http.end();
@@ -93,11 +97,11 @@ bool login() {
   const String host = local.cloudHost[0] ? local.cloudHost : "neapi.hoymiles.com";
   const String passMd5 = md5Hex(local.cloudPass);
 
-  // v0 + v3 Login versuchen
+  // v3 braucht Nonce aus pre-insp und ein anderes Hash-Verfahren; v0 mit MD5 funktioniert weiter
   const char *paths[] = {
       "/iam/pub/0/auth/login",
-      "/iam/pub/3/auth/login",
   };
+  bool answered = false;
   for (const char *path : paths) {
     JsonDocument req;
     req["user_name"] = local.cloudUser;
@@ -105,7 +109,10 @@ bool login() {
     String body;
     serializeJson(req, body);
     String resp;
-    if (!httpsPost("https://" + host + path, body, nullptr, resp)) continue;
+    const bool ok = httpsPost("https://" + host + path, body, nullptr, resp);
+    Serial.printf("Cloud login %s: HTTP %d, %u Bytes\n", path, lastHttpCode, unsigned(resp.length()));
+    if (lastHttpCode > 0) answered = true;
+    if (!ok) continue;
 
     JsonDocument doc;
     if (deserializeJson(doc, resp)) continue;
@@ -118,10 +125,14 @@ bool login() {
       tokenAt = millis();
       return true;
     }
+    Serial.printf("Cloud login abgelehnt: %.160s\n", resp.c_str()); // ohne Token, nur Fehlermeldung
   }
   token[0] = 0;
-  loginBlockedUntil = millis() + 5UL * 60UL * 1000UL;
-  strlcpy(gLive.status, "Cloud-Login fehlgeschlagen", sizeof(gLive.status));
+  // nur sperren, wenn Hoymiles geantwortet und abgelehnt hat; Netzwerkfehler sofort wieder versuchen
+  if (answered) {
+    loginBlockedUntil = millis() + 5UL * 60UL * 1000UL;
+    strlcpy(gLive.status, "Cloud-Login abgelehnt", sizeof(gLive.status));
+  }
   return false;
 }
 
@@ -180,7 +191,16 @@ bool fetchRealtime() {
 
   for (const char *path : paths) {
     String resp;
-    if (!httpsPost("https://" + host + path, body, token, resp)) continue;
+    const bool ok = httpsPost("https://" + host + path, body, token, resp);
+    static bool dumped = false;
+    if (!dumped && ok) {
+      dumped = true;
+      Serial.printf("Cloud data %s: HTTP %d, %u Bytes\n", path, lastHttpCode, unsigned(resp.length()));
+      for (size_t i = 0; i < resp.length(); i += 200) Serial.println(resp.substring(i, i + 200));
+    } else if (!ok) {
+      Serial.printf("Cloud data %s: HTTP %d\n", path, lastHttpCode);
+    }
+    if (!ok) continue;
     // Protobuf/binary → kein JSON
     if (resp.length() < 2 || (resp[0] != '{' && resp[0] != '[')) continue;
 
@@ -196,14 +216,17 @@ bool fetchRealtime() {
     float grid = pickF(data, "grid_power", "p_grid", "meter_power", "pgrid");
     float soc = pickF(data, "bms_soc", "soc", "battery_soc");
     float ePv = pickF(data, "total_eq", "energy_total", "eq", "pv_energy");
-    float eImp = pickF(data, "grid_in", "import_eq", "energy_imp");
-    float eExp = pickF(data, "grid_out", "export_eq", "energy_exp");
+    // Zählerstände in Wh unter reflux_station_data.grid_in_eq / grid_out_eq
+    JsonVariantConst reflux = data["reflux_station_data"];
+    float eImp = num(reflux["grid_in_eq"]["total_eq"]);
+    float eExp = num(reflux["grid_out_eq"]["total_eq"]);
 
     if (isnan(pv) && isnan(bat) && isnan(soc)) continue;
 
     if (!isnan(pv)) gLive.pvW = int32_t(lroundf(pv));
     if (!isnan(bat)) gLive.batW = int32_t(lroundf(bat));
-    if (!isnan(grid)) gLive.gridW = int32_t(lroundf(grid));
+    // S-Miles: grid_power negativ = Bezug (load = pv + bms − grid); bei uns ist Bezug positiv
+    if (!isnan(grid)) gLive.gridW = -int32_t(lroundf(grid));
     if (!isnan(soc)) {
       uint16_t s = uint16_t(lroundf(soc));
       if (s > 100 && s <= 1000) s = s / 10; // manchmal 0.1%
@@ -263,7 +286,15 @@ void loop() {
   }
   // Nur pollen wenn HIT nicht liefert (DataBroker entscheidet Anzeige)
   if (gLive.hitOk) return;
-  if (millis() < nextPoll) return;
+  // erst wenn das Netz ein paar Sekunden steht, sonst scheitert schon die Namensauflösung
+  static uint32_t netUpAt = 0;
+  if (!gLive.ethOk && WiFi.status() != WL_CONNECTED) {
+    netUpAt = 0;
+    return;
+  }
+  if (!netUpAt) netUpAt = millis() | 1;
+  if (millis() - netUpAt < 5000) return;
+  if (int32_t(millis() - nextPoll) < 0) return;
   nextPoll = millis() + max<uint32_t>(15000, local.cloudPollMs);
   pollNow();
 }

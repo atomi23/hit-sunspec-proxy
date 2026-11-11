@@ -20,6 +20,7 @@ static AppConfig pending;
 static volatile bool wifiDirty = false;
 static char activeSta[33] = "";
 static char activeStaPass[65] = "";
+static char activeApPass[65] = "";
 static bool activeAp = false;
 static bool activeWifi = false;
 
@@ -63,6 +64,7 @@ static void startWifi(const AppConfig &cfg) {
   activeWifi = cfg.wifiEnabled;
   strlcpy(activeSta, cfg.staSsid, sizeof(activeSta));
   strlcpy(activeStaPass, cfg.staPass, sizeof(activeStaPass));
+  strlcpy(activeApPass, cfg.wifiPass, sizeof(activeApPass));
   if (!cfg.wifiEnabled) {
     WiFi.mode(WIFI_OFF);
     activeAp = false;
@@ -102,7 +104,7 @@ void begin(const AppConfig &cfg) {
 void applyConfig(const AppConfig &cfg) {
   const bool apWanted = cfg.wifiApMode || !cfg.staSsid[0];
   if (cfg.wifiEnabled == activeWifi && apWanted == activeAp && strcmp(cfg.staSsid, activeSta) == 0 &&
-      strcmp(cfg.staPass, activeStaPass) == 0)
+      strcmp(cfg.staPass, activeStaPass) == 0 && strcmp(cfg.wifiPass, activeApPass) == 0)
     return;
   pending = cfg;
   wifiDirty = true;

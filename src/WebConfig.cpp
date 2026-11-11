@@ -14,6 +14,7 @@
 #include "KnxPoints.h"
 #include "DataSource.h"
 #include "UiFonts.h"
+#include "Watchdog.h"
 #include "HitBus.h"
 #include "NetBoot.h"
 #include "ModbusGateway.h"
@@ -537,6 +538,9 @@ Die neue Adresse steht danach auf dem Display (Seite System).</p>
 <label>Name des Geräte-WLANs</label><input name="wifiSsid"/>
 <label>Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input name="wifiPass" readonly/>
 <p class="hint">Ohne Heim-WLAN und ohne Kabel bleibt das Geräte-WLAN immer an, damit das Gerät erreichbar bleibt.</p>
+<button class="sec" type="button" onclick="newCode()" style="margin-top:12px">Neuen Zugangscode erzeugen</button>
+<p class="hint">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
+und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich neu anmelden. Das eigene Web-Passwort bleibt gültig.</p>
 <label>Benutzername</label><input name="webUser"/>
 <label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
@@ -548,7 +552,9 @@ Die neue Adresse steht danach auf dem Display (Seite System).</p>
 <p class="hint">Zeigt das Bild des Displays, alle 2 Sekunden neu, auch wenn das Licht am Gerät aus ist. Ein Klick wirkt wie Antippen.</p>
 <label><input name="displayEnabled" type="checkbox"/> Display eingeschaltet</label>
 <label>Helligkeit (0 bis 255)</label><input name="displayBrightness" type="number" min="0" max="255"/>
+<label><input name="displayAutoPage" type="checkbox"/> Seiten automatisch wechseln</label>
 <label>Seitenwechsel alle (Sekunden)</label><input name="displayPageS" type="number" min="3" max="600"/>
+<p class="hint">Aus: Die Live-Seite bleibt stehen. Antippen blättert, nach 30 Sekunden ohne Berührung geht es zurück zur Live-Seite.</p>
 <label>Ausschalten nach (Sekunden ohne Berührung, 0 = immer an)</label><input name="displayTimeoutS" type="number" min="0" max="36000"/>
 <p class="hint">Antippen schaltet das Display wieder ein. Bei einer Störung (HIT antwortet nicht) geht es von selbst an.</p>
 <label><input name="setupComplete" type="checkbox"/> Einrichtung abgeschlossen (QR-Code-Seite ausblenden)</label>
@@ -728,6 +734,12 @@ let ok=false;try{const r=await fetch('/api/config',{method:'POST',headers:{'Cont
 m.textContent=ok?'Gespeichert':'Speichern fehlgeschlagen';m.style.color=ok?'var(--acc)':'var(--fault)';
 if(ok){setTimeout(()=>m.textContent='',2500);load();}}
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
+async function newCode(){
+  if(!confirm('Neuen Zugangscode erzeugen? Der alte Code gilt dann nicht mehr. Der neue steht auf dem Display.'))return;
+  const r=await fetch('/api/access/new-code',{method:'POST'}).catch(()=>null);
+  alert(r&&r.ok?'Neuer Code ist aktiv. Bitte vom Display ablesen; gegebenenfalls neu anmelden.':'Fehler');
+  if(r&&r.ok)location.reload();
+}
 async function applyCtrl(){
   const f=document.getElementById('f');
   await save();
@@ -1081,6 +1093,7 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["gatewayPort"].isNull()) c.gatewayPort = o["gatewayPort"];
   if (!o["displayEnabled"].isNull()) c.displayEnabled = o["displayEnabled"];
   if (!o["displayBrightness"].isNull()) c.displayBrightness = o["displayBrightness"];
+  if (!o["displayAutoPage"].isNull()) c.displayAutoPage = o["displayAutoPage"];
   if (!o["displayPageS"].isNull()) c.displayPageMs = constrain(o["displayPageS"].as<uint32_t>(), 3u, 600u) * 1000;
   if (!o["displayTimeoutS"].isNull()) c.displayTimeoutS = constrain(o["displayTimeoutS"].as<uint32_t>(), 0u, 36000u);
   if (!o["tasmotaEnabled"].isNull()) c.tasmotaEnabled = o["tasmotaEnabled"];
@@ -1249,6 +1262,8 @@ void begin() {
     doc["ethOk"] = gLive.ethOk;
     doc["wifiOk"] = gLive.wifiOk;
     doc["sunspecClient"] = gLive.sunspecClient;
+    doc["resetReason"] = Watchdog::lastResetReason(ConfigStore::get().uiLang == UiLang::En);
+    doc["uptimeS"] = millis() / 1000;
     doc["gatewayEnabled"] = ConfigStore::get().gatewayEnabled;
     doc["gatewayClients"] = gLive.gatewayClients;
     doc["hitLink"] = ConfigStore::get().hitMode == HitLinkMode::RtuRs485 ? "RS485" : "TCP";
@@ -1336,6 +1351,7 @@ void begin() {
     doc["displayEnabled"] = c.displayEnabled;
     doc["displayBrightness"] = c.displayBrightness;
     doc["displayPageS"] = c.displayPageMs / 1000;
+    doc["displayAutoPage"] = c.displayAutoPage;
     doc["displayTimeoutS"] = c.displayTimeoutS;
     doc["tasmotaEnabled"] = c.tasmotaEnabled;
     doc["tasmotaMeterSpoof"] = c.tasmotaMeterSpoof;
@@ -1451,12 +1467,22 @@ void begin() {
                                  [fb, len](uint8_t *buf, size_t maxLen, size_t index) -> size_t {
                                    size_t n = min(maxLen, len - index);
                                    memcpy(buf, fb + index, n);
+                                   if (index + n >= len) StatusDisplay::frameDone();
                                    return n;
                                  });
     r->addHeader("X-Width", String(w));
     r->addHeader("X-Height", String(h));
     r->addHeader("Cache-Control", "no-store");
     req->send(r);
+  });
+
+  server.on("/api/access/new-code", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    ConfigStore::newDisplayCode();
+    auto &c = ConfigStore::get();
+    NetBoot::applyConfig(c);     // Geräte-WLAN mit neuem Passwort neu starten
+    StatusDisplay::applyConfig(c);
+    req->send(200, "application/json", "{\"ok\":true}");
   });
 
   server.on("/api/display/tap", HTTP_POST, [](AsyncWebServerRequest *req) {

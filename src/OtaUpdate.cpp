@@ -73,6 +73,13 @@ const char OTA_HTML[] PROGMEM = R"HTML(
 Schlägt das neue Image fehl, startet das Gerät mit der vorherigen Firmware.</p>
 </div>
 <div class="card">
+<h2>Neustart</h2>
+<p class="hint" style="margin-top:0">Läuft seit <b id="up">…</b>. Letzter Neustart: <b id="rr">…</b>.
+Ein Hardware-Watchdog startet das Gerät nach 45 s Hänger selbst neu, ein zweiter nach 15 Minuten ohne Datenquelle.</p>
+<div class="row"><button type="button" class="sec" onclick="restart()">Jetzt neu starten</button>
+<span class="meta" id="smsg"></span></div>
+</div>
+<div class="card">
 <h2>Werkseinstellungen</h2>
 <p class="hint" style="margin-top:0">Löscht alle Einstellungen: HIT-Adresse, WLAN, Passwörter, MQTT, KNX und Steuerung.
 Danach startet das Gerät wie neu, mit eigenem WLAN und einem neuen Zugangscode auf dem Display.</p>
@@ -111,7 +118,16 @@ async function saveUiPrefs(){
 }
 </script>
 <script>
-async function boot(){const s=await(await fetch('/api/status')).json();applyThemeLang(s);document.getElementById('ver').textContent=s.version||'?';}
+function dur(s){s=Number(s)||0;const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  return (d?d+' d ':'')+(d||h?h+' h ':'')+m+' min';}
+async function boot(){const s=await(await fetch('/api/status')).json();applyThemeLang(s);document.getElementById('ver').textContent=s.version||'?';
+  document.getElementById('up').textContent=dur(s.uptimeS);document.getElementById('rr').textContent=s.resetReason||'?';}
+async function restart(){
+  const m=document.getElementById('smsg');
+  const r=await fetch('/api/restart',{method:'POST'}).catch(()=>null);
+  m.textContent=r&&r.ok?'Startet neu, Seite lädt in 10 s neu.':'Fehler';
+  if(r&&r.ok)setTimeout(()=>location.reload(),10000);
+}
 async function go(){
   const file=document.getElementById('f').files[0];
   if(!file){alert('Bitte firmware.bin wählen');return;}
@@ -155,6 +171,13 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
   server.on("/ota", HTTP_GET, [requireAuth](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     req->send_P(200, "text/html", OTA_HTML);
+  });
+
+  server.on("/api/restart", HTTP_POST, [requireAuth](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    strlcpy(gLive.status, "Neustart", sizeof(gLive.status));
+    rebootPending = true; // loop() startet nach 1 s neu, die Antwort geht vorher raus
+    req->send(200, "application/json", "{\"ok\":true}");
   });
 
   server.on("/api/factory-reset", HTTP_POST, [requireAuth](AsyncWebServerRequest *req) {

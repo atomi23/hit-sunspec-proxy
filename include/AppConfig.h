@@ -57,6 +57,7 @@ struct AppConfig {
   // Display
   bool displayEnabled = true;
   uint8_t displayBrightness = 200;
+  bool displayAutoPage = false;   // aus: Live-Seite bleibt stehen, Antippen blättert
   uint32_t displayPageMs = 8000;
   uint16_t displayTimeoutS = 300; // Hintergrundlicht aus nach Inaktivität, 0 = immer an
 
@@ -115,4 +116,6 @@ namespace ConfigStore {
   void provisionFirstBoot();
   // Löscht alle gespeicherten Einstellungen; danach neu starten → Erststart mit neuem Display-Code
   void factoryReset();
+  // Neuer zufälliger Zugangscode (Login + Passwort des Geräte-WLANs), sofort gespeichert
+  const char *newDisplayCode();
 }

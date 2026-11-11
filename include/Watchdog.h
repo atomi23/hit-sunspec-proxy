@@ -6,4 +6,6 @@ namespace Watchdog {
   void feed();
   // Soft: zu lange ohne gültige Datenquelle → geordneter Neustart
   void checkSoft(uint32_t maxNoSourceMs = 15UL * 60UL * 1000UL);
+  // Grund des letzten Neustarts, Klartext für Web und Log
+  const char *lastResetReason(bool en = false);
 }

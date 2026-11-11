@@ -1,4 +1,4 @@
-﻿#include "StatusDisplay.h"
+#include "StatusDisplay.h"
 
 #if defined(BOARD_T_CONNECT_PRO)
 #include "LgfxBoard.h"
@@ -16,6 +16,10 @@ static uint32_t nextDraw = 0;
 static uint32_t lastActivity = 0;
 static bool asleep = false;
 static volatile bool tapRequested = false;
+// fertige Bilder für die Web-Ansicht; der Zeichenpuffer selbst ist mitten im Neuzeichnen unvollständig
+static uint8_t *snap = nullptr;
+static size_t snapLen = 0;
+static volatile uint32_t snapLockedAt = 0; // während einer Übertragung nicht überschreiben
 static AppConfig local;
 
 static lgfx::PointerWrapper wHero, wVal, wLbl, wSm;
@@ -79,6 +83,16 @@ static void fmtDec(char *out, size_t n, double v, int digits) {
   if (!en()) for (char *p = out; *p; p++) if (*p == '.') *p = ',';
 }
 
+static const char *originText(DataOrigin o) {
+  switch (o) {
+    case DataOrigin::Native: return L("HIT direkt", "HIT direct");
+    case DataOrigin::Mqtt: return "MQTT";
+    case DataOrigin::Cloud: return "Hoymiles-Cloud";
+    case DataOrigin::Demo: return "Demo";
+    default: return L("keine", "none");
+  }
+}
+
 static void fmtAge(char *out, size_t n, uint32_t sinceMs) {
   if (!sinceMs) { snprintf(out, n, "%s", L("keine Daten", "no data")); return; }
   uint32_t s = (millis() - sinceMs) / 1000;
@@ -132,11 +146,19 @@ static void footer() {
     else gfx->fillCircle(cx, 211, 2, P.rule);
   }
   char age[24];
-  fmtAge(age, sizeof(age), gLive.lastHitMs ? gLive.lastHitMs : gLive.lastMapMs);
+  uint32_t dataAt = 0; // Alter der Messwerte aus der aktiven Quelle
+  switch (gLive.dataOrigin) {
+    case DataOrigin::Native:
+    case DataOrigin::Demo: dataAt = gLive.lastHitMs; break;
+    case DataOrigin::Mqtt: dataAt = gLive.lastMqttIngestMs; break;
+    case DataOrigin::Cloud: dataAt = gLive.lastCloudMs; break;
+    default: break;
+  }
+  fmtAge(age, sizeof(age), dataAt);
   text(fSm, P.dim, P.bg, middle_right, age, 464, 211);
   if (gLive.dataOrigin != DataOrigin::Native && gLive.dataOrigin != DataOrigin::None) {
     char src[40];
-    snprintf(src, sizeof(src), "%s %s", L("Quelle", "Source"), dataOriginLabel(gLive.dataOrigin));
+    snprintf(src, sizeof(src), "%s %s", L("Quelle", "Source"), originText(gLive.dataOrigin));
     text(fSm, P.warn, P.bg, middle_left, src, 16, 211);
   }
 }
@@ -259,7 +281,7 @@ static void drawPageSystem() {
   card(12, 30, 456, 170);
   char v[48], age[24];
 
-  cell(28, 42, L("Datenquelle", "Data source"), dataOriginLabel(gLive.dataOrigin),
+  cell(28, 42, L("Datenquelle", "Data source"), originText(gLive.dataOrigin),
        gLive.dataOrigin == DataOrigin::Native ? P.acc : P.warn);
   fmtAge(age, sizeof(age), gLive.lastHitMs);
   snprintf(v, sizeof(v), gLive.hitFails ? L("%s, %lu Fehler", "%s, %lu errors") : "%s", age,
@@ -327,6 +349,8 @@ static void redraw() {
     else drawPageSystem();
   }
   if (buffered) canvas.pushSprite(0, 0);
+  const bool locked = snapLockedAt && millis() - snapLockedAt < 5000;
+  if (snap && !locked) memcpy(snap, canvas.getBuffer(), snapLen);
 }
 
 static void allocCanvas() {
@@ -341,6 +365,11 @@ static void allocCanvas() {
   }
   buffered = canvas.getBuffer() != nullptr;
   gfx = buffered ? static_cast<lgfx::LovyanGFX *>(&canvas) : &panel;
+  if (buffered && canvas.getColorDepth() == 16) {
+    snapLen = size_t(w) * h * 2;
+    snap = static_cast<uint8_t *>(heap_caps_malloc(snapLen, MALLOC_CAP_SPIRAM));
+    if (snap) memset(snap, 0, snapLen);
+  }
   Serial.printf("Display: %s\n", buffered ? (canvas.getColorDepth() == 16 ? "Puffer 16 Bit" : "Puffer 8 Bit")
                                           : "ohne Puffer");
 }
@@ -389,12 +418,15 @@ void applyConfig(const AppConfig &cfg) {
 }
 
 const uint8_t *frame(size_t &len, int &w, int &h) {
-  if (!ready || !buffered || canvas.getColorDepth() != 16) return nullptr;
+  if (!ready || !snap) return nullptr;
   w = canvas.width();
   h = canvas.height();
-  len = size_t(w) * h * 2;
-  return static_cast<const uint8_t *>(canvas.getBuffer());
+  len = snapLen;
+  snapLockedAt = millis() | 1;
+  return snap;
 }
+
+void frameDone() { snapLockedAt = 0; }
 
 void requestTap() { tapRequested = true; }
 
@@ -436,9 +468,12 @@ void loop() {
   }
   // auch mit ausgeschaltetem Licht weiterzeichnen: die Web-Live-Ansicht liest den Puffer
 
-  if (millis() >= nextPage) {
+  if (local.displayAutoPage && millis() >= nextPage) {
     nextPage = millis() + local.displayPageMs;
     page = (page + 1) % PAGES;
+    redraw();
+  } else if (!local.displayAutoPage && page != 0 && millis() - lastActivity > 30000) {
+    page = 0; // ohne Automatik nach dem Blättern zurück zur Live-Seite
     redraw();
   } else if (millis() >= nextDraw) {
     nextDraw = millis() + 1000;
@@ -456,6 +491,7 @@ void loop() {}
 void setBrightness(uint8_t) {}
 void applyConfig(const AppConfig &) {}
 const uint8_t *frame(size_t &, int &, int &) { return nullptr; }
+void frameDone() {}
 void requestTap() {}
 }
 

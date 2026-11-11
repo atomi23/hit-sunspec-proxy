@@ -33,10 +33,8 @@ void reconcile() {
     return;
   }
 
+  // abgefragt wird nur in HoyCloud::loop() im eingestellten Takt; reconcile() läuft in jeder Schleife
   if (cfg.cloudEnabled) {
-    if (!HoyCloud::fresh(cfg.cloudMaxAgeMs)) {
-      HoyCloud::pollNow();
-    }
     if (HoyCloud::fresh(cfg.cloudMaxAgeMs)) {
       gLive.dataOrigin = DataOrigin::Cloud;
       strlcpy(gLive.status, "Cloud Fallback", sizeof(gLive.status));
