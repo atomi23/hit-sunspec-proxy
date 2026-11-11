@@ -7,4 +7,7 @@ namespace StatusDisplay {
   void loop();
   void setBrightness(uint8_t level);
   void applyConfig(const AppConfig &cfg);
+  // Web-Live-Ansicht: Bildpuffer RGB565 (Byte-Reihenfolge wie am Panel: High-Byte zuerst), nullptr ohne Puffer
+  const uint8_t *frame(size_t &len, int &w, int &h);
+  void requestTap(); // wie Antippen; wird im loop() ausgeführt
 }

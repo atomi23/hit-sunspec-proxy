@@ -536,6 +536,10 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 </div>
 <div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite."><strong>Display</strong>
+<label>Live-Ansicht</label>
+<canvas id="scr" width="480" height="222" title="Klicken = nächste Seite"
+ style="display:block;width:100%;max-width:480px;aspect-ratio:480/222;border-radius:14px;background:#000;cursor:pointer"></canvas>
+<p class="hint">Zeigt das Bild des Displays, alle 2 Sekunden neu, auch wenn das Licht am Gerät aus ist. Ein Klick wirkt wie Antippen.</p>
 <label><input name="displayEnabled" type="checkbox"/> Display eingeschaltet</label>
 <label>Helligkeit (0 bis 255)</label><input name="displayBrightness" type="number" min="0" max="255"/>
 <label>Seitenwechsel alle (Sekunden)</label><input name="displayPageS" type="number" min="3" max="600"/>
@@ -686,6 +690,24 @@ function route(){
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
+async function drawScreen(){
+  const card=document.getElementById('display');
+  if(!card||!card.classList.contains('show')||document.hidden)return;
+  try{
+    const r=await fetch('/api/screen',{cache:'no-store'});if(!r.ok)return;
+    const w=Number(r.headers.get('X-Width'))||480,h=Number(r.headers.get('X-Height'))||222;
+    const b=new Uint8Array(await r.arrayBuffer());
+    const cv=document.getElementById('scr');if(cv.width!==w){cv.width=w;cv.height=h;}
+    const ctx=cv.getContext('2d'),img=ctx.createImageData(w,h),d=img.data;
+    for(let i=0,j=0;i+1<b.length;i+=2,j+=4){const v=(b[i]<<8)|b[i+1];
+      d[j]=((v>>11)&31)*255/31;d[j+1]=((v>>5)&63)*255/63;d[j+2]=(v&31)*255/31;d[j+3]=255;}
+    ctx.putImageData(img,0,0);
+  }catch(e){}
+}
+setInterval(drawScreen,2000);
+window.addEventListener('hashchange',drawScreen);
+document.getElementById('scr').addEventListener('click',async()=>{
+  await fetch('/api/display/tap',{method:'POST'});setTimeout(drawScreen,400);});
 async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
@@ -695,7 +717,10 @@ async function load(){
 async function save(){const f=document.getElementById('f');const body={};
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
 body.knxCh=collectKnx();
-await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const m=document.getElementById('saved');m.textContent='Gespeichert';setTimeout(()=>m.textContent='',2500);refresh();}
+const m=document.getElementById('saved');
+let ok=false;try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});ok=r.ok;}catch(e){}
+m.textContent=ok?'Gespeichert':'Speichern fehlgeschlagen';m.style.color=ok?'var(--acc)':'var(--fault)';
+if(ok){setTimeout(()=>m.textContent='',2500);load();}}
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
 async function applyCtrl(){
   const f=document.getElementById('f');
@@ -993,6 +1018,27 @@ bool requireAuth(AsyncWebServerRequest *req) {
   return false;
 }
 
+// Der Body kommt in mehreren TCP-Stücken; erst das letzte liefert den ganzen Text.
+// _tempObject gibt AsyncWebServer beim Ende des Requests selbst frei.
+const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
+  constexpr size_t MAX_BODY = 16384;
+  if (total > MAX_BODY) {
+    if (index == 0) req->send(413, "application/json", "{\"ok\":false,\"error\":\"body too large\"}");
+    return nullptr;
+  }
+  if (index == 0) {
+    req->_tempObject = calloc(total + 1, 1);
+    if (!req->_tempObject) {
+      req->send(500, "application/json", "{\"ok\":false,\"error\":\"no memory\"}");
+      return nullptr;
+    }
+  }
+  if (!req->_tempObject || index + len > total) return nullptr;
+  memcpy(static_cast<char *>(req->_tempObject) + index, data, len);
+  if (index + len < total) return nullptr;
+  return static_cast<const char *>(req->_tempObject);
+}
+
 void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["useEthernet"].isNull()) c.useEthernet = o["useEthernet"];
   if (!o["wifiEnabled"].isNull()) c.wifiEnabled = o["wifiEnabled"];
@@ -1143,10 +1189,12 @@ void begin() {
   });
 
   server.on("/api/setup/finish", HTTP_POST, [](AsyncWebServerRequest *req) {}, NULL,
-            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
+            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
+              const char *body = fullBody(req, data, len, index, total);
+              if (!body) return;
               if (!requireAuth(req)) return;
               JsonDocument doc;
-              if (deserializeJson(doc, data, len)) {
+              if (deserializeJson(doc, body)) {
                 req->send(400, "application/json", "{\"ok\":false,\"error\":\"bad json\"}");
                 return;
               }
@@ -1336,11 +1384,13 @@ void begin() {
   });
 
   server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest *req) {}, NULL,
-            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
+            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
+              const char *body = fullBody(req, data, len, index, total);
+              if (!body) return;
               if (!requireAuth(req)) return;
               JsonDocument doc;
-              if (deserializeJson(doc, data, len)) {
-                req->send(400, "text/plain", "bad json");
+              if (deserializeJson(doc, body)) {
+                req->send(400, "application/json", "{\"ok\":false,\"error\":\"bad json\"}");
                 return;
               }
               auto &c = ConfigStore::get();
@@ -1372,6 +1422,33 @@ void begin() {
     req->send(200, "application/json", s);
   });
 
+  server.on("/api/screen", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    size_t len = 0;
+    int w = 0, h = 0;
+    const uint8_t *fb = StatusDisplay::frame(len, w, h);
+    if (!fb) {
+      req->send(503, "text/plain", "kein Bildpuffer");
+      return;
+    }
+    auto *r = req->beginResponse("application/octet-stream", len,
+                                 [fb, len](uint8_t *buf, size_t maxLen, size_t index) -> size_t {
+                                   size_t n = min(maxLen, len - index);
+                                   memcpy(buf, fb + index, n);
+                                   return n;
+                                 });
+    r->addHeader("X-Width", String(w));
+    r->addHeader("X-Height", String(h));
+    r->addHeader("Cache-Control", "no-store");
+    req->send(r);
+  });
+
+  server.on("/api/display/tap", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    StatusDisplay::requestTap();
+    req->send(200, "application/json", "{\"ok\":true}");
+  });
+
   server.on("/api/poll", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     HitClient::pollNow();
@@ -1383,10 +1460,12 @@ void begin() {
   });
 
   server.on("/api/tasmota/probe", HTTP_POST, [](AsyncWebServerRequest *req) {}, NULL,
-            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t, size_t) {
+            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
+              const char *body = fullBody(req, data, len, index, total);
+              if (!body) return;
               if (!requireAuth(req)) return;
               JsonDocument in;
-              if (len > 0) deserializeJson(in, data, len);
+              deserializeJson(in, body);
               auto &c = ConfigStore::get();
               // temporär Host aus Request nutzen (ohne Speichern), dann zurück
               AppConfig tmp = c;

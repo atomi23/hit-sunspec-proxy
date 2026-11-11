@@ -15,6 +15,7 @@ static uint32_t nextPage = 0;
 static uint32_t nextDraw = 0;
 static uint32_t lastActivity = 0;
 static bool asleep = false;
+static volatile bool tapRequested = false;
 static AppConfig local;
 
 static lgfx::PointerWrapper wHero, wVal, wLbl, wSm;
@@ -383,8 +384,19 @@ void applyConfig(const AppConfig &cfg) {
   if (!ready) return;
   wake();
   setBrightness(cfg.displayBrightness);
+  nextPage = millis() + cfg.displayPageMs;
   redraw();
 }
+
+const uint8_t *frame(size_t &len, int &w, int &h) {
+  if (!ready || !buffered || canvas.getColorDepth() != 16) return nullptr;
+  w = canvas.width();
+  h = canvas.height();
+  len = size_t(w) * h * 2;
+  return static_cast<const uint8_t *>(canvas.getBuffer());
+}
+
+void requestTap() { tapRequested = true; }
 
 void loop() {
   if (!ready) return;
@@ -402,7 +414,9 @@ void loop() {
   static bool touchDown = false;
   int32_t x, y;
   bool touched = panel.getTouch(&x, &y);
-  if (touched && !touchDown) {
+  const bool webTap = tapRequested;
+  tapRequested = false;
+  if ((touched && !touchDown) || webTap) {
     if (asleep) {
       wake(); // erstes Antippen weckt nur
     } else {
@@ -420,7 +434,7 @@ void loop() {
     asleep = true;
     panel.setBrightness(0);
   }
-  if (asleep) return;
+  // auch mit ausgeschaltetem Licht weiterzeichnen: die Web-Live-Ansicht liest den Puffer
 
   if (millis() >= nextPage) {
     nextPage = millis() + local.displayPageMs;
@@ -441,6 +455,8 @@ void begin(const AppConfig &) {}
 void loop() {}
 void setBrightness(uint8_t) {}
 void applyConfig(const AppConfig &) {}
+const uint8_t *frame(size_t &, int &, int &) { return nullptr; }
+void requestTap() {}
 }
 
 #endif

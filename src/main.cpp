@@ -54,6 +54,8 @@ void setup() {
     Serial.printf("SETUP AP: SSID \"%s\"\n", cfg.wifiSsid);
   }
   if (cfg.demoMode) Serial.println("*** DEMO MODE — kein HIT ***");
+  Serial.printf("Display: Seitenwechsel %lus, aus nach %us\n", (unsigned long)(cfg.displayPageMs / 1000),
+                cfg.displayTimeoutS);
   if (cfg.hitWriteEnabled) Serial.println("HIT Write: AN");
   Serial.printf("SunSpec: %s:%u\n", gLive.ipShown, cfg.sunspecPort);
   if (cfg.hitMode == HitLinkMode::RtuRs485)
