@@ -44,6 +44,16 @@ const char UI_CSS[] PROGMEM = R"CSS(
   --bg:#1b1615;--side:#161211;--plate:#241d1c;--plate2:#2c2422;--well:#1f1918;--rule:#382e2b;--rule2:#4a3d39;
   --ink:#f3ece6;--dim:#a39389;--acc:#f0a35e;--on-acc:#2e1806;--warn:#f1c453;
 }
+:root[data-theme=light]{
+  color-scheme:light;
+  --bg:#f2f3ef;--side:#ffffff;--plate:#ffffff;--plate2:#eceee9;--well:#f6f7f4;--rule:#dfe3dc;--rule2:#c9cfc6;
+  --ink:#1a1f22;--dim:#69736c;--acc:#1f9d6b;--on-acc:#ffffff;
+  --sun:#c98a00;--grid:#2f7fc4;--warn:#c76f12;--fault:#d14434;--home:#7a5bc7;
+}
+:root[data-theme=light] .panel,:root[data-theme=light] .card,:root[data-theme=light] .flow,:root[data-theme=light] .chip{
+  box-shadow:0 1px 2px rgba(20,30,25,.06),0 4px 14px rgba(20,30,25,.05)}
+:root[data-theme=light] .side{border-right:1px solid var(--rule)}
+:root[data-theme=light] .side nav a:hover{background:rgba(0,0,0,.04)}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;font:400 15px/1.5 var(--font);color:var(--ink);background:var(--bg);
   font-variant-numeric:tabular-nums lining-nums;-webkit-font-smoothing:antialiased}
@@ -242,6 +252,7 @@ const char DASH_HTML[] PROGMEM = R"HTML(
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
+        <option value="light">Hell</option>
       </select>
     </div>
   </div>
@@ -473,6 +484,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
 .legend .chip{cursor:pointer;user-select:none}
 .legend .chip.off{opacity:.4}
 .legend .chip i{width:10px;height:10px;border-radius:3px;display:inline-block}
+:root{--c-pv:#f59e3b;--c-house:#ef6f62;--c-imp:#b39ddb;--c-exp:#5fd38d;--c-chg:#f1c453;--c-dis:#5aa9f0}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
 .tabs button{padding:6px 14px;font-size:14px}
 .tabs button:not(.on){background:var(--plate2);color:var(--ink)}
@@ -517,6 +529,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
+        <option value="light">Hell</option>
       </select>
     </div>
   </div>
@@ -534,6 +547,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   <div class="legend" id="leg"></div>
   <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden"></svg>
   <div class="read" id="r24"></div>
+  <p class="hint" data-t="bal">Oberhalb der Null-Linie liefern PV, Netzbezug und Akku Energie, unterhalb nehmen Haus, Einspeisung und Akku-Laden sie ab.</p>
 </section>
 
 <section class="panel" style="margin-top:16px">
@@ -567,22 +581,24 @@ async function saveUiPrefs(){
 <script>
 const TX={
  de:{title:'Verlauf',sub:'Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.',h24:'Letzte 24 Stunden',hE:'Energie',
-   pv:'PV',house:'Haus',grid:'Netz',bat:'Akku',days:'Tage',months:'Monate',years:'Jahre',total:'Gesamt',
-   gen:'Erzeugt',use:'Verbraucht',imp:'Bezug',exp:'Einspeisung',chg:'Akku geladen',dis:'Akku entladen',
+   pv:'PV',house:'Haus',use:'Haus',grid:'Netz',bat:'Akku',days:'Tage',months:'Monate',years:'Jahre',total:'Gesamt',
+   gen:'Erzeugt',use:'Verbraucht',imp:'Bezug',exp:'Einspeisung',chg:'Akku laden',dis:'Akku entladen',
    aut:'Autarkie',self:'Eigenverbrauch',none:'Noch keine Daten. Der Verlauf beginnt, sobald der ESP Messwerte und die Uhrzeit hat.',
    since:d=>'Aufzeichnung seit '+d+'. Erzeugung, Bezug und Einspeisung aus den HIT-Zählern, Verbrauch und Akku vom ESP aufsummiert.',
-   cur:'Laufender Zeitraum'},
+   cur:'Laufender Zeitraum',
+   bal:'Oberhalb der Null-Linie liefern PV, Netzbezug und Akku Energie, unterhalb nehmen Haus, Einspeisung und Akku-Laden sie ab.'},
  en:{title:'History',sub:'Power over the last 24 hours and energy per day, month and year.',h24:'Last 24 hours',hE:'Energy',
-   pv:'Solar',house:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
-   gen:'Produced',use:'Consumed',imp:'Import',exp:'Export',chg:'Battery charged',dis:'Battery discharged',
+   pv:'Solar',house:'Home',use:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
+   gen:'Produced',use:'Consumed',imp:'Import',exp:'Export',chg:'Battery charge',dis:'Battery discharge',
    aut:'Self-sufficiency',self:'Self-consumption',none:'No data yet. History starts once the ESP has readings and the time.',
    since:d=>'Recording since '+d+'. Production, import and export from the HIT counters; consumption and battery summed by the ESP.',
-   cur:'Current period'}
+   cur:'Current period',
+   bal:'Above zero solar, grid import and battery supply energy; below zero home, export and battery charging take it.'}
 };
 const T=k=>(TX[LANG]||TX.de)[k];
 const $=id=>document.getElementById(id);
 const nf=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
-const SER=[['pv','var(--sun)'],['house','var(--home)'],['grid','var(--grid)'],['bat','var(--acc)']];
+const SER=[['pv','var(--c-pv)'],['use','var(--c-house)'],['imp','var(--c-imp)'],['exp','var(--c-exp)'],['chg','var(--c-chg)'],['dis','var(--c-dis)']];
 const hidden=new Set();
 let D24=null;
 const X0=56,X1=944,Y0=16,Y1=264;
@@ -605,12 +621,14 @@ function draw24(){
   g+=`<line class="zero" x1="${X0}" x2="${X1}" y1="${y(0)}" y2="${y(0)}"/>`;
   for(let i=0;i<n;i++){const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
     if(ts.getMinutes()<5&&ts.getHours()%3===0)g+=`<text x="${x(i)}" y="${Y1+20}" text-anchor="middle">${String(ts.getHours()).padStart(2,'0')}:00</text>`;}
-  SER.slice().reverse().forEach(([k,c])=>{
-    if(hidden.has(k))return;let d='',pen=false;
-    D24[k].forEach((v,i)=>{if(v==null){pen=false;return;}d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);pen=true;});
-    if(k==='pv'&&d){g+=`<path d="${d}L${x(n-1)} ${y(0)}L${x(D24.pv.findIndex(v=>v!=null))} ${y(0)}Z" style="fill:${c};opacity:.12"/>`;}
-    g+=`<path class="ln" d="${d}" style="stroke:${c}"/>`;
-  });
+  const sum=k=>D24[k].reduce((a,v)=>a+Math.abs(v||0),0);
+  const order=SER.filter(([k])=>!hidden.has(k)).sort((a,b)=>sum(b[0])-sum(a[0]));
+  const segs=k=>{const out=[];let cur=null;D24[k].forEach((v,i)=>{if(v==null){cur=null;return;}if(!cur){cur=[];out.push(cur);}cur.push([x(i),y(v)]);});return out;};
+  const y0=y(0).toFixed(1);
+  order.forEach(([k,c])=>{segs(k).forEach(p=>{if(p.length<2)return;
+    g+=`<path d="M${p[0][0].toFixed(1)} ${y0}`+p.map(q=>`L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join('')+`L${p[p.length-1][0].toFixed(1)} ${y0}Z" style="fill:${c};opacity:.28"/>`;});});
+  order.forEach(([k,c])=>{segs(k).forEach(p=>{
+    g+=`<path class="ln" d="`+p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('')+`" style="stroke:${c}"/>`;});});
   g+=`<line id="cur" class="cur" x1="0" x2="0" y1="${Y0}" y2="${Y1}" style="display:none"/>`;
   svg.innerHTML=g;
   svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*960/r.width;
@@ -622,13 +640,18 @@ function draw24(){
   svg.onmouseleave=()=>{$('cur').style.display='none';$('r24').textContent='';};
 }
 
-const BSER=[['pv','var(--sun)','gen'],['house','var(--home)','use'],['imp','var(--grid)','imp'],['exp','var(--grid)','exp',.4]];
+const BSER=[['pv','var(--c-pv)','gen'],['house','var(--c-house)','use'],['imp','var(--c-imp)','imp'],['exp','var(--c-exp)','exp'],['chg','var(--c-chg)','chg'],['dis','var(--c-dis)','dis']];
+const hiddenB=new Set();
 let UNIT='day',BARS=null;
 function tabs(){
   const u=[['day','days'],['month','months'],['year','years'],['total','total']];
   $('tabs').innerHTML=u.map(([k,l])=>`<button type="button" class="${UNIT===k?'on':''}" data-u="${k}">${T(l)}</button>`).join('');
   $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{UNIT=b.dataset.u;tabs();loadBars();});
-  $('legB').innerHTML=BSER.map(([k,c,l,o])=>`<span class="chip on"><i style="background:${c};opacity:${o||1}"></i>${T(l)}</span>`).join('');
+  legendB();
+}
+function legendB(){
+  $('legB').innerHTML=BSER.map(([k,c,l])=>`<span class="chip ${hiddenB.has(k)?'off':'on'}" data-k="${k}"><i style="background:${c}"></i>${T(l)}</span>`).join('');
+  $('legB').querySelectorAll('.chip').forEach(e=>e.onclick=()=>{const k=e.dataset.k;hiddenB.has(k)?hiddenB.delete(k):hiddenB.add(k);legendB();if(BARS)drawBars();});
 }
 function label(k){
   if(UNIT==='day'){const p=k.split('-');return p[2]+'.'+p[1]+'.';}
@@ -637,17 +660,18 @@ function label(k){
 }
 function drawBars(){
   const svg=$('cb');let rows=BARS.bars||[];
-  if(UNIT==='total'){const tt=BARS.total||{};rows=[{k:T('total'),pv:+tt.pv,imp:+tt.imp,exp:+tt.exp,house:null}];}
+  if(UNIT==='total'){const tt=BARS.total||{};rows=[{k:T('total'),pv:+tt.pv,imp:+tt.imp,exp:+tt.exp,house:null,chg:null,dis:null}];}
   if(!rows.length){svg.innerHTML=`<text x="480" y="140" text-anchor="middle">${T('none')}</text>`;$('kpis').innerHTML='';return;}
-  let hi=0;rows.forEach(r=>BSER.forEach(([k])=>{if(r[k]!=null)hi=Math.max(hi,+r[k]);}));if(hi<=0)hi=1;
+  const vis=BSER.filter(([k])=>!hiddenB.has(k));
+  let hi=0;rows.forEach(r=>vis.forEach(([k])=>{if(r[k]!=null)hi=Math.max(hi,+r[k]);}));if(hi<=0)hi=1;
   const step=niceStep(hi);hi=Math.ceil(hi/step)*step;
-  const y0=20,y1=244,x0=56,x1=944,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(18,slot/5));
+  const y0=20,y1=244,x0=56,x1=944,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(16,slot/(vis.length+1)));
   const y=v=>y1-(y1-y0)*v/hi;let g='';
   for(let v=0;v<=hi+1e-6;v+=step)g+=`<line class="ax" x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}"/><text x="${x0-8}" y="${y(v)+4}" text-anchor="end">${nf(v,step<1?1:0)}</text>`;
   const every=Math.ceil(rows.length/16);
   rows.forEach((r,i)=>{const cx=x0+slot*i+slot/2;
-    BSER.forEach(([k,c,l,o],j)=>{if(r[k]==null)return;const v=+r[k],bx=cx+(j-2)*bw;
-      g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c};fill-opacity:${o||1}"><title>${label(r.k)} · ${T(l)} ${nf(v,1)} kWh</title></rect>`;});
+    vis.forEach(([k,c,l],j)=>{if(r[k]==null)return;const v=+r[k],bx=cx+(j-vis.length/2)*bw;
+      g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c}"><title>${label(r.k)} · ${T(l)} ${nf(v,1)} kWh</title></rect>`;});
     if(i%every===0)g+=`<text x="${cx}" y="${y1+18}" text-anchor="middle">${UNIT==='total'?r.k:label(r.k)}</text>`;});
   g+=`<text x="${x0}" y="12">kWh</text>`;
   svg.innerHTML=g;
@@ -662,7 +686,14 @@ async function loadBars(){
   const u=UNIT==='total'?'day':UNIT,n=UNIT==='day'?31:UNIT==='month'?24:40;
   BARS=await(await fetch(`/api/history/bars?unit=${u}&n=${n}`)).json();drawBars();
 }
-async function load24(){D24=await(await fetch('/api/history/day')).json();draw24();}
+async function load24(){
+  D24=await(await fetch('/api/history/day')).json();
+  if(D24.valid){const m=(a,f)=>a.map(v=>v==null?null:f(v));
+    D24.imp=m(D24.grid,v=>Math.max(0,v));D24.exp=m(D24.grid,v=>Math.min(0,v));
+    D24.dis=m(D24.bat,v=>Math.max(0,v));D24.chg=m(D24.bat,v=>Math.min(0,v));
+    D24.use=m(D24.house,v=>-Math.abs(v));}
+  draw24();
+}
 async function boot(){
   const s=await(await fetch('/api/status')).json();applyThemeLang(s);
   document.querySelectorAll('[data-t]').forEach(e=>{const v=T(e.dataset.t);if(typeof v==='string')e.textContent=v;});
@@ -713,6 +744,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
+        <option value="light">Hell</option>
       </select>
     </div>
   </div>
@@ -1171,6 +1203,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
+        <option value="light">Hell</option>
       </select>
     </div>
   </div>

@@ -52,6 +52,7 @@ const char OTA_HTML[] PROGMEM = R"HTML(
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
+        <option value="light">Hell</option>
       </select>
     </div>
   </div>
