@@ -97,6 +97,7 @@ window.fetch=async(u,o)=>{
 <div class="hist">
 <section class="panel day">
   <h2 data-t="h24">Letzte 24 Stunden</h2>
+  <div class="tabs" id="mode24"></div>
   <div class="legend" id="leg"></div>
   <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden"></svg>
   <div class="read" id="r24"></div>
@@ -140,14 +141,18 @@ const TX={
    aut:'Autarkie',self:'Eigenverbrauch',none:'Noch keine Daten. Der Verlauf beginnt, sobald der ESP Messwerte und die Uhrzeit hat.',
    since:d=>'Aufzeichnung seit '+d+'. Erzeugung, Bezug und Einspeisung aus den HIT-Zählern, Verbrauch und Akku vom ESP aufsummiert.',
    cur:'Laufender Zeitraum',
-   bal:'Flächen über der Null-Linie: PV, Netzbezug und Akku entladen. Die Linien zeigen, wohin die Energie geht: rot das Haus, gelb Akku laden. Unter der Null-Linie nur die Einspeisung.'},
+   bal:'Flächen über der Null-Linie: PV, Netzbezug und Akku entladen. Die Linien zeigen, wohin die Energie geht: rot das Haus, gelb Akku laden. Unter der Null-Linie nur die Einspeisung.',
+   pos:'Flächen: PV, Netzbezug und Akku entladen. Linien: rot das Haus, gelb Akku laden, grün die Einspeisung.',
+   mBal:'Bilanz',mPos:'Alles positiv'},
  en:{title:'History',sub:'Power over the last 24 hours and energy per day, month and year.',h24:'Last 24 hours',hE:'Energy',
    pv:'Solar',house:'Home',use:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
    gen:'Produced',use:'Consumed',imp:'Import',exp:'Export',chg:'Battery charge',dis:'Battery discharge',
    aut:'Self-sufficiency',self:'Self-consumption',none:'No data yet. History starts once the ESP has readings and the time.',
    since:d=>'Recording since '+d+'. Production, import and export from the HIT counters; consumption and battery summed by the ESP.',
    cur:'Current period',
-   bal:'Areas above zero: solar, grid import and battery discharge. The lines show where the energy goes: red the home, yellow battery charging. Only export is below zero.'}
+   bal:'Areas above zero: solar, grid import and battery discharge. The lines show where the energy goes: red the home, yellow battery charging. Only export is below zero.',
+   pos:'Areas: solar, grid import and battery discharge. Lines: red the home, yellow battery charging, green export.',
+   mBal:'Balance',mPos:'All positive'}
 };
 const T=k=>(TX[LANG]||TX.de)[k];
 const $=id=>document.getElementById(id);
@@ -155,6 +160,13 @@ const nf=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{min
 const SER=[['pv','var(--c-pv)'],['use','var(--c-house)'],['imp','var(--c-imp)'],['exp','var(--c-exp)'],['chg','var(--c-chg)'],['dis','var(--c-dis)']];
 const hidden=new Set();
 let D24=null;
+let MODE=localStorage.getItem('histMode')==='pos'?'pos':'bal';
+const S=k=>MODE==='pos'?D24[k].map(v=>v==null?null:Math.abs(v)):D24[k];
+function modeTabs(){
+  $('mode24').innerHTML=[['bal','mBal'],['pos','mPos']].map(([m,l])=>`<button type="button" class="${MODE===m?'on':''}" data-m="${m}">${T(l)}</button>`).join('');
+  $('mode24').querySelectorAll('button').forEach(b=>b.onclick=()=>{MODE=b.dataset.m;localStorage.setItem('histMode',MODE);modeTabs();draw24();});
+  const h=document.querySelector('[data-t="bal"]');if(h)h.textContent=T(MODE);
+}
 const X0=56;let Y0=16,Y1=264,X1=944,W24=960,WB=960,H24=300,HB=280;
 const fit=(el,prefer)=>{
   const r=el.getBoundingClientRect();
@@ -175,7 +187,7 @@ function draw24(){
   if(!D24||!D24.valid){const fh=fit(svg,260);svg.innerHTML=`<text x="50%" y="${Math.round(fh.h/2)}" text-anchor="middle">${T('none')}</text>`;return;}
   ({w:W24,h:H24}=fit(svg,300));X1=W24-16;Y0=16;Y1=H24-36;
   const n=D24.pv.length;let lo=0,hi=0;
-  SER.forEach(([k])=>{if(hidden.has(k))return;D24[k].forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}});});
+  SER.forEach(([k])=>{if(hidden.has(k))return;S(k).forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}});});
   if(hi-lo<100)hi=lo+100;
   const step=niceStep(hi-lo);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
   const x=i=>X0+(X1-X0)*i/(n-1),y=v=>Y1-(Y1-Y0)*(v-lo)/(hi-lo);
@@ -186,10 +198,11 @@ function draw24(){
     if(ts.getMinutes()<5&&ts.getHours()%3===0)g+=`<text x="${x(i)}" y="${Y1+20}" text-anchor="middle">${String(ts.getHours()).padStart(2,'0')}:00</text>`;}
   const sum=k=>D24[k].reduce((a,v)=>a+Math.abs(v||0),0);
   const order=SER.filter(([k])=>!hidden.has(k)).sort((a,b)=>sum(b[0])-sum(a[0]));
-  const segs=k=>{const out=[];let cur=null;D24[k].forEach((v,i)=>{if(v==null){cur=null;return;}if(!cur){cur=[];out.push(cur);}cur.push([x(i),y(v)]);});return out;};
+  const segs=k=>{const out=[];let cur=null;S(k).forEach((v,i)=>{if(v==null){cur=null;return;}if(!cur){cur=[];out.push(cur);}cur.push([x(i),y(v)]);});return out;};
   const y0=y(0).toFixed(1);
-  // Verbraucher (Haus, Akku laden) liegen über den Quellen, die sie decken: nur als Linie, sonst verdecken ihre Flächen sie
-  const LINE=new Set(['use','chg']);
+  // Verbraucher (Haus, Akku laden) liegen über den Quellen, die sie decken: nur als Linie, sonst verdecken ihre Flächen sie.
+  // Ohne Vorzeichen liegt auch die Einspeisung in der PV-Fläche und wird deshalb ebenfalls zur Linie.
+  const LINE=new Set(MODE==='pos'?['use','chg','exp']:['use','chg']);
   order.forEach(([k,c])=>{if(LINE.has(k))return;segs(k).forEach(p=>{if(p.length<2)return;
     g+=`<path d="M${p[0][0].toFixed(1)} ${y0}`+p.map(q=>`L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join('')+`L${p[p.length-1][0].toFixed(1)} ${y0}Z" style="fill:${c};opacity:.28"/>`;});});
   [...order.filter(([k])=>!LINE.has(k)),...order.filter(([k])=>LINE.has(k))].forEach(([k,c])=>{segs(k).forEach(p=>{
@@ -201,7 +214,7 @@ function draw24(){
     const c=$('cur');c.setAttribute('x1',x(i));c.setAttribute('x2',x(i));c.style.display='';
     const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
     $('r24').innerHTML=ts.toLocaleTimeString(LANG==='en'?'en-GB':'de-DE',{hour:'2-digit',minute:'2-digit'})+' · '+
-      SER.map(([k,col])=>`<span style="color:${col}">${T(k)} ${D24[k][i]==null?'–':nf(D24[k][i])+' W'}</span>`).join(' · ');};
+      SER.map(([k,col])=>`<span style="color:${col}">${T(k)} ${D24[k][i]==null?'–':nf(Math.abs(D24[k][i]))+' W'}</span>`).join(' · ');};
   svg.onmouseleave=()=>{$('cur').style.display='none';$('r24').textContent='';};
 }
 
@@ -263,7 +276,7 @@ async function load24(){
 async function boot(){
   const s=await(await fetch('/api/status')).json();applyThemeLang(s);
   document.querySelectorAll('[data-t]').forEach(e=>{const v=T(e.dataset.t);if(typeof v==='string')e.textContent=v;});
-  legend();tabs();await load24();await loadBars();
+  modeTabs();legend();tabs();await load24();await loadBars();
 }
 boot();
 setInterval(()=>{if(!document.hidden){load24();if(UNIT==='day')loadBars();}},60000);
