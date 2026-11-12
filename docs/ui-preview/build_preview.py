@@ -198,4 +198,48 @@ window.alert=()=>{{}};
 </script>
 """
 (OUT / "config.html").write_text(idx.replace("<body>", "<body>" + cfg_js, 1), encoding="utf-8")
+
+# Verlauf: synthetischer Tag (Sonne, Hausgrundlast, Akku lädt mittags und entlädt abends)
+import math
+end = 1762905600  # fester Zeitpunkt, Vorschau reproduzierbar
+series = {"pv": [], "bat": [], "grid": [], "house": []}
+for i in range(288):
+    hour = ((end - (287 - i) * 300) / 3600 + 1) % 24
+    pv = max(0, 5200 * math.sin(math.pi * (hour - 7) / 10)) if 7 < hour < 17 else 0
+    house = 450 + (900 if 6.5 < hour < 8 or 18 < hour < 22 else 0) + 300 * math.sin(i / 7) ** 2
+    bat = -min(pv - house, 2500) if pv > house else min(house - pv, 1800) if 17 < hour or hour < 1 else 0
+    grid = house - pv - bat
+    for k, v in (("pv", pv), ("bat", bat), ("grid", grid), ("house", house)):
+        series[k].append(round(v))
+day = {"step": 300, "valid": True, "end": end, **series}
+days = []
+for d in range(1, 32):
+    pv = round(4 + 14 * abs(math.sin(d / 5)), 2)
+    use = round(9 + 3 * math.cos(d / 3), 2)
+    days.append({"k": f"2026-10-{d:02d}" if d <= 31 else "", "pv": pv, "house": use,
+                 "imp": round(max(0.4, use - pv * 0.6), 2), "exp": round(max(0, pv * 0.55 - 2), 2),
+                 "chg": 4.1, "dis": 3.8})
+months = [{"k": f"20{25 + (m // 12)}-{m % 12 + 1:02d}", "pv": round(150 + 450 * math.sin(math.pi * ((m % 12) + 0.5) / 12), 1),
+           "house": 310, "imp": round(80 + 120 * math.cos(math.pi * (m % 12) / 6) ** 2, 1),
+           "exp": round(40 + 300 * math.sin(math.pi * ((m % 12) + 0.5) / 12), 1), "chg": 90, "dis": 85} for m in range(10, 23)]
+years = [{"k": "2025", "pv": 3920.4, "house": 3710, "imp": 980.2, "exp": 1650.3, "chg": 1100, "dis": 1040},
+         {"k": "2026", "pv": 4715.2, "house": 3890, "imp": 921.4, "exp": 2240.8, "chg": 1210, "dis": 1150}]
+total = {"pv": 8642.9, "imp": 940.7, "exp": 6299.7}
+hist = extract("HISTORY_HTML")
+hist_js = f"""
+<script>
+const H={{day:{json.dumps(day)},bars:{{day:{json.dumps(days)},month:{json.dumps(months)},year:{json.dumps(years)}}},total:{json.dumps(total)}}};
+const STATUS={json.dumps(mock_status)};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{{
+  u=String(u);
+  if(u.includes('/api/history/day')) return {{ok:true,json:async()=>H.day}};
+  if(u.includes('/api/history/bars')){{const m=u.match(/unit=(\\w+)/),un=m?m[1]:'day';
+    return {{ok:true,json:async()=>({{unit:un,bars:H.bars[un]||[],total:H.total,since:20251001}})}};}}
+  if(u.includes('/api/status')) return {{ok:true,json:async()=>STATUS}};
+  return _f(u,o);
+}};
+</script>
+"""
+(OUT / "history.html").write_text(hist.replace("<body>", "<body>" + hist_js, 1), encoding="utf-8")
 print(f"wrote {len(meta)} knx points -> {OUT}")

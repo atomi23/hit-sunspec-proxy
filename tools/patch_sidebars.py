@@ -3,6 +3,7 @@ from pathlib import Path
 
 ICONS = {
     "live": '<path d="M3 12h4l2-6 4 12 2-6h6"/>',
+    "hist": '<path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/>',
     "hit": '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/>',
     "netz": '<path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/>',
     "sunspec": '<path d="M5 5h14M5 10h14M5 15h14M5 20h8"/>',
@@ -33,6 +34,7 @@ def side(active: str) -> str:
             f'  <div class="logo">{LOGO}<div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>',
             "  <nav>",
             a("live", "/", "Live"),
+            a("hist", "/history", "Verlauf"),
             '    <div class="nav-grp">Datenquellen</div>',
             a("hit", "/config#hit", "HIT-Wechselrichter"),
             a("tasmota", "/config#tasmota", "Tasmota-Zähler"),
@@ -115,6 +117,7 @@ text = wc.read_text(encoding="utf-8")
 for title, active in [
     ("Live · HIT Proxy", "live"),
     ("Config · HIT Proxy", "config"),
+    ("Verlauf · HIT Proxy", "hist"),
     ("Write-Debug · HIT Proxy", "debug"),
 ]:
     marker = f"<title>{title}</title>"

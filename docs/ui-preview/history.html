@@ -1,0 +1,229 @@
+
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title>Verlauf · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>
+.chart{display:block;width:100%;height:auto;overflow:visible}
+.chart .ax{stroke:var(--rule);stroke-width:1}
+.chart .zero{stroke:var(--rule2);stroke-width:1}
+.chart text{fill:var(--dim);font:400 12px var(--font)}
+.chart .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .cur{stroke:var(--dim);stroke-width:1;stroke-dasharray:3 3}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.legend .chip{cursor:pointer;user-select:none}
+.legend .chip.off{opacity:.4}
+.legend .chip i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.tabs button{padding:6px 14px;font-size:14px}
+.tabs button:not(.on){background:var(--plate2);color:var(--ink)}
+.read{font-size:13px;color:var(--dim);min-height:20px;margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpis div{background:var(--well);border-radius:12px;padding:10px 12px}
+.kpis b{display:block;font-size:20px;font-weight:600;color:var(--ink)}
+.kpis span{font-size:12px;color:var(--dim)}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head><body>
+<script>
+const H={day:{"step": 300, "valid": true, "end": 1762905600, "pv": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 272, 408, 544, 679, 813, 948, 1081, 1214, 1346, 1477, 1607, 1736, 1864, 1990, 2115, 2239, 2361, 2481, 2600, 2717, 2832, 2945, 3056, 3166, 3272, 3377, 3479, 3579, 3677, 3772, 3864, 3954, 4041, 4125, 4207, 4285, 4361, 4434, 4503, 4570, 4633, 4693, 4750, 4804, 4855, 4902, 4945, 4986, 5023, 5056, 5086, 5113, 5136, 5156, 5172, 5184, 5193, 5198, 5200, 5198, 5193, 5184, 5172, 5156, 5136, 5113, 5086, 5056, 5023, 4986, 4945, 4902, 4855, 4804, 4750, 4693, 4633, 4570, 4503, 4434, 4361, 4285, 4207, 4125, 4041, 3954, 3864, 3772, 3677, 3579, 3479, 3377, 3272, 3166, 3056, 2945, 2832, 2717, 2600, 2481, 2361, 2239, 2115, 1990, 1864, 1736, 1607, 1477, 1346, 1214, 1081, 948, 813, 679, 544, 408, 272, 136, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "bat": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1030, -1199, -1363, -1517, -1659, -1789, -1904, -2007, -2097, -2178, -2252, -2322, -2393, -2466, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2500, -2422, -2332, -2249, -2172, -2099, -2024, -1946, -1861, -1766, -1660, -1540, -1407, -1260, -1103, -936, -764, -589, -416, -247, -86, 0, 0, 0, 0, 0, 0, 618, 575, 535, 499, 472, 455, 450, 457, 476, 504, 541, 582, 1525, 1566, 1601, 1628, 1645, 1650, 1643, 1624, 1595, 1559, 1518, 1475, 1434, 1399, 1372, 1355, 1350, 1357, 1376, 1405, 1441, 1482, 1525, 1566, 1601, 1628, 1645, 1650, 1643, 1624, 1595, 1559, 1517, 1475, 1434, 1399, 1372, 1355, 1350, 1357, 1376, 1405, 1442, 1483, 1526, 1566, 1601, 728, 745, 750, 743, 724, 695, 658, 617, 574, 534, 498, 471, 455, 450, 457, 476, 505, 542, 583, 626, 667, 702, 729, 745, 750, 743, 724, 695, 658, 617, 574, 533, 498, 471, 455, 450, 0], "grid": [450, 456, 474, 502, 538, 579, 621, 662, 698, 726, 744, 750, 744, 726, 698, 662, 621, 578, 537, 502, 474, 456, 450, 456, 474, 502, 538, 579, 622, 663, 699, 726, 744, 750, 744, 726, 698, 662, 621, 578, 537, 501, 473, 456, 450, 456, 474, 502, 538, 579, 622, 663, 699, 727, 744, 750, 744, 726, 697, 661, 620, 578, 537, 501, 473, 456, 1350, 1356, 1374, 1403, 1439, 1480, 1386, 1291, 1191, 1083, 966, 837, 696, 544, 383, 215, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -45, -133, -229, -336, -452, -575, -704, -835, -964, -1089, -1207, -1313, -1406, -1484, -1547, -1595, -1630, -1654, -1670, -1681, -1690, -1702, -1718, -1741, -1773, -1813, -1861, -1916, -1976, -2036, -2095, -2148, -2193, -2226, -2245, -2248, -2236, -2209, -2168, -2116, -2055, -1989, -1922, -1856, -1795, -1741, -1696, -1659, -1630, -1608, -1590, -1575, -1557, -1535, -1504, -1461, -1406, -1335, -1250, -1150, -1037, -914, -783, -648, -512, -379, -252, -132, -22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 206, 335, 452, 560, 659, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 458], "house": [450, 456, 474, 502, 538, 579, 621, 662, 698, 726, 744, 750, 744, 726, 698, 662, 621, 578, 537, 502, 474, 456, 450, 456, 474, 502, 538, 579, 622, 663, 699, 726, 744, 750, 744, 726, 698, 662, 621, 578, 537, 501, 473, 456, 450, 456, 474, 502, 538, 579, 622, 663, 699, 727, 744, 750, 744, 726, 697, 661, 620, 578, 537, 501, 473, 456, 1350, 1356, 1374, 1403, 1439, 1480, 1523, 1563, 1599, 1627, 1644, 1650, 1644, 1625, 1597, 1561, 1520, 577, 536, 501, 473, 456, 450, 457, 475, 503, 539, 580, 623, 664, 699, 727, 744, 750, 743, 725, 697, 661, 620, 577, 536, 500, 473, 456, 450, 457, 475, 503, 539, 581, 623, 664, 700, 727, 744, 750, 743, 725, 697, 660, 619, 576, 536, 500, 473, 455, 450, 457, 475, 504, 540, 581, 624, 664, 700, 727, 745, 750, 743, 725, 696, 660, 619, 576, 535, 500, 472, 455, 450, 457, 475, 504, 540, 581, 624, 665, 700, 728, 745, 750, 743, 725, 696, 660, 618, 576, 535, 500, 472, 455, 450, 457, 475, 504, 541, 582, 624, 665, 701, 728, 745, 750, 743, 724, 696, 659, 618, 575, 535, 499, 472, 455, 450, 457, 476, 504, 541, 582, 1525, 1566, 1601, 1628, 1645, 1650, 1643, 1624, 1595, 1559, 1518, 1475, 1434, 1399, 1372, 1355, 1350, 1357, 1376, 1405, 1441, 1482, 1525, 1566, 1601, 1628, 1645, 1650, 1643, 1624, 1595, 1559, 1517, 1475, 1434, 1399, 1372, 1355, 1350, 1357, 1376, 1405, 1442, 1483, 1526, 1566, 1601, 728, 745, 750, 743, 724, 695, 658, 617, 574, 534, 498, 471, 455, 450, 457, 476, 505, 542, 583, 626, 667, 702, 729, 745, 750, 743, 724, 695, 658, 617, 574, 533, 498, 471, 455, 450, 458]},bars:{day:[{"k": "2026-10-01", "pv": 6.78, "house": 11.83, "imp": 7.76, "exp": 1.73, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-02", "pv": 9.45, "house": 11.36, "imp": 5.69, "exp": 3.2, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-03", "pv": 11.9, "house": 10.62, "imp": 3.48, "exp": 4.55, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-04", "pv": 14.04, "house": 9.71, "imp": 1.29, "exp": 5.72, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-05", "pv": 15.78, "house": 8.71, "imp": 0.4, "exp": 6.68, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-06", "pv": 17.05, "house": 7.75, "imp": 0.4, "exp": 7.38, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-07", "pv": 17.8, "house": 6.93, "imp": 0.4, "exp": 7.79, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-08", "pv": 17.99, "house": 6.33, "imp": 0.4, "exp": 7.89, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-09", "pv": 17.63, "house": 6.03, "imp": 0.4, "exp": 7.7, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-10", "pv": 16.73, "house": 6.05, "imp": 0.4, "exp": 7.2, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-11", "pv": 15.32, "house": 6.4, "imp": 0.4, "exp": 6.43, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-12", "pv": 13.46, "house": 7.04, "imp": 0.4, "exp": 5.4, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-13", "pv": 11.22, "house": 7.89, "imp": 1.16, "exp": 4.17, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-14", "pv": 8.69, "house": 8.86, "imp": 3.65, "exp": 2.78, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-15", "pv": 5.98, "house": 9.85, "imp": 6.26, "exp": 1.29, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-16", "pv": 4.82, "house": 10.75, "imp": 7.86, "exp": 0.65, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-17", "pv": 7.58, "house": 11.45, "imp": 6.9, "exp": 2.17, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-18", "pv": 10.2, "house": 11.88, "imp": 5.76, "exp": 3.61, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-19", "pv": 12.57, "house": 12.0, "imp": 4.46, "exp": 4.91, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-20", "pv": 14.6, "house": 11.78, "imp": 3.02, "exp": 6.03, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-21", "pv": 16.2, "house": 11.26, "imp": 1.54, "exp": 6.91, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-22", "pv": 17.32, "house": 10.49, "imp": 0.4, "exp": 7.53, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-23", "pv": 17.91, "house": 9.56, "imp": 0.4, "exp": 7.85, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-24", "pv": 17.95, "house": 8.56, "imp": 0.4, "exp": 7.87, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-25", "pv": 17.42, "house": 7.62, "imp": 0.4, "exp": 7.58, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-26", "pv": 16.37, "house": 6.82, "imp": 0.4, "exp": 7.0, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-27", "pv": 14.82, "house": 6.27, "imp": 0.4, "exp": 6.15, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-28", "pv": 12.84, "house": 6.01, "imp": 0.4, "exp": 5.06, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-29", "pv": 10.5, "house": 6.09, "imp": 0.4, "exp": 3.78, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-30", "pv": 7.91, "house": 6.48, "imp": 1.73, "exp": 2.35, "chg": 4.1, "dis": 3.8}, {"k": "2026-10-31", "pv": 5.16, "house": 7.16, "imp": 4.06, "exp": 0.84, "chg": 4.1, "dis": 3.8}],month:[{"k": "2025-11", "pv": 322.2, "house": 310, "imp": 110.0, "exp": 154.8, "chg": 90, "dis": 85}, {"k": "2025-12", "pv": 208.7, "house": 310, "imp": 170.0, "exp": 79.2, "chg": 90, "dis": 85}, {"k": "2026-01", "pv": 208.7, "house": 310, "imp": 200.0, "exp": 79.2, "chg": 90, "dis": 85}, {"k": "2026-02", "pv": 322.2, "house": 310, "imp": 170.0, "exp": 154.8, "chg": 90, "dis": 85}, {"k": "2026-03", "pv": 423.9, "house": 310, "imp": 110.0, "exp": 222.6, "chg": 90, "dis": 85}, {"k": "2026-04", "pv": 507.0, "house": 310, "imp": 80.0, "exp": 278.0, "chg": 90, "dis": 85}, {"k": "2026-05", "pv": 565.7, "house": 310, "imp": 110.0, "exp": 317.2, "chg": 90, "dis": 85}, {"k": "2026-06", "pv": 596.2, "house": 310, "imp": 170.0, "exp": 337.4, "chg": 90, "dis": 85}, {"k": "2026-07", "pv": 596.2, "house": 310, "imp": 200.0, "exp": 337.4, "chg": 90, "dis": 85}, {"k": "2026-08", "pv": 565.7, "house": 310, "imp": 170.0, "exp": 317.2, "chg": 90, "dis": 85}, {"k": "2026-09", "pv": 507.0, "house": 310, "imp": 110.0, "exp": 278.0, "chg": 90, "dis": 85}, {"k": "2026-10", "pv": 423.9, "house": 310, "imp": 80.0, "exp": 222.6, "chg": 90, "dis": 85}, {"k": "2026-11", "pv": 322.2, "house": 310, "imp": 110.0, "exp": 154.8, "chg": 90, "dis": 85}],year:[{"k": "2025", "pv": 3920.4, "house": 3710, "imp": 980.2, "exp": 1650.3, "chg": 1100, "dis": 1040}, {"k": "2026", "pv": 4715.2, "house": 3890, "imp": 921.4, "exp": 2240.8, "chg": 1210, "dis": 1150}]},total:{"pv": 8642.9, "imp": 940.7, "exp": 6299.7}};
+const STATUS={"version": "0.4.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{
+  u=String(u);
+  if(u.includes('/api/history/day')) return {ok:true,json:async()=>H.day};
+  if(u.includes('/api/history/bars')){const m=u.match(/unit=(\w+)/),un=m?m[1]:'day';
+    return {ok:true,json:async()=>({unit:un,bars:H.bars[un]||[],total:H.total,since:20251001})};}
+  if(u.includes('/api/status')) return {ok:true,json:async()=>STATUS};
+  return _f(u,o);
+};
+</script>
+<div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
+  <nav>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a class="on" aria-current="page" href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> Verlauf</a>
+    <div class="nav-grp">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <div class="nav-grp">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <div class="nav-grp">Gerät</div>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+      </select>
+    </div>
+  </div>
+</aside>
+<main class="main">
+<div class="page-head">
+  <div>
+    <h1 data-t="title">Verlauf</h1>
+    <p class="sub" data-t="sub">Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <h2 data-t="h24">Letzte 24 Stunden</h2>
+  <div class="legend" id="leg"></div>
+  <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden"></svg>
+  <div class="read" id="r24"></div>
+</section>
+
+<section class="panel" style="margin-top:16px">
+  <h2 data-t="hE">Energie</h2>
+  <div class="tabs" id="tabs"></div>
+  <div class="legend" id="legB"></div>
+  <svg id="cb" class="chart" viewBox="0 0 960 280" role="img" aria-label="Energie je Zeitraum"></svg>
+  <div class="kpis" id="kpis"></div>
+  <p class="hint" id="since"></p>
+</section>
+</main></div>
+
+<script>
+const I18N={de:{},en:{}};
+let LANG='de';
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script>
+const TX={
+ de:{title:'Verlauf',sub:'Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.',h24:'Letzte 24 Stunden',hE:'Energie',
+   pv:'PV',house:'Haus',grid:'Netz',bat:'Akku',days:'Tage',months:'Monate',years:'Jahre',total:'Gesamt',
+   gen:'Erzeugt',use:'Verbraucht',imp:'Bezug',exp:'Einspeisung',chg:'Akku geladen',dis:'Akku entladen',
+   aut:'Autarkie',self:'Eigenverbrauch',none:'Noch keine Daten. Der Verlauf beginnt, sobald der ESP Messwerte und die Uhrzeit hat.',
+   since:d=>'Aufzeichnung seit '+d+'. Erzeugung, Bezug und Einspeisung aus den HIT-Zählern, Verbrauch und Akku vom ESP aufsummiert.',
+   cur:'Laufender Zeitraum'},
+ en:{title:'History',sub:'Power over the last 24 hours and energy per day, month and year.',h24:'Last 24 hours',hE:'Energy',
+   pv:'Solar',house:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
+   gen:'Produced',use:'Consumed',imp:'Import',exp:'Export',chg:'Battery charged',dis:'Battery discharged',
+   aut:'Self-sufficiency',self:'Self-consumption',none:'No data yet. History starts once the ESP has readings and the time.',
+   since:d=>'Recording since '+d+'. Production, import and export from the HIT counters; consumption and battery summed by the ESP.',
+   cur:'Current period'}
+};
+const T=k=>(TX[LANG]||TX.de)[k];
+const $=id=>document.getElementById(id);
+const nf=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const SER=[['pv','var(--sun)'],['house','var(--home)'],['grid','var(--grid)'],['bat','var(--acc)']];
+const hidden=new Set();
+let D24=null;
+const X0=56,X1=944,Y0=16,Y1=264;
+
+function niceStep(range){const raw=range/5,p=Math.pow(10,Math.floor(Math.log10(raw||1))),m=raw/p;return (m<1.5?1:m<3?2:m<7?5:10)*p;}
+function legend(){
+  $('leg').innerHTML=SER.map(([k,c])=>`<span class="chip ${hidden.has(k)?'off':'on'}" data-k="${k}"><i style="background:${c}"></i>${T(k)}</span>`).join('');
+  $('leg').querySelectorAll('.chip').forEach(e=>e.onclick=()=>{const k=e.dataset.k;hidden.has(k)?hidden.delete(k):hidden.add(k);legend();draw24();});
+}
+function draw24(){
+  const svg=$('c24');
+  if(!D24||!D24.valid){svg.innerHTML=`<text x="480" y="150" text-anchor="middle">${T('none')}</text>`;return;}
+  const n=D24.pv.length;let lo=0,hi=0;
+  SER.forEach(([k])=>{if(hidden.has(k))return;D24[k].forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}});});
+  if(hi-lo<100)hi=lo+100;
+  const step=niceStep(hi-lo);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+  const x=i=>X0+(X1-X0)*i/(n-1),y=v=>Y1-(Y1-Y0)*(v-lo)/(hi-lo);
+  let g='';
+  for(let v=lo;v<=hi+1e-6;v+=step){g+=`<line class="ax" x1="${X0}" x2="${X1}" y1="${y(v)}" y2="${y(v)}"/><text x="${X0-8}" y="${y(v)+4}" text-anchor="end">${nf(v/1000,Math.abs(step)<1000?1:0)} kW</text>`;}
+  g+=`<line class="zero" x1="${X0}" x2="${X1}" y1="${y(0)}" y2="${y(0)}"/>`;
+  for(let i=0;i<n;i++){const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
+    if(ts.getMinutes()<5&&ts.getHours()%3===0)g+=`<text x="${x(i)}" y="${Y1+20}" text-anchor="middle">${String(ts.getHours()).padStart(2,'0')}:00</text>`;}
+  SER.slice().reverse().forEach(([k,c])=>{
+    if(hidden.has(k))return;let d='',pen=false;
+    D24[k].forEach((v,i)=>{if(v==null){pen=false;return;}d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);pen=true;});
+    if(k==='pv'&&d){g+=`<path d="${d}L${x(n-1)} ${y(0)}L${x(D24.pv.findIndex(v=>v!=null))} ${y(0)}Z" style="fill:${c};opacity:.12"/>`;}
+    g+=`<path class="ln" d="${d}" style="stroke:${c}"/>`;
+  });
+  g+=`<line id="cur" class="cur" x1="0" x2="0" y1="${Y0}" y2="${Y1}" style="display:none"/>`;
+  svg.innerHTML=g;
+  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*960/r.width;
+    const i=Math.round((px-X0)/(X1-X0)*(n-1));if(i<0||i>=n)return;
+    const c=$('cur');c.setAttribute('x1',x(i));c.setAttribute('x2',x(i));c.style.display='';
+    const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
+    $('r24').innerHTML=ts.toLocaleTimeString(LANG==='en'?'en-GB':'de-DE',{hour:'2-digit',minute:'2-digit'})+' · '+
+      SER.map(([k,col])=>`<span style="color:${col}">${T(k)} ${D24[k][i]==null?'–':nf(D24[k][i])+' W'}</span>`).join(' · ');};
+  svg.onmouseleave=()=>{$('cur').style.display='none';$('r24').textContent='';};
+}
+
+const BSER=[['pv','var(--sun)','gen'],['house','var(--home)','use'],['imp','var(--grid)','imp'],['exp','var(--grid)','exp',.4]];
+let UNIT='day',BARS=null;
+function tabs(){
+  const u=[['day','days'],['month','months'],['year','years'],['total','total']];
+  $('tabs').innerHTML=u.map(([k,l])=>`<button type="button" class="${UNIT===k?'on':''}" data-u="${k}">${T(l)}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{UNIT=b.dataset.u;tabs();loadBars();});
+  $('legB').innerHTML=BSER.map(([k,c,l,o])=>`<span class="chip on"><i style="background:${c};opacity:${o||1}"></i>${T(l)}</span>`).join('');
+}
+function label(k){
+  if(UNIT==='day'){const p=k.split('-');return p[2]+'.'+p[1]+'.';}
+  if(UNIT==='month'){const p=k.split('-');return new Date(+p[0],+p[1]-1,1).toLocaleDateString(LANG==='en'?'en-GB':'de-DE',{month:'short',year:'2-digit'});}
+  return k;
+}
+function drawBars(){
+  const svg=$('cb');let rows=BARS.bars||[];
+  if(UNIT==='total'){const tt=BARS.total||{};rows=[{k:T('total'),pv:+tt.pv,imp:+tt.imp,exp:+tt.exp,house:null}];}
+  if(!rows.length){svg.innerHTML=`<text x="480" y="140" text-anchor="middle">${T('none')}</text>`;$('kpis').innerHTML='';return;}
+  let hi=0;rows.forEach(r=>BSER.forEach(([k])=>{if(r[k]!=null)hi=Math.max(hi,+r[k]);}));if(hi<=0)hi=1;
+  const step=niceStep(hi);hi=Math.ceil(hi/step)*step;
+  const y0=20,y1=244,x0=56,x1=944,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(18,slot/5));
+  const y=v=>y1-(y1-y0)*v/hi;let g='';
+  for(let v=0;v<=hi+1e-6;v+=step)g+=`<line class="ax" x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}"/><text x="${x0-8}" y="${y(v)+4}" text-anchor="end">${nf(v,step<1?1:0)}</text>`;
+  const every=Math.ceil(rows.length/16);
+  rows.forEach((r,i)=>{const cx=x0+slot*i+slot/2;
+    BSER.forEach(([k,c,l,o],j)=>{if(r[k]==null)return;const v=+r[k],bx=cx+(j-2)*bw;
+      g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c};fill-opacity:${o||1}"><title>${label(r.k)} · ${T(l)} ${nf(v,1)} kWh</title></rect>`;});
+    if(i%every===0)g+=`<text x="${cx}" y="${y1+18}" text-anchor="middle">${UNIT==='total'?r.k:label(r.k)}</text>`;});
+  g+=`<text x="${x0}" y="12">kWh</text>`;
+  svg.innerHTML=g;
+  const cur=rows[rows.length-1],pv=+cur.pv||0,imp=+cur.imp||0,exp=+cur.exp||0,use=cur.house==null?null:+cur.house;
+  const k=(lbl,v)=>`<div><span>${lbl}</span><b>${v}</b></div>`;
+  $('kpis').innerHTML=k(T('gen'),nf(pv,1)+' kWh')+k(T('use'),use==null?'–':nf(use,1)+' kWh')+k(T('imp'),nf(imp,1)+' kWh')+
+    k(T('exp'),nf(exp,1)+' kWh')+k(T('aut'),use?nf(Math.max(0,Math.min(100,100*(1-imp/use))))+' %':'–')+
+    k(T('self'),pv?nf(Math.max(0,Math.min(100,100*(1-exp/pv))))+' %':'–');
+  const s=String(BARS.since||'');$('since').textContent=s.length===8?T('since')(s.slice(6)+'.'+s.slice(4,6)+'.'+s.slice(0,4)):'';
+}
+async function loadBars(){
+  const u=UNIT==='total'?'day':UNIT,n=UNIT==='day'?31:UNIT==='month'?24:40;
+  BARS=await(await fetch(`/api/history/bars?unit=${u}&n=${n}`)).json();drawBars();
+}
+async function load24(){D24=await(await fetch('/api/history/day')).json();draw24();}
+async function boot(){
+  const s=await(await fetch('/api/status')).json();applyThemeLang(s);
+  document.querySelectorAll('[data-t]').forEach(e=>{const v=T(e.dataset.t);if(typeof v==='string')e.textContent=v;});
+  legend();tabs();await load24();await loadBars();
+}
+boot();
+setInterval(()=>{if(!document.hidden){load24();if(UNIT==='day')loadBars();}},60000);
+</script></body></html>

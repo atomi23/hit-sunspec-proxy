@@ -7,7 +7,7 @@
 </head><body>
 <script>
 const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14033, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14033, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14033, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14033, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14035, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}]};
-const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/38", "dpt": 14035}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
+const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/38", "dpt": 14035}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
 const STATUS={"version": "0.4.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
 const _f=window.fetch;
 window.fetch=async(u,o)=>{
@@ -27,6 +27,7 @@ window.alert=()=>{};
   <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
   <nav>
     <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> Verlauf</a>
     <div class="nav-grp">Datenquellen</div>
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
@@ -92,17 +93,31 @@ window.alert=()=>{};
 <label>Gerätename</label><input name="deviceName"/>
 <label><input name="useEthernet" type="checkbox"/> Ethernet verwenden</label>
 <label><input name="wifiEnabled" type="checkbox"/> WLAN verwenden</label>
-<label><input name="wifiApMode" type="checkbox"/> Eigenes WLAN aufspannen (Access Point)</label>
-<label>WLAN-Name (SSID)</label><input name="wifiSsid"/>
-<label>Zugangscode (WLAN-Passwort, steht auf dem Display)</label><input name="wifiPass" readonly/>
+<label>Heim-WLAN: Name (SSID)</label><input name="staSsid" autocomplete="off" placeholder="leer = kein Heim-WLAN"/>
+<label>Heim-WLAN: Passwort</label><input name="staPass" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert"/>
+<p class="hint">Mit Heim-WLAN ist der ESP auch ohne Kabel im Netz und hat Internet, zum Beispiel für die Hoymiles-Cloud.
+Die neue Adresse steht danach auf dem Display (Seite System).</p>
+<label><input name="wifiApMode" type="checkbox"/> Geräte-WLAN zusätzlich anlassen (Notzugang)</label>
+<label>Name des Geräte-WLANs</label><input name="wifiSsid"/>
+<label>Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input name="wifiPass" readonly/>
+<p class="hint">Ohne Heim-WLAN und ohne Kabel bleibt das Geräte-WLAN immer an, damit das Gerät erreichbar bleibt.</p>
+<button class="sec" type="button" onclick="newCode()" style="margin-top:12px">Neuen Zugangscode erzeugen</button>
+<p class="hint">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
+und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich neu anmelden. Das eigene Web-Passwort bleibt gültig.</p>
 <label>Benutzername</label><input name="webUser"/>
 <label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 </div>
 <div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite."><strong>Display</strong>
+<label>Live-Ansicht</label>
+<canvas id="scr" width="480" height="222" title="Klicken = nächste Seite"
+ style="display:block;width:100%;max-width:480px;aspect-ratio:480/222;border-radius:14px;background:#000;cursor:pointer"></canvas>
+<p class="hint">Zeigt das Bild des Displays, alle 2 Sekunden neu, auch wenn das Licht am Gerät aus ist. Ein Klick wirkt wie Antippen.</p>
 <label><input name="displayEnabled" type="checkbox"/> Display eingeschaltet</label>
 <label>Helligkeit (0 bis 255)</label><input name="displayBrightness" type="number" min="0" max="255"/>
+<label><input name="displayAutoPage" type="checkbox"/> Seiten automatisch wechseln</label>
 <label>Seitenwechsel alle (Sekunden)</label><input name="displayPageS" type="number" min="3" max="600"/>
+<p class="hint">Aus: Die Live-Seite bleibt stehen. Antippen blättert, nach 30 Sekunden ohne Berührung geht es zurück zur Live-Seite.</p>
 <label>Ausschalten nach (Sekunden ohne Berührung, 0 = immer an)</label><input name="displayTimeoutS" type="number" min="0" max="36000"/>
 <p class="hint">Antippen schaltet das Display wieder ein. Bei einer Störung (HIT antwortet nicht) geht es von selbst an.</p>
 <label><input name="setupComplete" type="checkbox"/> Einrichtung abgeschlossen (QR-Code-Seite ausblenden)</label>
@@ -250,6 +265,24 @@ function route(){
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
+async function drawScreen(){
+  const card=document.getElementById('display');
+  if(!card||!card.classList.contains('show')||document.hidden)return;
+  try{
+    const r=await fetch('/api/screen',{cache:'no-store'});if(!r.ok)return;
+    const w=Number(r.headers.get('X-Width'))||480,h=Number(r.headers.get('X-Height'))||222;
+    const b=new Uint8Array(await r.arrayBuffer());
+    const cv=document.getElementById('scr');if(cv.width!==w){cv.width=w;cv.height=h;}
+    const ctx=cv.getContext('2d'),img=ctx.createImageData(w,h),d=img.data;
+    for(let i=0,j=0;i+1<b.length;i+=2,j+=4){const v=(b[i]<<8)|b[i+1];
+      d[j]=((v>>11)&31)*255/31;d[j+1]=((v>>5)&63)*255/63;d[j+2]=(v&31)*255/31;d[j+3]=255;}
+    ctx.putImageData(img,0,0);
+  }catch(e){}
+}
+setInterval(drawScreen,2000);
+window.addEventListener('hashchange',drawScreen);
+document.getElementById('scr').addEventListener('click',async()=>{
+  await fetch('/api/display/tap',{method:'POST'});setTimeout(drawScreen,400);});
 async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
@@ -259,8 +292,17 @@ async function load(){
 async function save(){const f=document.getElementById('f');const body={};
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
 body.knxCh=collectKnx();
-await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const m=document.getElementById('saved');m.textContent='Gespeichert';setTimeout(()=>m.textContent='',2500);refresh();}
+const m=document.getElementById('saved');
+let ok=false;try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});ok=r.ok;}catch(e){}
+m.textContent=ok?'Gespeichert':'Speichern fehlgeschlagen';m.style.color=ok?'var(--acc)':'var(--fault)';
+if(ok){setTimeout(()=>m.textContent='',2500);load();}}
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
+async function newCode(){
+  if(!confirm('Neuen Zugangscode erzeugen? Der alte Code gilt dann nicht mehr. Der neue steht auf dem Display.'))return;
+  const r=await fetch('/api/access/new-code',{method:'POST'}).catch(()=>null);
+  alert(r&&r.ok?'Neuer Code ist aktiv. Bitte vom Display ablesen; gegebenenfalls neu anmelden.':'Fehler');
+  if(r&&r.ok)location.reload();
+}
 async function applyCtrl(){
   const f=document.getElementById('f');
   await save();

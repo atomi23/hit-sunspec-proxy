@@ -15,6 +15,7 @@
 #include "Watchdog.h"
 #include "HitBus.h"
 #include "ModbusGateway.h"
+#include "History.h"
 
 void setup() {
   Serial.begin(115200);
@@ -41,6 +42,7 @@ void setup() {
   KnxIp::begin(cfg);
   DataBroker::begin();
   WebConfig::begin();
+  History::begin();
 
   HitClient::pollNow();
   TasmotaClient::pollNow();
@@ -81,6 +83,7 @@ void loop() {
   MqttHa::loop();
   HoyCloud::loop();
   DataBroker::reconcile();
+  History::loop();
   KnxIp::loop();
   SunSpecServer::loop();
   ModbusGateway::loop();
