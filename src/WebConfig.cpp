@@ -565,7 +565,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   <div class="legend" id="leg"></div>
   <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden"></svg>
   <div class="read" id="r24"></div>
-  <p class="hint" data-t="bal">Oberhalb der Null-Linie liefern PV, Netzbezug und Akku Energie, unterhalb nehmen Haus, Einspeisung und Akku-Laden sie ab.</p>
+  <p class="hint" data-t="bal">Flächen über der Null-Linie: PV, Netzbezug und Akku entladen. Die Linien zeigen, wohin die Energie geht: rot das Haus, gelb Akku laden. Unter der Null-Linie nur die Einspeisung.</p>
 </section>
 
 <section class="panel bars">
@@ -605,14 +605,14 @@ const TX={
    aut:'Autarkie',self:'Eigenverbrauch',none:'Noch keine Daten. Der Verlauf beginnt, sobald der ESP Messwerte und die Uhrzeit hat.',
    since:d=>'Aufzeichnung seit '+d+'. Erzeugung, Bezug und Einspeisung aus den HIT-Zählern, Verbrauch und Akku vom ESP aufsummiert.',
    cur:'Laufender Zeitraum',
-   bal:'Oberhalb der Null-Linie liefern PV, Netzbezug und Akku Energie, unterhalb nehmen Haus, Einspeisung und Akku-Laden sie ab.'},
+   bal:'Flächen über der Null-Linie: PV, Netzbezug und Akku entladen. Die Linien zeigen, wohin die Energie geht: rot das Haus, gelb Akku laden. Unter der Null-Linie nur die Einspeisung.'},
  en:{title:'History',sub:'Power over the last 24 hours and energy per day, month and year.',h24:'Last 24 hours',hE:'Energy',
    pv:'Solar',house:'Home',use:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
    gen:'Produced',use:'Consumed',imp:'Import',exp:'Export',chg:'Battery charge',dis:'Battery discharge',
    aut:'Self-sufficiency',self:'Self-consumption',none:'No data yet. History starts once the ESP has readings and the time.',
    since:d=>'Recording since '+d+'. Production, import and export from the HIT counters; consumption and battery summed by the ESP.',
    cur:'Current period',
-   bal:'Above zero solar, grid import and battery supply energy; below zero home, export and battery charging take it.'}
+   bal:'Areas above zero: solar, grid import and battery discharge. The lines show where the energy goes: red the home, yellow battery charging. Only export is below zero.'}
 };
 const T=k=>(TX[LANG]||TX.de)[k];
 const $=id=>document.getElementById(id);
@@ -653,10 +653,12 @@ function draw24(){
   const order=SER.filter(([k])=>!hidden.has(k)).sort((a,b)=>sum(b[0])-sum(a[0]));
   const segs=k=>{const out=[];let cur=null;D24[k].forEach((v,i)=>{if(v==null){cur=null;return;}if(!cur){cur=[];out.push(cur);}cur.push([x(i),y(v)]);});return out;};
   const y0=y(0).toFixed(1);
-  order.forEach(([k,c])=>{segs(k).forEach(p=>{if(p.length<2)return;
+  // Verbraucher (Haus, Akku laden) liegen über den Quellen, die sie decken: nur als Linie, sonst verdecken ihre Flächen sie
+  const LINE=new Set(['use','chg']);
+  order.forEach(([k,c])=>{if(LINE.has(k))return;segs(k).forEach(p=>{if(p.length<2)return;
     g+=`<path d="M${p[0][0].toFixed(1)} ${y0}`+p.map(q=>`L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join('')+`L${p[p.length-1][0].toFixed(1)} ${y0}Z" style="fill:${c};opacity:.28"/>`;});});
-  order.forEach(([k,c])=>{segs(k).forEach(p=>{
-    g+=`<path class="ln" d="`+p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('')+`" style="stroke:${c}"/>`;});});
+  [...order.filter(([k])=>!LINE.has(k)),...order.filter(([k])=>LINE.has(k))].forEach(([k,c])=>{segs(k).forEach(p=>{
+    g+=`<path class="ln" d="`+p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('')+`" style="stroke:${c}${LINE.has(k)?';stroke-width:2.5':''}"/>`;});});
   g+=`<line id="cur" class="cur" x1="0" x2="0" y1="${Y0}" y2="${Y1}" style="display:none"/>`;
   svg.innerHTML=g;
   svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W24/r.width;
@@ -719,8 +721,8 @@ async function load24(){
   D24=await(await fetch('/api/history/day')).json();
   if(D24.valid){const m=(a,f)=>a.map(v=>v==null?null:f(v));
     D24.imp=m(D24.grid,v=>Math.max(0,v));D24.exp=m(D24.grid,v=>Math.min(0,v));
-    D24.dis=m(D24.bat,v=>Math.max(0,v));D24.chg=m(D24.bat,v=>Math.min(0,v));
-    D24.use=m(D24.house,v=>-Math.abs(v));}
+    D24.dis=m(D24.bat,v=>Math.max(0,v));D24.chg=m(D24.bat,v=>Math.max(0,-v));
+    D24.use=m(D24.house,v=>Math.abs(v));}
   draw24();
 }
 async function boot(){
