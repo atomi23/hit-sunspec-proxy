@@ -326,18 +326,26 @@ static void drawSetupScreen() {
   gfx->fillScreen(P.bg);
   const char *code = local.displayCode[0] ? local.displayCode : local.wifiPass;
 
+  // Mit Kabel ist die Einrichtung auch direkt aus dem Heimnetz erreichbar
+  const bool cable = gLive.ethOk && strcmp(gLive.ipEth, "-") != 0;
   text(fVal, P.ink, P.bg, top_left, L("Einrichtung", "Setup"), 16, 12);
-  text(fSm, P.dim, P.bg, top_left, L("Mit dem WLAN des Geräts verbinden", "Join the device Wi-Fi"), 16, 42);
+  text(fSm, P.dim, P.bg, top_left,
+       cable ? L("Per Kabel im Heimnetz oder über das WLAN des Geräts", "Via cable on your network or the device Wi-Fi")
+             : L("Mit dem WLAN des Geräts verbinden", "Join the device Wi-Fi"),
+       16, 42);
 
   cell(16, 68, L("WLAN", "Wi-Fi"), local.wifiSsid, P.ink);
   text(fSm, P.dim, P.bg, top_left, L("Passwort", "Password"), 16, 110);
   text(fVal, P.acc, P.bg, top_left, code, 16, 126);
   char url[40];
-  snprintf(url, sizeof(url), "http://%s", gLive.ipShown);
-  text(fSm, P.dim, P.bg, top_left, L("Danach im Browser öffnen", "Then open in a browser"), 16, 164);
+  snprintf(url, sizeof(url), "http://%s", cable ? gLive.ipEth : gLive.ipShown);
+  text(fSm, P.dim, P.bg, top_left, L("Im Browser öffnen", "Open in a browser"), 16, 164);
   text(fLbl, P.ink, P.bg, top_left, url, 16, 181);
-  char login[48];
-  snprintf(login, sizeof(login), "%s %s", L("Login", "Login"), local.webUser);
+  char login[64];
+  if (cable)
+    snprintf(login, sizeof(login), "%s http://%s - Login %s", L("WLAN:", "Wi-Fi:"), gLive.ipWifi, local.webUser);
+  else
+    snprintf(login, sizeof(login), "Login %s", local.webUser);
   text(fSm, P.dim, P.bg, top_left, login, 16, 202);
 
   char wifiQr[128];

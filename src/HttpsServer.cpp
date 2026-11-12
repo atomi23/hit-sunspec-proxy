@@ -41,8 +41,11 @@ String info = "{}";
 // Browser bauen dann bei Bedarf neu auf. Sitzungen mit laufender Anfrage bleiben unangetastet.
 constexpr int MAX_SESSIONS = 2;
 constexpr uint32_t IDLE_CLOSE_MS = 4000;
+// Zwei Seiten, die alle 2 s abfragen, würden die Plätze sonst dauerhaft belegen und neue Verbindungen aussperren
+constexpr uint32_t MAX_AGE_MS = 15000;
 struct Sess {
   int fd = -1;
+  uint32_t opened = 0;
   uint32_t last = 0;
   bool busy = false;
 };
@@ -56,6 +59,7 @@ Sess *findSess(int fd, bool create) {
   for (Sess &s : sess)
     if (s.fd < 0) {
       s.fd = fd;
+      s.opened = millis();
       s.last = millis();
       s.busy = false;
       return &s;
@@ -465,7 +469,7 @@ void closeIdle() {
   const uint32_t idleMs = heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 50000 ? 0 : IDLE_CLOSE_MS;
   for (size_t i = 0; i < n; i++) {
     Sess *s = findSess(fds[i], true); // neu: ab jetzt zählen, auch wenn noch nichts kam
-    if (s && !s->busy && millis() - s->last > idleMs) {
+    if (s && !s->busy && (millis() - s->last > idleMs || millis() - s->opened > MAX_AGE_MS)) {
       toClose[nClose++] = fds[i];
       s->fd = -1;
     }
