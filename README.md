@@ -6,7 +6,7 @@ andere Modbus-Clients.
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
-Aktuelle Firmware: **v0.5.0**
+Aktuelle Firmware: **v0.5.1**
 
 ## Architektur
 

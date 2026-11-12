@@ -1584,6 +1584,14 @@ void begin() {
   // Während der Einrichtung nicht, da steht man mit dem Handy im Geräte-WLAN.
   server.addMiddleware([](AsyncWebServerRequest *req, ArMiddlewareNext next) {
     const auto &c = ConfigStore::get();
+    // Bis die Einrichtung fertig ist, führt jede Seite dorthin; Schnittstellen, CSS und Schriften braucht die Einrichtung selbst
+    if (!c.setupComplete && req->method() == HTTP_GET) {
+      const String &u = req->url();
+      if (u != "/setup" && !u.startsWith("/api/") && u != "/a.css" && !u.startsWith("/f/")) {
+        req->redirect("/setup");
+        return;
+      }
+    }
     if (c.httpsRedirect && c.setupComplete && HttpsServer::running() && req->client() &&
         req->client()->remoteIP() != IPAddress(127, 0, 0, 1)) {
       String host = req->host();
