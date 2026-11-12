@@ -1249,7 +1249,8 @@ async function finish(){
   if(!body.demoMode && !body.hitHost){fin.innerHTML='<span class="bad">HIT-IP oder Demo nötig</span>';go(2);return;}
   const r=await(await fetch('/api/setup/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
   if(!r.ok){fin.innerHTML='<span class="bad">'+(r.error||'Fehler')+'</span>';return;}
-  const next=r.https?`https://${location.hostname}/`:'/';
+  const host=(location.hostname==='192.168.4.1'&&r.ip&&r.ip!=='-')?r.ip:location.hostname;
+  const next=r.https?`https://${host}/`:(host===location.hostname?'/':`http://${host}/`);
   fin.innerHTML=r.https
     ?`<span class="ok">Fertig.</span> Weiter über HTTPS: <a href="${next}">${next}</a><br>`+
      `<span class="muted">Der Browser warnt einmal wegen des eigenen Zertifikats; bestätigen und mit demselben Zugang anmelden.</span>`
@@ -1458,6 +1459,37 @@ const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size
   memcpy(static_cast<char *>(req->_tempObject) + index, data, len);
   if (index + len < total) return nullptr;
   return static_cast<const char *>(req->_tempObject);
+}
+
+// Netzwerk neu starten oder den HIT abfragen dauert Sekunden und kann die Verbindung kappen, über die
+// gespeichert wurde. Deshalb erst antworten, dann in der Hauptschleife übernehmen.
+volatile uint8_t applyPending = 0; // 1 = übernehmen, 2 = übernehmen und HIT sofort abfragen
+volatile uint32_t applyAt = 0;
+
+void scheduleApply(bool pollHit) {
+  applyAt = millis() + 300;
+  applyPending = pollHit ? 2 : (applyPending ? applyPending : 1);
+}
+
+void runPendingApply() {
+  if (!applyPending || int32_t(millis() - applyAt) < 0) return;
+  const bool poll = applyPending == 2;
+  applyPending = 0;
+  auto &c = ConfigStore::get();
+  NetBoot::applyConfig(c);
+  HitBus::applyConfig(c);
+  HitClient::applyConfig(c);
+  ModbusGateway::applyConfig(c);
+  HitControl::applyConfig(c);
+  SunSpecServer::applyConfig(c);
+  StatusDisplay::applyConfig(c);
+  TasmotaClient::applyConfig(c);
+  MqttHa::applyConfig(c);
+  HoyCloud::applyConfig(c);
+  KnxIp::applyConfig(c);
+  HttpsServer::applyConfig(c);
+  if (poll) HitClient::pollNow();
+  SunSpecServer::rebuildMap();
 }
 
 void applyJson(JsonObjectConst o, AppConfig &c) {
@@ -1703,22 +1735,17 @@ void begin() {
               else c.wifiApMode = false;
               ConfigStore::save();
               gLive.setupScreen = false;
-              NetBoot::applyConfig(c);
-              HitBus::applyConfig(c);
-              HitClient::applyConfig(c);
-              ModbusGateway::applyConfig(c);
-              HitControl::applyConfig(c);
-              SunSpecServer::applyConfig(c);
-              StatusDisplay::applyConfig(c);
-              TasmotaClient::applyConfig(c);
-              MqttHa::applyConfig(c);
-              HoyCloud::applyConfig(c);
-              KnxIp::applyConfig(c);
-              HttpsServer::applyConfig(c);
-              HitClient::pollNow();
-              SunSpecServer::rebuildMap();
-              req->send(200, "application/json",
-                        (c.httpsEnabled && HttpsServer::running()) ? "{\"ok\":true,\"https\":true}" : "{\"ok\":true}");
+              {
+                // Geräte-WLAN geht gleich aus; wer darüber eingerichtet hat, braucht die Adresse im Heimnetz
+                const bool eth = gLive.ethOk && strcmp(gLive.ipEth, "-") != 0;
+                String out = "{\"ok\":true,\"https\":";
+                out += (c.httpsEnabled && HttpsServer::running()) ? "true" : "false";
+                out += ",\"ip\":\"";
+                out += eth ? gLive.ipEth : gLive.ipShown;
+                out += "\"}";
+                req->send(200, "application/json", out);
+              }
+              scheduleApply(true);
             });
 
   server.on("/api/status", HTTP_GET, [](AsyncWebServerRequest *req) {
@@ -1908,19 +1935,8 @@ void begin() {
               if (doc["setupComplete"].isNull()) c.setupComplete = true;
               ConfigStore::save();
               gLive.setupScreen = !c.setupComplete;
-              NetBoot::applyConfig(c);
-              HitBus::applyConfig(c);
-              HitClient::applyConfig(c);
-              ModbusGateway::applyConfig(c);
-              HitControl::applyConfig(c);
-              SunSpecServer::applyConfig(c);
-              StatusDisplay::applyConfig(c);
-              TasmotaClient::applyConfig(c);
-              MqttHa::applyConfig(c);
-              HoyCloud::applyConfig(c);
-              KnxIp::applyConfig(c);
-              HttpsServer::applyConfig(c);
               req->send(200, "application/json", "{\"ok\":true}");
+              scheduleApply(false);
             });
 
   server.on("/api/control/apply", HTTP_POST, [](AsyncWebServerRequest *req) {
@@ -2059,6 +2075,7 @@ void begin() {
 }
 
 void loop() {
+  runPendingApply();
   OtaUpdate::loop();
   HttpsServer::loop();
 }
