@@ -330,7 +330,7 @@ static void drawSetupScreen() {
   const bool cable = gLive.ethOk && strcmp(gLive.ipEth, "-") != 0;
   text(fVal, P.ink, P.bg, top_left, L("Einrichtung", "Setup"), 16, 12);
   text(fSm, P.dim, P.bg, top_left,
-       cable ? L("Per Kabel im Heimnetz oder über das WLAN des Geräts", "Via cable on your network or the device Wi-Fi")
+       cable ? L("Per Kabel oder Geräte-WLAN", "Via cable or device Wi-Fi")
              : L("Mit dem WLAN des Geräts verbinden", "Join the device Wi-Fi"),
        16, 42);
 
