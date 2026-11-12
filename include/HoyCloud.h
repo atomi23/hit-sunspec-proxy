@@ -2,9 +2,8 @@
 #include "AppConfig.h"
 
 namespace HoyCloud {
-  void begin(const AppConfig &cfg);
+  void begin(const AppConfig &cfg); // startet die Abruf-Task
   void applyConfig(const AppConfig &cfg);
-  void loop();
-  bool pollNow();
+  bool pollNow();                   // nur aus der Abruf-Task
   bool fresh(uint32_t maxAgeMs);
 }

@@ -33,7 +33,7 @@ void reconcile() {
     return;
   }
 
-  // abgefragt wird nur in HoyCloud::loop() im eingestellten Takt; reconcile() läuft in jeder Schleife
+  // abgefragt wird nur in der Cloud-Task im eingestellten Takt; reconcile() läuft in jeder Schleife
   if (cfg.cloudEnabled) {
     if (HoyCloud::fresh(cfg.cloudMaxAgeMs)) {
       gLive.dataOrigin = DataOrigin::Cloud;

@@ -78,8 +78,7 @@ int lastHttpCode = 0;
 bool httpsPost(const String &url, const String &body, const char *auth, String &out) {
   NetworkClientSecure cli;
   cli.setCACert(HOY_CA);
-  // Der Abruf läuft in der Hauptschleife (auch SunSpec für Consolinno): ohne Grenze wartet der
-  // TLS-Handshake bis zu 120 s, dann schlägt der Watchdog zu
+  // ohne Grenze wartet der TLS-Handshake bis zu 120 s; so lange wären keine frischen Werte da
   cli.setHandshakeTimeout(10);
   cli.setTimeout(10);
   HTTPClient http;
@@ -88,16 +87,10 @@ bool httpsPost(const String &url, const String &body, const char *auth, String &
   http.setTimeout(10000);
   http.addHeader("Content-Type", "application/json");
   if (auth && auth[0]) http.addHeader("Authorization", auth);
-  Watchdog::feed();
-  Watchdog::stage("Cloud: Verbindung");
   int code = http.POST(body);
   lastHttpCode = code;
-  Watchdog::feed();
-  Watchdog::stage("Cloud: Antwort");
   out = http.getString();
   http.end();
-  Watchdog::stage("Cloud");
-  Watchdog::feed();
   return code >= 200 && code < 300;
 }
 
@@ -266,6 +259,38 @@ bool fetchRealtime() {
   gLive.cloudOk = false;
   return false;
 }
+
+// Einstellungen kommen aus der Weboberfläche; die Abruf-Task übernimmt sie nur zwischen zwei Abrufen
+SemaphoreHandle_t cfgLock = nullptr;
+AppConfig pendingCfg;
+bool cfgPending = false;
+
+void takeConfig() {
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  const bool changed = cfgPending;
+  if (changed) {
+    local = pendingCfg;
+    cfgPending = false;
+  }
+  xSemaphoreGive(cfgLock);
+  if (!changed) return;
+  nextPoll = 0;
+  token[0] = 0;
+  loginBlockedUntil = 0;
+  gLive.cloudOk = false;
+}
+
+void step();
+
+// Eigene Task: DNS, TLS-Handshake und Antwort dauern Sekunden und dürfen die Hauptschleife
+// (SunSpec für Consolinno, Modbus-Gateway) nicht aufhalten
+void taskMain(void *) {
+  for (;;) {
+    takeConfig();
+    step();
+    vTaskDelay(pdMS_TO_TICKS(250));
+  }
+}
 } // namespace
 
 namespace HoyCloud {
@@ -275,14 +300,16 @@ void begin(const AppConfig &cfg) {
   started = true;
   nextPoll = 0;
   token[0] = 0;
+  cfgLock = xSemaphoreCreateMutex();
+  xTaskCreatePinnedToCore(taskMain, "cloud", 12288, nullptr, 1, nullptr, 0);
 }
 
 void applyConfig(const AppConfig &cfg) {
-  local = cfg;
-  nextPoll = 0;
-  token[0] = 0;
-  loginBlockedUntil = 0;
-  gLive.cloudOk = false;
+  if (!cfgLock) return;
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  pendingCfg = cfg;
+  cfgPending = true;
+  xSemaphoreGive(cfgLock);
 }
 
 bool pollNow() {
@@ -297,7 +324,10 @@ bool fresh(uint32_t maxAgeMs) {
   return gLive.cloudOk && gLive.lastCloudMs && (millis() - gLive.lastCloudMs) <= maxAgeMs;
 }
 
-void loop() {
+} // namespace HoyCloud
+
+namespace {
+void step() {
   if (!started || !local.cloudEnabled) {
     gLive.cloudOk = false;
     return;
@@ -319,7 +349,6 @@ void loop() {
     return;
   }
   nextPoll = millis() + max<uint32_t>(15000, local.cloudPollMs);
-  pollNow();
+  HoyCloud::pollNow();
 }
-
-} // namespace HoyCloud
+} // namespace

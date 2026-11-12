@@ -90,8 +90,6 @@ void loop() {
   TasmotaClient::loop();
   Watchdog::stage("MQTT");
   MqttHa::loop();
-  Watchdog::stage("Cloud");
-  HoyCloud::loop();
   Watchdog::stage("Datenquelle");
   DataBroker::reconcile();
   Watchdog::stage("Verlauf");
