@@ -6,7 +6,7 @@ verteilt die Daten an Consolinno, Home Assistant, KNX und andere Modbus-Clients.
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
-Aktuelle Firmware: **v0.4.1**
+Aktuelle Firmware: **v0.4.2**
 
 ## Architektur
 
@@ -37,6 +37,22 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 
 ![Live](docs/screenshots/live-dashboard.jpg)
 
+### Verlauf
+
+Leistungsbilanz der letzten 24 Stunden: Quellen (PV, Netzbezug, Akku entladen) über der Null-Linie,
+Verbraucher (Haus, Einspeisung, Akku laden) darunter. Darunter Energie je Tag, Monat, Jahr und gesamt.
+
+![Verlauf](docs/screenshots/history.jpg)
+
+![Verlauf, helles Design](docs/screenshots/history-light.jpg)
+
+### Protokoll
+
+Systemprotokoll mit HIT-Ausfällen samt Ursache, Wiederkehr, Cloud-Status, OTA und Neustarts.
+Die §14a-Writes von Consolinno stehen im zweiten Reiter.
+
+![Systemprotokoll](docs/screenshots/system-log.jpg)
+
 ### Einstellungen: HIT-Wechselrichter und KNX
 
 ![HIT-Wechselrichter](docs/screenshots/web-config.jpg)
@@ -46,6 +62,10 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 ## Funktionen
 
 - **Live-Seite** mit Energiefluss (PV, Akku, HIT, Netz, Haus), Ladestand-Ring, Strings, Phasen, Zählern
+- **Verlauf** im ESP gespeichert (LittleFS): 24 h in 5-Minuten-Schritten, Tage, Monate, Jahre
+- **Zwei Protokolle:** System (HIT, Cloud, OTA, Neustarts) und §14a-Writes von Consolinno;
+  das Display zeigt HIT-Fehler als Fehler/Abfragen
+- Oberfläche nutzt die volle Browserbreite
 - **Menü nach Datenweg:** Datenquellen, Ausgänge, Gerät; ein Bereich pro Menüpunkt
 - **Display** 480×222 mit kantengeglätteter Barlow-Schrift, drei Seiten (Live, Strings und Netz, System),
   einstellbarer Abschalt-Timeout, wacht bei Berührung oder HIT-Störung auf
@@ -58,7 +78,7 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 - **Zugangscode** jederzeit neu erzeugen; bleibt sonst über Neustarts und Updates erhalten
 - **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart
 - **Live-Ansicht des Displays** in der Weboberfläche; Live-Seite bleibt stehen, automatisches Blättern optional
-- Themes Mint, Ocean, Ember; Deutsch und Englisch (Web und Display)
+- Themes Mint, Ocean, Ember und Hell; Deutsch und Englisch (Web und Display)
 
 ## Inbetriebnahme
 

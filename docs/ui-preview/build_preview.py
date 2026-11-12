@@ -26,7 +26,7 @@ idx = extract("INDEX_HTML")
 (OUT / "a.css").write_text(css, encoding="utf-8")
 
 mock_status = {
-    "version": "0.4.0",
+    "version": "0.4.2",
     "setupComplete": True,
     "demoMode": True,
     "ipShown": "192.0.2.80",
@@ -80,6 +80,7 @@ mock_status = {
 dash_js = f"""
 <script>
 const MOCK={json.dumps(mock_status)};
+MOCK.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
@@ -230,6 +231,7 @@ hist_js = f"""
 <script>
 const H={{day:{json.dumps(day)},bars:{{day:{json.dumps(days)},month:{json.dumps(months)},year:{json.dumps(years)}}},total:{json.dumps(total)}}};
 const STATUS={json.dumps(mock_status)};
+STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
@@ -242,4 +244,38 @@ window.fetch=async(u,o)=>{{
 </script>
 """
 (OUT / "history.html").write_text(hist.replace("<body>", "<body>" + hist_js, 1), encoding="utf-8")
+
+# Protokoll: erfundene Ereignisse, relative Zeiten ab Seitenaufruf
+dbg = extract("DEBUG_HTML")
+up = 9 * 3600 * 1000 + 42 * 60 * 1000
+ev = [
+    (0, "I", "System", "Start v0.4.2, Grund: Software-Neustart (OTA)"),
+    (4200, "I", "Cloud", "Daten kommen an"),
+    (2 * 3600e3, "W", "HIT", "Abfrage fehlgeschlagen bei Reg 1804: keine Antwort (Timeout)"),
+    (2 * 3600e3 + 26e3, "I", "HIT", "wieder erreichbar nach 1 Fehlversuch (25 s)"),
+    (5 * 3600e3, "W", "HIT", "Abfrage fehlgeschlagen bei Reg 27: vom HIT getrennt"),
+    (5 * 3600e3 + 500e3, "E", "HIT", "seit 500 s keine Daten (20 Versuche): Verbindungsaufbau fehlgeschlagen"),
+    (5 * 3600e3 + 640e3, "I", "HIT", "wieder erreichbar nach 26 Fehlversuchen (640 s)"),
+    (8 * 3600e3, "W", "Cloud", "Datenabruf fehlgeschlagen (HTTP 502)"),
+    (8 * 3600e3 + 61e3, "I", "Cloud", "Daten kommen an"),
+]
+events = [{"t": int(t), "ts": 0, "lv": lv, "src": s, "msg": m} for t, lv, s, m in ev]
+dbg_js = f"""
+<script>
+const STATUS={json.dumps(mock_status)};
+STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
+const EV={{uptimeMs:{up},hitPolls:1394,hitFails:27,hitErr:"Verbindungsaufbau fehlgeschlagen",events:{json.dumps(events)}}};
+const WR={{uptimeMs:{up},wMaxLimPct:6000,wMaxLimEna:true,sunspecClient:true,hitWriteEnabled:false,sunspecWriteToHit:false,
+  count:2,lastAddr:40238,lastVal:6000,lastNote:"WMaxLimPct 60 %",events:[{{t:{up - 300000},fc:16,addr:40238,val:6000,note:"WMaxLimPct 60 %"}},{{t:{up - 299000},fc:6,addr:40242,val:1,note:"WMaxLim_Ena an"}}]}};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{{
+  u=String(u);
+  if(u.includes('/api/events')) return {{ok:true,json:async()=>EV}};
+  if(u.includes('/api/debug')) return {{ok:true,json:async()=>WR}};
+  if(u.includes('/api/status')) return {{ok:true,json:async()=>STATUS}};
+  return _f(u,o);
+}};
+</script>
+"""
+(OUT / "debug.html").write_text(dbg.replace("<body>", "<body>" + dbg_js, 1), encoding="utf-8")
 print(f"wrote {len(meta)} knx points -> {OUT}")

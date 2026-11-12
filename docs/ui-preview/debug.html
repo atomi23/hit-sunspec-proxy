@@ -1,0 +1,181 @@
+
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title>Protokoll · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>.card{margin-bottom:12px}</style>
+</head><body>
+<script>
+const STATUS={"version": "0.4.2", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
+const EV={uptimeMs:34920000,hitPolls:1394,hitFails:27,hitErr:"Verbindungsaufbau fehlgeschlagen",events:[{"t": 0, "ts": 0, "lv": "I", "src": "System", "msg": "Start v0.4.2, Grund: Software-Neustart (OTA)"}, {"t": 4200, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}, {"t": 7200000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 1804: keine Antwort (Timeout)"}, {"t": 7226000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 1 Fehlversuch (25 s)"}, {"t": 18000000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 27: vom HIT getrennt"}, {"t": 18500000, "ts": 0, "lv": "E", "src": "HIT", "msg": "seit 500 s keine Daten (20 Versuche): Verbindungsaufbau fehlgeschlagen"}, {"t": 18640000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 26 Fehlversuchen (640 s)"}, {"t": 28800000, "ts": 0, "lv": "W", "src": "Cloud", "msg": "Datenabruf fehlgeschlagen (HTTP 502)"}, {"t": 28861000, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}]};
+const WR={uptimeMs:34920000,wMaxLimPct:6000,wMaxLimEna:true,sunspecClient:true,hitWriteEnabled:false,sunspecWriteToHit:false,
+  count:2,lastAddr:40238,lastVal:6000,lastNote:"WMaxLimPct 60 %",events:[{t:34620000,fc:16,addr:40238,val:6000,note:"WMaxLimPct 60 %"},{t:34621000,fc:6,addr:40242,val:1,note:"WMaxLim_Ena an"}]};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{
+  u=String(u);
+  if(u.includes('/api/events')) return {ok:true,json:async()=>EV};
+  if(u.includes('/api/debug')) return {ok:true,json:async()=>WR};
+  if(u.includes('/api/status')) return {ok:true,json:async()=>STATUS};
+  return _f(u,o);
+};
+</script>
+<div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
+  <nav>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> Verlauf</a>
+    <div class="nav-grp">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <div class="nav-grp">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <div class="nav-grp">Gerät</div>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
+    <a class="on" aria-current="page" href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+        <option value="light">Hell</option>
+      </select>
+    </div>
+  </div>
+</aside>
+<main class="main">
+<style>
+.ltabs{display:flex;gap:6px;margin:0 0 14px}
+.ltabs button:not(.on){background:var(--plate2);color:var(--ink)}
+.lv{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--rule2)}
+.lv.W{background:var(--warn)}.lv.E{background:var(--fault)}.lv.I{background:var(--acc)}
+#sys td:first-child,#tb td:first-child{white-space:nowrap;color:var(--dim);padding-right:16px}
+#sys td:nth-child(2){white-space:nowrap;padding-right:16px}
+</style>
+<div class="page-head">
+  <div>
+    <h1>Protokoll</h1>
+    <p class="sub" id="psub">Verbindungen, Fehler und Neustarts seit dem letzten Start.</p>
+  </div>
+</div>
+<div class="ltabs">
+  <button type="button" id="tSys" class="on" onclick="tab('sys')">System</button>
+  <button type="button" id="tW" onclick="tab('w')">§14a-Writes</button>
+</div>
+
+<div id="pSys">
+<div class="card" id="sysSum">Lade…</div>
+<div class="card" style="margin-top:12px">
+<div class="row" style="margin-top:0;margin-bottom:12px">
+<button class="sec" type="button" onclick="refresh()">Aktualisieren</button>
+<button class="sec" type="button" onclick="clrSys()">Protokoll leeren</button>
+</div>
+<table><thead><tr><th>Zeit</th><th>Quelle</th><th>Meldung</th></tr></thead>
+<tbody id="sys"></tbody></table>
+</div>
+</div>
+
+<div id="pW" class="hide">
+<div class="card" id="sum">Lade…</div>
+<div class="card" style="margin-top:12px">
+<div class="row" style="margin-top:0;margin-bottom:12px">
+<button class="sec" type="button" onclick="refresh()">Aktualisieren</button>
+<button class="sec" type="button" onclick="clr()">Log leeren</button>
+</div>
+<table><thead><tr><th>Alter</th><th>FC</th><th>Addr</th><th>Wert</th><th>Hinweis</th></tr></thead>
+<tbody id="tb"></tbody></table>
+</div>
+</div>
+</main></div>
+
+<script>
+const I18N={
+ de:{live:'Live',settings:'Einstellungen',proto:'Protokoll',energy:'Energiefluss',batSoc:'Batterie SoC',poll:'Jetzt pollen',
+     pv:'PV',bat:'Batterie',grid:'Netz',soc:'SoC',enHit:'Energie HIT',yield:'PV Ertrag',imp:'Bezug',exp:'Einspeisung',
+     lpp:'Consolinno LPP',limit:'Limit',on:'aktiv',off:'aus',hems:'HEMS',conn:'verbunden',wait:'wartet',tas:'Tasmota',
+     online:'online',offline:'offline',ph:'Phasen Netz',freq:'Frequenz',sys:'System'},
+ en:{live:'Live',settings:'Settings',proto:'Log',energy:'Energy flow',batSoc:'Battery SoC',poll:'Poll now',
+     pv:'PV',bat:'Battery',grid:'Grid',soc:'SoC',enHit:'HIT Energy',yield:'PV yield',imp:'Import',exp:'Export',
+     lpp:'Consolinno LPP',limit:'Limit',on:'on',off:'off',hems:'HEMS',conn:'connected',wait:'waiting',tas:'Tasmota',
+     online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
+};
+let LANG='de';
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script>
+function age(ms){const s=Math.floor((Date.now()-window._boot-ms)/1000);if(s<0)return ms+'ms';if(s<60)return s+'s';return Math.floor(s/60)+'m';}
+let TAB=location.hash==='#writes'?'w':'sys';
+function tab(k){TAB=k;$('tSys').classList.toggle('on',k==='sys');$('tW').classList.toggle('on',k==='w');
+  $('pSys').classList.toggle('hide',k!=='sys');$('pW').classList.toggle('hide',k!=='w');
+  $('psub').textContent=k==='sys'?'Verbindungen, Fehler und Neustarts seit dem letzten Start.':'SunSpec Model 123: Writes von Consolinno auf Port 1502.';
+  history.replaceState(null,'',location.pathname+location.search+(k==='w'?'#writes':''));refresh();}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function when(e,boot){
+  const d=e.ts?new Date(e.ts*1000):new Date(boot+e.t);
+  const today=new Date().toDateString()===d.toDateString();
+  return (today?'':d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' ')+d.toLocaleTimeString('de-DE');
+}
+async function refreshSys(){
+  const d=await(await fetch('/api/events')).json();
+  const boot=Date.now()-d.uptimeMs;
+  const rate=d.hitPolls?(100*d.hitFails/d.hitPolls):0;
+  $('sysSum').innerHTML=`<div class="big" style="color:${d.hitFails?(rate>5?'var(--fault)':'var(--warn)'):'var(--acc)'}">HIT: ${d.hitFails} von ${d.hitPolls} Abfragen fehlgeschlagen</div>
+    <div class="muted">${d.hitPolls?rate.toFixed(1)+' % seit Start · ':''}läuft seit ${Math.floor(d.uptimeMs/3600000)} h ${Math.floor(d.uptimeMs/60000)%60} min${d.hitErr?' · letzte Ursache: '+esc(d.hitErr):''}</div>`;
+  const tb=$('sys');
+  tb.innerHTML=(d.events||[]).slice().reverse().map(e=>`<tr><td>${when(e,boot)}</td><td><span class="lv ${e.lv}"></span>${esc(e.src)}</td><td>${esc(e.msg)}</td></tr>`).join('')
+    ||'<tr><td colspan="3" class="muted">Noch keine Einträge.</td></tr>';
+}
+async function clrSys(){await fetch('/api/events/clear',{method:'POST'});refresh();}
+async function refresh(){
+  const s=await(await fetch('/api/status')).json(); applyThemeLang(s);
+  if(TAB==='sys')return refreshSys();
+  const d=await(await fetch('/api/debug')).json();
+  window._boot=Date.now()-d.uptimeMs;
+  const pct=(d.wMaxLimPct/100).toFixed(2);
+  const ena=d.wMaxLimEna;
+  document.getElementById('sum').innerHTML=`
+    <div class="big">${ena?'BEGRENZT':'Frei'} · ${pct} %</div>
+    <div class="muted">WMaxLimPct_Ena=${ena?1:0} · raw=${d.wMaxLimPct} (SF-2) · HEMS-Client ${d.sunspecClient?'verbunden':'—'} · Writes ${d.count}
+    ${d.lastNote?('<br>Zuletzt: '+d.lastNote+' (Addr '+d.lastAddr+' = '+d.lastVal+')'):'<br>Noch kein Write empfangen — in Consolinno §14a/LPP testen.'}</div>
+    <div class="muted" style="margin-top:8px">HIT-Weiterleitung: ${d.sunspecWriteToHit?'an':'aus'} · Write-Enable: ${d.hitWriteEnabled?'an':'aus'}</div>`;
+  const tb=document.getElementById('tb'); tb.innerHTML='';
+  (d.events||[]).slice().reverse().forEach(e=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${age(e.t)}</td><td>${e.fc}</td><td>${e.addr}</td><td>${e.val}</td><td>${e.note||''}</td>`;
+    tb.appendChild(tr);
+  });
+}
+async function clr(){await fetch('/api/debug/clear',{method:'POST'});refresh();}
+tab(TAB);setInterval(()=>{if(!document.hidden)refresh();},3000);
+</script></body></html>

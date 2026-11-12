@@ -1191,7 +1191,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="color-scheme" content="dark"/><title>Write-Debug · HIT Proxy</title>
+<meta name="color-scheme" content="dark"/><title>Protokoll · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
 <style>.card{margin-bottom:12px}</style>
 </head><body><div class="app">
@@ -1311,7 +1311,7 @@ let TAB=location.hash==='#writes'?'w':'sys';
 function tab(k){TAB=k;$('tSys').classList.toggle('on',k==='sys');$('tW').classList.toggle('on',k==='w');
   $('pSys').classList.toggle('hide',k!=='sys');$('pW').classList.toggle('hide',k!=='w');
   $('psub').textContent=k==='sys'?'Verbindungen, Fehler und Neustarts seit dem letzten Start.':'SunSpec Model 123: Writes von Consolinno auf Port 1502.';
-  history.replaceState(null,'',k==='w'?'#writes':'#');refresh();}
+  history.replaceState(null,'',location.pathname+location.search+(k==='w'?'#writes':''));refresh();}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 function when(e,boot){
