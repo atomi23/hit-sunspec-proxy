@@ -31,6 +31,7 @@ void setup() {
   Watchdog::begin(45);
   Serial.printf("Letzter Neustart: %s\n", Watchdog::lastResetReason());
   EventLog::add('I', "System", "Start v%s, Grund: %s", PROXY_VERSION, Watchdog::lastResetReason());
+  if (Watchdog::hungIn()[0]) EventLog::add('E', "System", "vorher hing die Hauptschleife in: %s", Watchdog::hungIn());
 
   NetBoot::begin(cfg);
   StatusDisplay::begin(cfg);
@@ -81,18 +82,31 @@ void setup() {
 void loop() {
   Watchdog::feed();
   auto &cfg = ConfigStore::get();
+  Watchdog::stage("Netzwerk");
   NetBoot::loop(cfg);
+  Watchdog::stage("HIT");
   HitClient::loop();
+  Watchdog::stage("Tasmota");
   TasmotaClient::loop();
+  Watchdog::stage("MQTT");
   MqttHa::loop();
+  Watchdog::stage("Cloud");
   HoyCloud::loop();
+  Watchdog::stage("Datenquelle");
   DataBroker::reconcile();
+  Watchdog::stage("Verlauf");
   History::loop();
+  Watchdog::stage("KNX");
   KnxIp::loop();
+  Watchdog::stage("SunSpec");
   SunSpecServer::loop();
+  Watchdog::stage("Modbus-Gateway");
   ModbusGateway::loop();
+  Watchdog::stage("Display");
   StatusDisplay::loop();
+  Watchdog::stage("Web/HTTPS/OTA");
   WebConfig::loop();
+  Watchdog::stage("Hauptschleife");
   Watchdog::checkSoft();
   Watchdog::feed();
   delay(2);

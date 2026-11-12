@@ -7,12 +7,16 @@
 </head><body>
 <script>
 const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14033, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14033, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14033, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14033, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14035, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}]};
-const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/38", "dpt": 14035}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
+const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/38", "dpt": 14035}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
 const STATUS={"version": "0.4.2", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const TLS={subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
+  sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
+  chain:1,source:"self",running:true,enabled:true};
 const _f=window.fetch;
 window.fetch=async(u,o)=>{
   u=String(u);
   if(u.includes('/api/knx/meta')) return {ok:true,json:async()=>META};
+  if(u.includes('/api/tls')) return {ok:true,json:async()=>TLS};
   if(u.includes('/api/config') && (!o || !o.method || o.method==='GET'))
     return {ok:true,json:async()=>CFG};
   if(u.includes('/api/config')) return {ok:true,json:async()=>({ok:true})};
@@ -108,6 +112,27 @@ und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich
 <label>Benutzername</label><input name="webUser"/>
 <label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
+<label><input name="httpsEnabled" type="checkbox"/> HTTPS (Port 443)</label>
+<label><input name="httpsRedirect" type="checkbox"/> Aufrufe über HTTP auf HTTPS umleiten</label>
+<p class="hint">Der ESP erzeugt sein Zertifikat selbst. Der Browser warnt deshalb beim ersten Aufruf; vergleiche den Fingerabdruck
+unten mit dem im Browser und bestätige dann. Während der Einrichtung und falls HTTPS nicht startet, bleibt HTTP erreichbar.</p>
+<div id="tlsBox">
+<table><tbody id="tlsInfo"><tr><td class="muted">Lade…</td></tr></tbody></table>
+<label>Eigenes Zertifikat (PEM, Zwischenzertifikate dahinter)</label>
+<textarea id="tlsCrt" rows="5" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+<input type="file" id="tlsCrtFile" accept=".pem,.crt,.cer,.txt" onchange="tlsFile(this,'tlsCrt')"/>
+<label>Privater Schlüssel (PEM, ohne Passwort)</label>
+<textarea id="tlsKey" rows="4" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+<input type="file" id="tlsKeyFile" accept=".pem,.key,.txt" onchange="tlsFile(this,'tlsKey')"/>
+<div class="row">
+<button class="sec" type="button" onclick="tlsUpload()">Eigenes Zertifikat übernehmen</button>
+<button class="sec" type="button" onclick="tlsSelf()">Selbst signiertes neu erzeugen</button>
+<span id="tlsMsg" class="hint" style="margin:0"></span>
+</div>
+<p class="hint">Ein eigenes Zertifikat, etwa von der Hausnetz-CA oder Let's Encrypt über DNS-Prüfung, erspart die Warnung. Der ESP prüft,
+ob Schlüssel und Zertifikat zusammenpassen, und startet HTTPS danach neu. „Selbst signiertes neu erzeugen“ löscht das eigene Zertifikat
+und nimmt die aktuelle IP-Adresse ins neue auf.</p>
+</div>
 </div>
 <div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite."><strong>Display</strong>
 <label>Live-Ansicht</label>
@@ -288,7 +313,33 @@ async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); refresh(); route();
+  renderKnx(meta.points||[], c.knxCh||[]); refresh(); route(); loadTls();
+}
+async function loadTls(){
+  const t=await fetch('/api/tls').then(r=>r.json()).catch(()=>null);const tb=document.getElementById('tlsInfo');if(!tb)return;
+  if(!t){tb.innerHTML='<tr><td>Nicht abrufbar</td></tr>';return;}
+  const esc=s=>String(s||'–').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
+  tb.innerHTML=row('Status',!t.enabled?'aus':t.running?'<span class="ok">läuft</span>':'<span class="bad">nicht gestartet</span>')+
+    row('Zertifikat',t.source==='own'?'eigenes'+(t.chain>1?' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')':''):'selbst signiert')+
+    row('Ausgestellt für',esc(t.subject))+(t.source==='own'?row('Aussteller',esc(t.issuer)):'')+
+    row('Gültig bis',esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`);
+}
+function tlsFile(inp,id){const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{document.getElementById(id).value=r.result;};r.readAsText(f);}
+function tlsMsg(t,ok){const m=document.getElementById('tlsMsg');m.textContent=t;m.style.color=ok?'var(--acc)':'var(--fault)';}
+async function tlsUpload(){
+  const cert=document.getElementById('tlsCrt').value.trim(),key=document.getElementById('tlsKey').value.trim();
+  if(!cert||!key){tlsMsg('Zertifikat und Schlüssel einfügen oder Dateien wählen',false);return;}
+  const r=await fetch('/api/tls/cert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cert,key})}).catch(()=>null);
+  const j=r?await r.json().catch(()=>({})):{};
+  if(r&&r.ok){document.getElementById('tlsKey').value='';tlsMsg('Übernommen, HTTPS startet neu…',true);setTimeout(()=>location.reload(),4000);}
+  else tlsMsg(j.error||'Fehler beim Hochladen',false);
+}
+async function tlsSelf(){
+  if(!confirm('Neues selbst signiertes Zertifikat erzeugen? Ein eigenes Zertifikat wird dabei gelöscht, der Browser warnt danach erneut.'))return;
+  const r=await fetch('/api/tls/self',{method:'POST'}).catch(()=>null);
+  if(r&&r.ok){tlsMsg('Wird erzeugt, HTTPS startet neu…',true);setTimeout(()=>location.reload(),5000);}else tlsMsg('Fehler',false);
 }
 async function save(){const f=document.getElementById('f');const body={};
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});

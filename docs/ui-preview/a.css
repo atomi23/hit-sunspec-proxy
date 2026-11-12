@@ -169,7 +169,13 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 .cfg .card.show{columns:2 380px;column-gap:48px}
 .cfg .card label{break-after:avoid}
 .cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
-.cfg #knxRows,.cfg #probeBox{column-span:all}
+.cfg #knxRows,.cfg #probeBox,.cfg #tlsBox{column-span:all}
+textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--well);color:var(--ink);
+  font:400 12px/1.4 ui-monospace,Consolas,monospace;resize:vertical}
+textarea:focus{border-color:var(--acc);outline:none}
+#tlsBox input[type=file]{margin-top:6px;padding:6px;font-size:13px}
+#tlsInfo td:first-child{color:var(--dim);width:150px}
+#tlsInfo td{word-break:break-all}
 .cfg .card{display:none}
 .cfg .card.show{display:block}
 .cfg .card>strong{display:none}

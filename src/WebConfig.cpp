@@ -833,6 +833,7 @@ und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich
 <p class="hint">Der ESP erzeugt sein Zertifikat selbst. Der Browser warnt deshalb beim ersten Aufruf; vergleiche den Fingerabdruck
 unten mit dem im Browser und bestätige dann. Während der Einrichtung und falls HTTPS nicht startet, bleibt HTTP erreichbar.</p>
 <div id="tlsBox">
+<label>HTTPS-Zertifikat</label>
 <table><tbody id="tlsInfo"><tr><td class="muted">Lade…</td></tr></tbody></table>
 <label>Eigenes Zertifikat (PEM, Zwischenzertifikate dahinter)</label>
 <textarea id="tlsCrt" rows="5" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>

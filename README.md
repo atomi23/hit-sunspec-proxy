@@ -74,6 +74,9 @@ Die §14a-Writes von Consolinno stehen im zweiten Reiter.
 - **SunSpec** registergleich zur bisherigen Node-RED-Lösung, Abbild ab Adresse 0, 40000 und 50000
 - **Schutz des Netzschutz-Bereichs:** FC6 auf HIT-Register 101–299 wird nie gesendet
   (laut Hoymiles V2.8 lädt das alle Netzschutz-Werkswerte)
+- **HTTPS** auf Port 443, HTTP leitet um (außer während der Einrichtung). Selbst signiertes Zertifikat mit
+  IP-Adresse und `<gerätename>.local`, wird bei neuer IP oder vor Ablauf selbst erneuert; eigenes Zertifikat
+  (PEM, auch mit Zwischenzertifikaten) hochladbar, der ESP prüft ob Schlüssel und Zertifikat zusammenpassen
 - **Werksreset**, **Neustart** (mit letztem Neustartgrund) und **OTA-Update** in der Weboberfläche
 - **Zugangscode** jederzeit neu erzeugen; bleibt sonst über Neustarts und Updates erhalten
 - **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart
@@ -86,6 +89,9 @@ Die §14a-Writes von Consolinno stehen im zweiten Reiter.
 2. Das Display zeigt WLAN-Name, Passwort und einen QR-Code. Mit dem Geräte-WLAN verbinden.
 3. Browser `http://192.168.4.1/` → Einrichtung (HIT-Adresse, Netzwerk)
 4. Consolinno: Proxy-IP, Port **1502**, Unit-ID **1**
+5. Danach läuft die Oberfläche über `https://<esp-ip>/`. Der Browser warnt beim ersten Aufruf, weil das
+   Zertifikat selbst signiert ist; einmal bestätigen. Unter *Netzwerk und Zugang* steht danach der
+   SHA-256-Fingerabdruck zum Vergleich mit dem im Browser. Ohne Warnung geht es mit einem eigenen Zertifikat.
 
 Umstieg von Node-RED / HA-Modbus-Proxy:
 

@@ -9,6 +9,11 @@ bool ready = false;
 uint32_t noSourceSince = 0;
 bool hadSource = false;
 
+constexpr uint32_t STAGE_MAGIC = 0x57444731; // "WDG1"
+RTC_NOINIT_ATTR uint32_t stageMagic;
+RTC_NOINIT_ATTR char stageName[24];
+char hung[24] = "";
+
 #if ESP_IDF_VERSION_MAJOR >= 5
 bool initTwdt(uint32_t timeoutSec) {
   esp_task_wdt_config_t cfg = {
@@ -37,6 +42,13 @@ bool initTwdt(uint32_t timeoutSec) {
 namespace Watchdog {
 
 void begin(uint32_t timeoutSec) {
+  const esp_reset_reason_t why = esp_reset_reason();
+  if (stageMagic == STAGE_MAGIC && (why == ESP_RST_TASK_WDT || why == ESP_RST_INT_WDT || why == ESP_RST_WDT ||
+                                    why == ESP_RST_PANIC)) {
+    stageName[sizeof(stageName) - 1] = '\0';
+    strlcpy(hung, stageName, sizeof(hung));
+  }
+  stage("Start");
   if (timeoutSec < 15) timeoutSec = 15;
   ready = initTwdt(timeoutSec);
   noSourceSince = millis();
@@ -47,6 +59,13 @@ void begin(uint32_t timeoutSec) {
 void feed() {
   if (ready) esp_task_wdt_reset();
 }
+
+void stage(const char *name) {
+  strlcpy(stageName, name, sizeof(stageName));
+  stageMagic = STAGE_MAGIC;
+}
+
+const char *hungIn() { return hung; }
 
 void checkSoft(uint32_t maxNoSourceMs) {
   auto &cfg = ConfigStore::get();

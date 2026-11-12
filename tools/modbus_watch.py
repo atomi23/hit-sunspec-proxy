@@ -41,6 +41,7 @@ def main() -> int:
     ap.add_argument("--unit", type=int, default=1)
     ap.add_argument("--secs", type=float, default=600)
     ap.add_argument("--every", type=float, default=10)
+    ap.add_argument("--slow", type=float, default=500, help="Antworten über dieser Zeit (ms) einzeln melden")
     a = ap.parse_args()
 
     end = time.time() + a.secs
@@ -56,7 +57,10 @@ def main() -> int:
                 raise ValueError(f"keine SunSpec-Kennung: {regs}")
             ok += 1
             m_ok += 1
-            worst = max(worst, (time.time() - t) * 1000)
+            ms = (time.time() - t) * 1000
+            worst = max(worst, ms)
+            if ms > a.slow:
+                print(time.strftime("%H:%M:%S"), f"langsam {ms:.0f} ms", flush=True)
         except Exception as e:  # noqa: BLE001
             fail += 1
             m_fail += 1

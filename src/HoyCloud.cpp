@@ -78,17 +78,25 @@ int lastHttpCode = 0;
 bool httpsPost(const String &url, const String &body, const char *auth, String &out) {
   NetworkClientSecure cli;
   cli.setCACert(HOY_CA);
+  // Der Abruf läuft in der Hauptschleife (auch SunSpec für Consolinno): ohne Grenze wartet der
+  // TLS-Handshake bis zu 120 s, dann schlägt der Watchdog zu
+  cli.setHandshakeTimeout(10);
+  cli.setTimeout(10);
   HTTPClient http;
   if (!http.begin(cli, url)) return false;
-  http.setTimeout(12000);
+  http.setConnectTimeout(5000);
+  http.setTimeout(10000);
   http.addHeader("Content-Type", "application/json");
   if (auth && auth[0]) http.addHeader("Authorization", auth);
   Watchdog::feed();
+  Watchdog::stage("Cloud: Verbindung");
   int code = http.POST(body);
   lastHttpCode = code;
   Watchdog::feed();
+  Watchdog::stage("Cloud: Antwort");
   out = http.getString();
   http.end();
+  Watchdog::stage("Cloud");
   Watchdog::feed();
   return code >= 200 && code < 300;
 }
@@ -192,9 +200,11 @@ bool fetchRealtime() {
       "/pvm-data/api/0/data/count_station_real_data",
   };
 
+  int firstCode = 0; // der zweite Pfad ist nur ein Ausweichweg; für die Meldung zählt der erste
   for (const char *path : paths) {
     String resp;
     const bool ok = httpsPost("https://" + host + path, body, token, resp);
+    if (path == paths[0]) firstCode = lastHttpCode;
     static bool dumped = false;
     if (!dumped && ok) {
       dumped = true;
@@ -249,7 +259,10 @@ bool fetchRealtime() {
     return true;
   }
 
-  if (gLive.cloudOk) EventLog::add('W', "Cloud", "Datenabruf fehlgeschlagen (HTTP %d)", lastHttpCode);
+  if (gLive.cloudOk) {
+    if (firstCode > 0) EventLog::add('W', "Cloud", "Datenabruf fehlgeschlagen (HTTP %d)", firstCode);
+    else EventLog::add('W', "Cloud", "Datenabruf fehlgeschlagen (keine Verbindung, Fehler %d)", firstCode);
+  }
   gLive.cloudOk = false;
   return false;
 }

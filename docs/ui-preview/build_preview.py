@@ -144,6 +144,8 @@ cfg = {
     "hitWriteEnabled": False,
     "setupComplete": True,
     "webUser": "admin",
+    "httpsEnabled": True,
+    "httpsRedirect": True,
     "wifiApMode": False,
     "invertPowerSign": False,
     "hitMode": 0,
@@ -184,10 +186,14 @@ cfg_js = f"""
 const META={json.dumps({"points": meta})};
 const CFG={json.dumps(cfg)};
 const STATUS={json.dumps(mock_status)};
+const TLS={{subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
+  sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
+  chain:1,source:"self",running:true,enabled:true}};
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
   if(u.includes('/api/knx/meta')) return {{ok:true,json:async()=>META}};
+  if(u.includes('/api/tls')) return {{ok:true,json:async()=>TLS}};
   if(u.includes('/api/config') && (!o || !o.method || o.method==='GET'))
     return {{ok:true,json:async()=>CFG}};
   if(u.includes('/api/config')) return {{ok:true,json:async()=>({{ok:true}})}};
