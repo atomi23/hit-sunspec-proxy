@@ -1,8 +1,8 @@
 # HIT → Consolinno SunSpec Proxy (ESP32)
 
 Autarker Modbus-Proxy: **Hoymiles HIT** → **Consolinno HEMS** (SunSpec GEN24 auf Port **1502**).
-Ersetzt Node-RED und den Modbus-Proxy in Home Assistant: Der ESP hält die einzige HIT-Verbindung und
-verteilt die Daten an Consolinno, Home Assistant, KNX und andere Modbus-Clients.
+Der ESP hält die einzige HIT-Verbindung und verteilt die Daten an Consolinno, Home Assistant, KNX und
+andere Modbus-Clients.
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
@@ -12,7 +12,7 @@ Aktuelle Firmware: **v0.5.0**
 
 ```
                          ┌── SunSpec :1502 ──→ Consolinno HEMS
-Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assistant, Node-RED, …
+Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assistant, andere Modbus-Clients
    (eine Verbindung)     ├── MQTT + Discovery ──→ Home Assistant
           ESP32          ├── KNX IP Routing ──→ KNX-Bus
                          └── Display, Web-UI
@@ -22,7 +22,7 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 |------|----------|--------|
 | HIT (Modbus TCP oder RS485) | ja | Datenquelle, einzige Verbindung zum HIT |
 | SunSpec :1502 | ja | Consolinno HEMS (GEN24-Emulation, Modelle 1/103/120/121/122/123/160/124) |
-| Modbus-Gateway | nein | HA & Co. lesen den HIT über den ESP (ersetzt den HA-Modbus-Proxy) |
+| Modbus-Gateway | nein | Andere Modbus-Clients lesen den HIT über den ESP |
 | MQTT | nein | HA-Sensoren per Discovery, optional MQTT als Ersatzquelle |
 | KNX IP | nein | Multicast-Routing aller wählbaren Live-Werte |
 | Tasmota | nein | Netzzähler, optional als SunSpec Model 201 |
@@ -77,7 +77,7 @@ Selbst signiertes Zertifikat mit Fingerabdruck zum Vergleichen, oder ein eigenes
   einstellbarer Abschalt-Timeout, wacht bei Berührung oder HIT-Störung auf
 - **HIT über TCP oder RS485** (Modbus RTU, TX 17 / RX 18), eine dauerhafte Verbindung für Lesen und Schreiben
 - **Modbus-Gateway** (Port 502): Lesen immer, Schreiben nur mit Freigabe, jeder Schreibzugriff im Protokoll
-- **SunSpec** registergleich zur bisherigen Node-RED-Lösung, Abbild ab Adresse 0, 40000 und 50000
+- **SunSpec** GEN24-kompatibel, Abbild ab Adresse 0, 40000 und 50000
 - **Schutz des Netzschutz-Bereichs:** FC6 auf HIT-Register 101–299 wird nie gesendet
   (laut Hoymiles V2.8 lädt das alle Netzschutz-Werkswerte)
 - **HTTPS** auf Port 443, HTTP leitet um (außer während der Einrichtung). Selbst signiertes Zertifikat mit
@@ -99,12 +99,9 @@ Selbst signiertes Zertifikat mit Fingerabdruck zum Vergleichen, oder ein eigenes
    Zertifikat selbst signiert ist; einmal bestätigen. Unter *Netzwerk und Zugang* steht danach der
    SHA-256-Fingerabdruck zum Vergleich mit dem im Browser. Ohne Warnung geht es mit einem eigenen Zertifikat.
 
-Umstieg von Node-RED / HA-Modbus-Proxy:
-
-1. Paralleltest: im ESP als HIT-Adresse den bisherigen Modbus-Proxy eintragen, dann
-   `python tools/sunspec_check.py <node-red-host> --compare <esp-ip>`
-2. Umschalten: Modbus-Proxy in HA stoppen, im ESP den HIT direkt eintragen, Gateway einschalten,
-   HA-Modbus-Ziel auf `<esp-ip>:502`, Consolinno auf `<esp-ip>:1502`
+Gibt es schon eine andere SunSpec-Quelle, lassen sich beide vergleichen:
+`python tools/sunspec_check.py <alte-quelle> --compare <esp-ip>`. Andere Programme, die den HIT per Modbus
+lesen, tragen danach `<esp-ip>:502` ein (Modbus-Gateway einschalten).
 
 Pins: [`PINS.md`](PINS.md)
 
@@ -113,7 +110,7 @@ Pins: [`PINS.md`](PINS.md)
 | Skript | Zweck |
 |--------|-------|
 | `tools/sunspec_check.py` | SunSpec-Kette lesen, zwei Geräte vergleichen (Registerversatz) |
-| `tools/parity_check.py` | Node-RED-Karte gegen die ESP-Umrechnung derselben HIT-Daten prüfen (nur lesend) |
+| `tools/parity_check.py` | Eine bestehende SunSpec-Karte gegen die ESP-Umrechnung derselben HIT-Daten prüfen (nur lesend) |
 | `tools/make_vlw.py` | Display-Schriften (VLW) aus Barlow erzeugen |
 | `tools/embed_fonts.py` | Web-Schriften (WOFF) einbetten |
 | `tools/https_check.py` | HTTPS prüfen: Umleitung, Speichern, Zertifikat hochladen/ablehnen, optional OTA |

@@ -82,7 +82,7 @@ window.alert=()=>{};
 <label>Unit-ID</label><input name="hitUnitId" type="number"/>
 <label>Poll (ms)</label><input name="hitPollMs" type="number"/>
 <label>RS485-Baudrate (nur bei Kabel)</label><input name="hitRtuBaud" type="number"/>
-<p class="hint">TCP: IP des HIT, Port 502. Der HIT erlaubt nur eine Verbindung, also vorher den Modbus-Proxy in Home Assistant abschalten oder hier dessen Adresse eintragen.</p>
+<p class="hint">TCP: IP des HIT, Port 502. Der HIT erlaubt nur eine Verbindung; solange ein anderes Programm mit ihm verbunden ist, bekommt der ESP keine Antwort.</p>
 <p class="hint">RS485: Anschluss am HIT meist PARA2, RJ45 Pin 8 = A, Pin 7 = B, 8N1, Unit-ID 1. Am HIT eingestellte Baudrate übernehmen (Werk oft 115200, häufig auf 9600 gestellt).</p>
 <label><input name="demoMode" type="checkbox"/> <b>Demo-Modus</b> (Fake-Daten, kein HIT-Schreiben)</label>
 <p class="hint">Für Board-/Web-/Display-Test ohne Hoymiles. SunSpec :1502 lokal ansprechbar; Consolinno nicht nötig.</p>
@@ -202,9 +202,8 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <div class="card" id="gateway" data-sub="Andere Programme lesen den HIT über den ESP, statt selbst eine Verbindung aufzubauen."><strong>Modbus-Gateway</strong>
 <label><input name="gatewayEnabled" type="checkbox"/> Gateway einschalten</label>
 <label>Port</label><input name="gatewayPort" type="number" min="1" max="65535"/>
-<p class="hint">Der HIT erlaubt nur eine Verbindung, und die hält der ESP. Home Assistant, Node-RED oder andere Tools
-tragen statt des HIT die IP des ESP mit diesem Port ein; Register und Unit-ID bleiben gleich.
-Damit ersetzt der ESP den Modbus-Proxy in Home Assistant.</p>
+<p class="hint">Der HIT erlaubt nur eine Verbindung, und die hält der ESP. Home Assistant oder andere Modbus-Programme
+tragen statt des HIT die IP des ESP mit diesem Port ein; Register und Unit-ID bleiben gleich.</p>
 <p class="hint">Lesen geht immer. Schreiben reicht der ESP nur durch, wenn unter Akku-Steuerung „Schreiben an HIT erlauben“ aktiv ist,
 sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht im Protokoll.</p>
 </div>

@@ -813,7 +813,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <label>Unit-ID</label><input name="hitUnitId" type="number"/>
 <label>Poll (ms)</label><input name="hitPollMs" type="number"/>
 <label>RS485-Baudrate (nur bei Kabel)</label><input name="hitRtuBaud" type="number"/>
-<p class="hint">TCP: IP des HIT, Port 502. Der HIT erlaubt nur eine Verbindung, also vorher den Modbus-Proxy in Home Assistant abschalten oder hier dessen Adresse eintragen.</p>
+<p class="hint">TCP: IP des HIT, Port 502. Der HIT erlaubt nur eine Verbindung; solange ein anderes Programm mit ihm verbunden ist, bekommt der ESP keine Antwort.</p>
 <p class="hint">RS485: Anschluss am HIT meist PARA2, RJ45 Pin 8 = A, Pin 7 = B, 8N1, Unit-ID 1. Am HIT eingestellte Baudrate übernehmen (Werk oft 115200, häufig auf 9600 gestellt).</p>
 <label><input name="demoMode" type="checkbox"/> <b>Demo-Modus</b> (Fake-Daten, kein HIT-Schreiben)</label>
 <p class="hint">Für Board-/Web-/Display-Test ohne Hoymiles. SunSpec :1502 lokal ansprechbar; Consolinno nicht nötig.</p>
@@ -933,9 +933,8 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <div class="card" id="gateway" data-sub="Andere Programme lesen den HIT über den ESP, statt selbst eine Verbindung aufzubauen."><strong>Modbus-Gateway</strong>
 <label><input name="gatewayEnabled" type="checkbox"/> Gateway einschalten</label>
 <label>Port</label><input name="gatewayPort" type="number" min="1" max="65535"/>
-<p class="hint">Der HIT erlaubt nur eine Verbindung, und die hält der ESP. Home Assistant, Node-RED oder andere Tools
-tragen statt des HIT die IP des ESP mit diesem Port ein; Register und Unit-ID bleiben gleich.
-Damit ersetzt der ESP den Modbus-Proxy in Home Assistant.</p>
+<p class="hint">Der HIT erlaubt nur eine Verbindung, und die hält der ESP. Home Assistant oder andere Modbus-Programme
+tragen statt des HIT die IP des ESP mit diesem Port ein; Register und Unit-ID bleiben gleich.</p>
 <p class="hint">Lesen geht immer. Schreiben reicht der ESP nur durch, wenn unter Akku-Steuerung „Schreiben an HIT erlauben“ aktiv ist,
 sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht im Protokoll.</p>
 </div>
@@ -1179,7 +1178,7 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
 <li>Port = <code id="ssPort">1502</code></li>
 <li>Unit / Slave = <code>1</code></li>
 </ul>
-<p class="hint">Alten Node-RED-SunSpec-Pfad danach abschalten. HIT nicht direkt in Consolinno eintragen.</p>
+<p class="hint">Den HIT nicht zusätzlich direkt in Consolinno eintragen, sonst sehen beide Wege den HIT gleichzeitig.</p>
 <div class="row"><button class="sec" type="button" onclick="go(2)">Zurück</button><button type="button" onclick="go(4)">Weiter</button></div>
 </div>
 
@@ -1250,8 +1249,12 @@ async function finish(){
   if(!body.demoMode && !body.hitHost){fin.innerHTML='<span class="bad">HIT-IP oder Demo nötig</span>';go(2);return;}
   const r=await(await fetch('/api/setup/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
   if(!r.ok){fin.innerHTML='<span class="bad">'+(r.error||'Fehler')+'</span>';return;}
-  fin.innerHTML='<span class="ok">Fertig — weiter zum Live-Dashboard…</span>';
-  setTimeout(()=>location.href='/',1200);
+  const next=r.https?`https://${location.hostname}/`:'/';
+  fin.innerHTML=r.https
+    ?`<span class="ok">Fertig.</span> Weiter über HTTPS: <a href="${next}">${next}</a><br>`+
+     `<span class="muted">Der Browser warnt einmal wegen des eigenen Zertifikats; bestätigen und mit demselben Zugang anmelden.</span>`
+    :'<span class="ok">Fertig — weiter zum Live-Dashboard…</span>';
+  setTimeout(()=>location.href=next,r.https?2500:1200);
 }
 boot();
 </script></body></html>
@@ -1714,7 +1717,8 @@ void begin() {
               HttpsServer::applyConfig(c);
               HitClient::pollNow();
               SunSpecServer::rebuildMap();
-              req->send(200, "application/json", "{\"ok\":true}");
+              req->send(200, "application/json",
+                        (c.httpsEnabled && HttpsServer::running()) ? "{\"ok\":true,\"https\":true}" : "{\"ok\":true}");
             });
 
   server.on("/api/status", HTTP_GET, [](AsyncWebServerRequest *req) {
