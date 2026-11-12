@@ -8,6 +8,14 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 
 Aktuelle Firmware: **v0.5.1**
 
+## Display am Gerät
+
+Die drei Seiten auf dem T-Connect-Pro: Live, Strings und Netz, System. Demo-Daten.
+
+![Live](docs/screenshots/device-live.jpg)
+![Strings und Netz](docs/screenshots/device-strings.jpg)
+![System](docs/screenshots/device-system.jpg)
+
 ## Architektur
 
 ```
