@@ -17,6 +17,7 @@
 #include "ModbusGateway.h"
 #include "History.h"
 #include "EventLog.h"
+#include "HttpsServer.h"
 
 void setup() {
   Serial.begin(115200);
@@ -45,6 +46,7 @@ void setup() {
   DataBroker::begin();
   WebConfig::begin();
   History::begin();
+  HttpsServer::begin(cfg); // nach History: braucht das Dateisystem
 
   HitClient::pollNow();
   TasmotaClient::pollNow();

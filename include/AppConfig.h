@@ -24,6 +24,8 @@ struct AppConfig {
   char webUser[32] = "admin";
   char displayCode[17] = "";   // random, persistent, Login-Fallback
   char webPass[65] = "";       // selbst gewählt; leer = nur Display-Code
+  bool httpsEnabled = true;    // Port 443 vor der Weboberfläche
+  bool httpsRedirect = true;   // HTTP-Aufrufe von außen auf HTTPS umleiten
 
   // HIT source
   HitLinkMode hitMode = HitLinkMode::Tcp;

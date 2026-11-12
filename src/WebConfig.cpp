@@ -9,6 +9,7 @@
 #include "HitControl.h"
 #include "DebugLog.h"
 #include "EventLog.h"
+#include "HttpsServer.h"
 #include "OtaUpdate.h"
 #include "HoyCloud.h"
 #include "KnxIp.h"
@@ -198,7 +199,13 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 .cfg .card.show{columns:2 380px;column-gap:48px}
 .cfg .card label{break-after:avoid}
 .cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
-.cfg #knxRows,.cfg #probeBox{column-span:all}
+.cfg #knxRows,.cfg #probeBox,.cfg #tlsBox{column-span:all}
+textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--well);color:var(--ink);
+  font:400 12px/1.4 ui-monospace,Consolas,monospace;resize:vertical}
+textarea:focus{border-color:var(--acc);outline:none}
+#tlsBox input[type=file]{margin-top:6px;padding:6px;font-size:13px}
+#tlsInfo td:first-child{color:var(--dim);width:150px}
+#tlsInfo td{word-break:break-all}
 .cfg .card{display:none}
 .cfg .card.show{display:block}
 .cfg .card>strong{display:none}
@@ -821,6 +828,27 @@ und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich
 <label>Benutzername</label><input name="webUser"/>
 <label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
+<label><input name="httpsEnabled" type="checkbox"/> HTTPS (Port 443)</label>
+<label><input name="httpsRedirect" type="checkbox"/> Aufrufe über HTTP auf HTTPS umleiten</label>
+<p class="hint">Der ESP erzeugt sein Zertifikat selbst. Der Browser warnt deshalb beim ersten Aufruf; vergleiche den Fingerabdruck
+unten mit dem im Browser und bestätige dann. Während der Einrichtung und falls HTTPS nicht startet, bleibt HTTP erreichbar.</p>
+<div id="tlsBox">
+<table><tbody id="tlsInfo"><tr><td class="muted">Lade…</td></tr></tbody></table>
+<label>Eigenes Zertifikat (PEM, Zwischenzertifikate dahinter)</label>
+<textarea id="tlsCrt" rows="5" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+<input type="file" id="tlsCrtFile" accept=".pem,.crt,.cer,.txt" onchange="tlsFile(this,'tlsCrt')"/>
+<label>Privater Schlüssel (PEM, ohne Passwort)</label>
+<textarea id="tlsKey" rows="4" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+<input type="file" id="tlsKeyFile" accept=".pem,.key,.txt" onchange="tlsFile(this,'tlsKey')"/>
+<div class="row">
+<button class="sec" type="button" onclick="tlsUpload()">Eigenes Zertifikat übernehmen</button>
+<button class="sec" type="button" onclick="tlsSelf()">Selbst signiertes neu erzeugen</button>
+<span id="tlsMsg" class="hint" style="margin:0"></span>
+</div>
+<p class="hint">Ein eigenes Zertifikat, etwa von der Hausnetz-CA oder Let's Encrypt über DNS-Prüfung, erspart die Warnung. Der ESP prüft,
+ob Schlüssel und Zertifikat zusammenpassen, und startet HTTPS danach neu. „Selbst signiertes neu erzeugen“ löscht das eigene Zertifikat
+und nimmt die aktuelle IP-Adresse ins neue auf.</p>
+</div>
 </div>
 <div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite."><strong>Display</strong>
 <label>Live-Ansicht</label>
@@ -1001,7 +1029,33 @@ async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); refresh(); route();
+  renderKnx(meta.points||[], c.knxCh||[]); refresh(); route(); loadTls();
+}
+async function loadTls(){
+  const t=await fetch('/api/tls').then(r=>r.json()).catch(()=>null);const tb=document.getElementById('tlsInfo');if(!tb)return;
+  if(!t){tb.innerHTML='<tr><td>Nicht abrufbar</td></tr>';return;}
+  const esc=s=>String(s||'–').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
+  tb.innerHTML=row('Status',!t.enabled?'aus':t.running?'<span class="ok">läuft</span>':'<span class="bad">nicht gestartet</span>')+
+    row('Zertifikat',t.source==='own'?'eigenes'+(t.chain>1?' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')':''):'selbst signiert')+
+    row('Ausgestellt für',esc(t.subject))+(t.source==='own'?row('Aussteller',esc(t.issuer)):'')+
+    row('Gültig bis',esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`);
+}
+function tlsFile(inp,id){const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{document.getElementById(id).value=r.result;};r.readAsText(f);}
+function tlsMsg(t,ok){const m=document.getElementById('tlsMsg');m.textContent=t;m.style.color=ok?'var(--acc)':'var(--fault)';}
+async function tlsUpload(){
+  const cert=document.getElementById('tlsCrt').value.trim(),key=document.getElementById('tlsKey').value.trim();
+  if(!cert||!key){tlsMsg('Zertifikat und Schlüssel einfügen oder Dateien wählen',false);return;}
+  const r=await fetch('/api/tls/cert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cert,key})}).catch(()=>null);
+  const j=r?await r.json().catch(()=>({})):{};
+  if(r&&r.ok){document.getElementById('tlsKey').value='';tlsMsg('Übernommen, HTTPS startet neu…',true);setTimeout(()=>location.reload(),4000);}
+  else tlsMsg(j.error||'Fehler beim Hochladen',false);
+}
+async function tlsSelf(){
+  if(!confirm('Neues selbst signiertes Zertifikat erzeugen? Ein eigenes Zertifikat wird dabei gelöscht, der Browser warnt danach erneut.'))return;
+  const r=await fetch('/api/tls/self',{method:'POST'}).catch(()=>null);
+  if(r&&r.ok){tlsMsg('Wird erzeugt, HTTPS startet neu…',true);setTimeout(()=>location.reload(),5000);}else tlsMsg('Fehler',false);
 }
 async function save(){const f=document.getElementById('f');const body={};
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
@@ -1401,6 +1455,8 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   // wifiPass / displayCode: random — nicht aus Form überschreiben außer explizit
   if (o["webUser"].is<const char *>()) strlcpy(c.webUser, o["webUser"], sizeof(c.webUser));
   if (o["webPass"].is<const char *>()) strlcpy(c.webPass, o["webPass"], sizeof(c.webPass));
+  if (!o["httpsEnabled"].isNull()) c.httpsEnabled = o["httpsEnabled"];
+  if (!o["httpsRedirect"].isNull()) c.httpsRedirect = o["httpsRedirect"];
   if (!o["hitWriteEnabled"].isNull()) c.hitWriteEnabled = o["hitWriteEnabled"];
   if (!o["sunspecWriteToHit"].isNull()) c.sunspecWriteToHit = o["sunspecWriteToHit"];
   if (!o["batMaxChargePct"].isNull()) c.batMaxChargePct = o["batMaxChargePct"];
@@ -1473,6 +1529,22 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
 namespace WebConfig {
 
 void begin() {
+  // Von außen auf HTTPS umleiten; der HTTPS-Server selbst fragt über 127.0.0.1 an.
+  // Während der Einrichtung nicht, da steht man mit dem Handy im Geräte-WLAN.
+  server.addMiddleware([](AsyncWebServerRequest *req, ArMiddlewareNext next) {
+    const auto &c = ConfigStore::get();
+    if (c.httpsRedirect && c.setupComplete && HttpsServer::running() && req->client() &&
+        req->client()->remoteIP() != IPAddress(127, 0, 0, 1)) {
+      String host = req->host();
+      const int colon = host.indexOf(':');
+      if (colon >= 0) host = host.substring(0, colon);
+      if (!host.length()) host = gLive.ipShown;
+      req->redirect("https://" + host + req->url());
+      return;
+    }
+    next();
+  });
+
   // Public stylesheet (no auth) — pages stay readable right after login
   server.on("/a.css", HTTP_GET, [](AsyncWebServerRequest *req) {
     req->send_P(200, "text/css", UI_CSS);
@@ -1556,6 +1628,36 @@ void begin() {
     req->send(200, "application/json", out);
   });
 
+  server.on("/api/tls", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    req->send(200, "application/json", HttpsServer::infoJson());
+  });
+
+  server.on("/api/tls/cert", HTTP_POST, [](AsyncWebServerRequest *req) {}, NULL,
+            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
+              const char *body = fullBody(req, data, len, index, total);
+              if (!body) return;
+              if (!requireAuth(req)) return;
+              JsonDocument doc;
+              if (deserializeJson(doc, body)) {
+                req->send(400, "application/json", "{\"ok\":false,\"error\":\"bad json\"}");
+                return;
+              }
+              String err;
+              JsonDocument out;
+              out["ok"] = HttpsServer::installCustom(doc["cert"] | "", doc["key"] | "", err);
+              if (err.length()) out["error"] = err;
+              String s;
+              serializeJson(out, s);
+              req->send(out["ok"] ? 200 : 400, "application/json", s);
+            });
+
+  server.on("/api/tls/self", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    HttpsServer::useSelfSigned();
+    req->send(200, "application/json", "{\"ok\":true}");
+  });
+
   server.on("/api/events/clear", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     EventLog::clear();
@@ -1593,6 +1695,7 @@ void begin() {
               MqttHa::applyConfig(c);
               HoyCloud::applyConfig(c);
               KnxIp::applyConfig(c);
+              HttpsServer::applyConfig(c);
               HitClient::pollNow();
               SunSpecServer::rebuildMap();
               req->send(200, "application/json", "{\"ok\":true}");
@@ -1614,6 +1717,9 @@ void begin() {
     doc["sunspecClient"] = gLive.sunspecClient;
     doc["resetReason"] = Watchdog::lastResetReason(ConfigStore::get().uiLang == UiLang::En);
     doc["uptimeS"] = millis() / 1000;
+    doc["heapInternal"] = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    doc["heapInternalMin"] = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+    doc["https"] = HttpsServer::running();
     doc["gatewayEnabled"] = ConfigStore::get().gatewayEnabled;
     doc["gatewayClients"] = gLive.gatewayClients;
     doc["hitLink"] = ConfigStore::get().hitMode == HitLinkMode::RtuRs485 ? "RS485" : "TCP";
@@ -1677,6 +1783,8 @@ void begin() {
     doc["wifiPass"] = c.displayCode[0] ? c.displayCode : c.wifiPass; // UI zeigt Display-Code
     doc["webUser"] = c.webUser;
     doc["webPass"] = c.webPass;
+    doc["httpsEnabled"] = c.httpsEnabled;
+    doc["httpsRedirect"] = c.httpsRedirect;
     doc["displayCode"] = c.displayCode;
     doc["hitWriteEnabled"] = c.hitWriteEnabled;
     doc["sunspecWriteToHit"] = c.sunspecWriteToHit;
@@ -1791,6 +1899,7 @@ void begin() {
               MqttHa::applyConfig(c);
               HoyCloud::applyConfig(c);
               KnxIp::applyConfig(c);
+              HttpsServer::applyConfig(c);
               req->send(200, "application/json", "{\"ok\":true}");
             });
 
@@ -1931,6 +2040,7 @@ void begin() {
 
 void loop() {
   OtaUpdate::loop();
+  HttpsServer::loop();
 }
 
 } // namespace WebConfig

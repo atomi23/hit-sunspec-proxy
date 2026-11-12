@@ -3,6 +3,7 @@
 #include "Watchdog.h"
 #include "EventLog.h"
 #include <HTTPClient.h>
+#include <esp_heap_caps.h>
 #include <WiFi.h>
 #include <NetworkClientSecure.h>
 #include <ArduinoJson.h>
@@ -299,6 +300,11 @@ void loop() {
   if (!netUpAt) netUpAt = millis() | 1;
   if (millis() - netUpAt < 5000) return;
   if (int32_t(millis() - nextPoll) < 0) return;
+  // die TLS-Verbindung braucht rund 40 KB internen RAM; sind gerade HTTPS-Sitzungen offen, kurz warten
+  if (heap_caps_get_free_size(MALLOC_CAP_INTERNAL) < 70000) {
+    nextPoll = millis() + 3000;
+    return;
+  }
   nextPoll = millis() + max<uint32_t>(15000, local.cloudPollMs);
   pollNow();
 }

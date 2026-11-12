@@ -3,6 +3,7 @@
 #include <Update.h>
 #include "AppConfig.h"
 #include "EventLog.h"
+#include "HttpsServer.h"
 
 namespace {
 bool busy = false;
@@ -264,6 +265,7 @@ void loop() {
     delay(500);
     Serial.println("Werksreset");
     ConfigStore::factoryReset();
+    HttpsServer::forget();
     ESP.restart();
   }
   if (!rebootPending) return;

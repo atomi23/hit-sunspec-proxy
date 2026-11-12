@@ -1,6 +1,7 @@
 #include "AppConfig.h"
 #include "LiveData.h"
 #include <WiFi.h>
+#include <esp_log.h>
 
 #if defined(BOARD_T_CONNECT_PRO)
 #include <ETH.h>
@@ -59,8 +60,10 @@ static void refreshIps(const AppConfig &cfg) {
 }
 
 static void startWifi(const AppConfig &cfg) {
-  WiFi.disconnect(true);
-  WiFi.softAPdisconnect(true);
+  if (WiFi.getMode() != WIFI_OFF) { // beim ersten Start ist WLAN noch nicht initialisiert
+    WiFi.disconnect(true);
+    WiFi.softAPdisconnect(true);
+  }
   activeWifi = cfg.wifiEnabled;
   strlcpy(activeSta, cfg.staSsid, sizeof(activeSta));
   strlcpy(activeStaPass, cfg.staPass, sizeof(activeStaPass));
@@ -86,9 +89,13 @@ void begin(const AppConfig &cfg) {
 
 #if defined(BOARD_T_CONNECT_PRO)
   if (cfg.useEthernet) {
-    // SPI W5500 — Pinning laut LilyGO T-Connect-Pro
-    SPI.begin(12, 13, 11); // SCLK, MISO, MOSI shared with display bus
+    // W5500 über Arduino-SPI, wie LovyanGFX; beide sperren über denselben SPIClass-Bus.
+    // (Mit dem IDF-SPI-Treiber startet die PHY auf diesem Board nicht.)
+    SPI.begin(12, 13, 11); // SCLK, MISO, MOSI; ist schon offen, wenn das Display vorher gestartet hat
     ETH.begin(ETH_PHY_W5500, 1, 10, 9, 48, SPI);
+    // Fehlermeldungen des Treibers kommen bei Empfangsproblemen in einer engen Schleife und hungern
+    // über die UART-Ausgabe die Hauptschleife aus (Task-Watchdog); Pakete gehen dann ohnehin verloren
+    esp_log_level_set("w5500.mac", ESP_LOG_NONE);
   }
 #elif defined(BOARD_T_POE_PRO)
   if (cfg.useEthernet) {

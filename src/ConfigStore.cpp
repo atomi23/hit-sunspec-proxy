@@ -84,6 +84,8 @@ bool load() {
   strlcpy(cfg.staPass, prefs.getString("stapass", cfg.staPass).c_str(), sizeof(cfg.staPass));
   strlcpy(cfg.webUser, prefs.getString("webuser", cfg.webUser).c_str(), sizeof(cfg.webUser));
   strlcpy(cfg.webPass, prefs.getString("webpass", cfg.webPass).c_str(), sizeof(cfg.webPass));
+  cfg.httpsEnabled = prefs.getBool("httpsena", cfg.httpsEnabled);
+  cfg.httpsRedirect = prefs.getBool("httpsred", cfg.httpsRedirect);
   strlcpy(cfg.displayCode, prefs.getString("dcode", cfg.displayCode).c_str(), sizeof(cfg.displayCode));
 
   cfg.hitMode = static_cast<HitLinkMode>(prefs.getUChar("hitmode", static_cast<uint8_t>(cfg.hitMode)));
@@ -185,6 +187,8 @@ bool save() {
   prefs.putString("stapass", cfg.staPass);
   prefs.putString("webuser", cfg.webUser);
   prefs.putString("webpass", cfg.webPass);
+  prefs.putBool("httpsena", cfg.httpsEnabled);
+  prefs.putBool("httpsred", cfg.httpsRedirect);
   prefs.putString("dcode", cfg.displayCode);
 
   prefs.putUChar("hitmode", static_cast<uint8_t>(cfg.hitMode));

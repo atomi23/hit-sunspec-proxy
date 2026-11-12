@@ -7,7 +7,7 @@ struct SysEvt {
   uint32_t epoch = 0; // 0 = Uhrzeit noch unbekannt
   char level = 'I';   // I, W, E
   char src[8] = "";
-  char msg[72] = "";
+  char msg[96] = "";
 };
 
 namespace EventLog {
