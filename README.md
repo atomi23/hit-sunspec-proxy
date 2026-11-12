@@ -6,7 +6,7 @@ verteilt die Daten an Consolinno, Home Assistant, KNX und andere Modbus-Clients.
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
-Aktuelle Firmware: **v0.4.0**
+Aktuelle Firmware: **v0.4.1**
 
 ## Architektur
 
@@ -54,7 +54,10 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 - **SunSpec** registergleich zur bisherigen Node-RED-Lösung, Abbild ab Adresse 0, 40000 und 50000
 - **Schutz des Netzschutz-Bereichs:** FC6 auf HIT-Register 101–299 wird nie gesendet
   (laut Hoymiles V2.8 lädt das alle Netzschutz-Werkswerte)
-- **Werksreset** und **OTA-Update** in der Weboberfläche
+- **Werksreset**, **Neustart** (mit letztem Neustartgrund) und **OTA-Update** in der Weboberfläche
+- **Zugangscode** jederzeit neu erzeugen; bleibt sonst über Neustarts und Updates erhalten
+- **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart
+- **Live-Ansicht des Displays** in der Weboberfläche; Live-Seite bleibt stehen, automatisches Blättern optional
 - Themes Mint, Ocean, Ember; Deutsch und Englisch (Web und Display)
 
 ## Inbetriebnahme
