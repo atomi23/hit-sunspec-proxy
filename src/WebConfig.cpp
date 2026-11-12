@@ -8,6 +8,7 @@
 #include "MqttHa.h"
 #include "HitControl.h"
 #include "DebugLog.h"
+#include "EventLog.h"
 #include "OtaUpdate.h"
 #include "HoyCloud.h"
 #include "KnxIp.h"
@@ -81,8 +82,8 @@ a{color:var(--acc)}
 .side .foot .meta{margin-top:4px;font-size:12px;color:var(--dim);white-space:pre-line}
 .side .prefs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
 .side .prefs select{padding:7px 9px;font-size:13px;border-radius:10px}
-.main{flex:1;min-width:0;padding:32px 44px 64px;max-width:1280px}
-.page-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:24px}
+.main{flex:1;min-width:0;width:100%;padding:20px clamp(12px,1.6vw,28px) 28px;display:flex;flex-direction:column}
+.page-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;flex-shrink:0}
 .brand{display:none}
 h1{margin:0;font-size:32px;font-weight:600;line-height:1.1;letter-spacing:-.01em}
 h2{margin:0 0 12px;font-size:17px;font-weight:600}
@@ -153,8 +154,8 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 #probeBox{margin-top:12px;display:none}
 
 /* Live: Energiefluss */
-.flow{background:radial-gradient(120% 90% at 50% 0%,var(--plate2),var(--plate) 70%);border-radius:24px;padding:12px 12px 4px}
-.flow svg{display:block;width:100%;height:auto;overflow:visible}
+.flow{background:radial-gradient(120% 90% at 50% 0%,var(--plate2),var(--plate) 70%);border-radius:24px;padding:8px 8px 2px}
+.flow svg{display:block;width:100%;height:auto;max-height:58vh;overflow:visible}
 .flow .lbl{fill:var(--dim);font:400 15px var(--font)}
 .flow .val{fill:var(--ink);font:600 36px var(--font);letter-spacing:-.01em}
 .flow .val tspan{font-size:17px;font-weight:400;fill:var(--dim)}
@@ -186,21 +187,24 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 @media (prefers-reduced-motion:reduce){.flow .run.on,.flow .data.live{animation:none}}
 
 /* Live: Kennzahlen */
-.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
-.cards.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px;flex-shrink:0}
+.cards.two{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
 .cards .panel{padding:20px 22px 14px}
 .cards td:first-child{color:var(--dim)}
 .note{font-size:13px;color:var(--dim);margin:10px 0 6px}
 .foot-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:24px}
 
 /* Einstellungen: ein Bereich je Menüpunkt */
-.cfg,.main:has(.cfg) .page-head{max-width:780px}
+.cfg .card.show{columns:2 380px;column-gap:48px}
+.cfg .card label{break-after:avoid}
+.cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
+.cfg #knxRows,.cfg #probeBox{column-span:all}
 .cfg .card{display:none}
 .cfg .card.show{display:block}
 .cfg .card>strong{display:none}
 .cfg .card>label:first-of-type{margin-top:0}
 
-@media(max-width:1100px){.grid2{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr 1fr}}
+@media(max-width:1100px){.grid2{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:860px){
   .app{flex-direction:column}
   .side{width:100%;height:auto;position:relative;padding:14px 10px 8px}
@@ -474,7 +478,13 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
 <meta name="color-scheme" content="dark"/><title>Verlauf · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
 <style>
-.chart{display:block;width:100%;height:auto;overflow:visible}
+.main:has(.hist){height:100vh;overflow:auto;padding-bottom:16px}
+.hist{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.hist .panel{display:flex;flex-direction:column;min-height:0;flex:1 1 0;padding:16px 20px 12px}
+.hist .panel h2{margin-bottom:8px}
+.hist .hint{margin-top:4px}
+.chart{display:block;width:100%;flex:1 1 0;height:0;min-height:140px;overflow:visible}
+@media(max-height:720px),(max-width:860px){.main:has(.hist){height:auto;overflow:visible}.chart{flex:none;height:260px}}
 .chart .ax{stroke:var(--rule);stroke-width:1}
 .chart .zero{stroke:var(--rule2);stroke-width:1}
 .chart text{fill:var(--dim);font:400 12px var(--font)}
@@ -542,7 +552,8 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   </div>
 </div>
 
-<section class="panel">
+<div class="hist">
+<section class="panel day">
   <h2 data-t="h24">Letzte 24 Stunden</h2>
   <div class="legend" id="leg"></div>
   <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden"></svg>
@@ -550,7 +561,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   <p class="hint" data-t="bal">Oberhalb der Null-Linie liefern PV, Netzbezug und Akku Energie, unterhalb nehmen Haus, Einspeisung und Akku-Laden sie ab.</p>
 </section>
 
-<section class="panel" style="margin-top:16px">
+<section class="panel bars">
   <h2 data-t="hE">Energie</h2>
   <div class="tabs" id="tabs"></div>
   <div class="legend" id="legB"></div>
@@ -558,6 +569,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   <div class="kpis" id="kpis"></div>
   <p class="hint" id="since"></p>
 </section>
+</div>
 </main></div>
 
 <script>
@@ -601,7 +613,15 @@ const nf=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{min
 const SER=[['pv','var(--c-pv)'],['use','var(--c-house)'],['imp','var(--c-imp)'],['exp','var(--c-exp)'],['chg','var(--c-chg)'],['dis','var(--c-dis)']];
 const hidden=new Set();
 let D24=null;
-const X0=56,X1=944,Y0=16,Y1=264;
+const X0=56;let Y0=16,Y1=264,X1=944,W24=960,WB=960,H24=300,HB=280;
+const fit=(el,prefer)=>{
+  const r=el.getBoundingClientRect();
+  const w=Math.max(320,Math.round(r.width||960));
+  let h=Math.round(r.height||prefer);
+  if(h<120)h=prefer;
+  el.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  return {w,h};
+};
 
 function niceStep(range){const raw=range/5,p=Math.pow(10,Math.floor(Math.log10(raw||1))),m=raw/p;return (m<1.5?1:m<3?2:m<7?5:10)*p;}
 function legend(){
@@ -610,7 +630,8 @@ function legend(){
 }
 function draw24(){
   const svg=$('c24');
-  if(!D24||!D24.valid){svg.innerHTML=`<text x="480" y="150" text-anchor="middle">${T('none')}</text>`;return;}
+  if(!D24||!D24.valid){const fh=fit(svg,260);svg.innerHTML=`<text x="50%" y="${Math.round(fh.h/2)}" text-anchor="middle">${T('none')}</text>`;return;}
+  ({w:W24,h:H24}=fit(svg,300));X1=W24-16;Y0=16;Y1=H24-36;
   const n=D24.pv.length;let lo=0,hi=0;
   SER.forEach(([k])=>{if(hidden.has(k))return;D24[k].forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}});});
   if(hi-lo<100)hi=lo+100;
@@ -631,7 +652,7 @@ function draw24(){
     g+=`<path class="ln" d="`+p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('')+`" style="stroke:${c}"/>`;});});
   g+=`<line id="cur" class="cur" x1="0" x2="0" y1="${Y0}" y2="${Y1}" style="display:none"/>`;
   svg.innerHTML=g;
-  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*960/r.width;
+  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W24/r.width;
     const i=Math.round((px-X0)/(X1-X0)*(n-1));if(i<0||i>=n)return;
     const c=$('cur');c.setAttribute('x1',x(i));c.setAttribute('x2',x(i));c.style.display='';
     const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
@@ -661,14 +682,15 @@ function label(k){
 function drawBars(){
   const svg=$('cb');let rows=BARS.bars||[];
   if(UNIT==='total'){const tt=BARS.total||{};rows=[{k:T('total'),pv:+tt.pv,imp:+tt.imp,exp:+tt.exp,house:null,chg:null,dis:null}];}
-  if(!rows.length){svg.innerHTML=`<text x="480" y="140" text-anchor="middle">${T('none')}</text>`;$('kpis').innerHTML='';return;}
+  if(!rows.length){const fh=fit(svg,240);svg.innerHTML=`<text x="50%" y="${Math.round(fh.h/2)}" text-anchor="middle">${T('none')}</text>`;$('kpis').innerHTML='';return;}
   const vis=BSER.filter(([k])=>!hiddenB.has(k));
   let hi=0;rows.forEach(r=>vis.forEach(([k])=>{if(r[k]!=null)hi=Math.max(hi,+r[k]);}));if(hi<=0)hi=1;
   const step=niceStep(hi);hi=Math.ceil(hi/step)*step;
-  const y0=20,y1=244,x0=56,x1=944,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(16,slot/(vis.length+1)));
+  ({w:WB,h:HB}=fit(svg,280));
+  const y0=20,y1=HB-36,x0=56,x1=WB-16,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(22,slot/(vis.length+1)));
   const y=v=>y1-(y1-y0)*v/hi;let g='';
   for(let v=0;v<=hi+1e-6;v+=step)g+=`<line class="ax" x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}"/><text x="${x0-8}" y="${y(v)+4}" text-anchor="end">${nf(v,step<1?1:0)}</text>`;
-  const every=Math.ceil(rows.length/16);
+  const every=Math.ceil(rows.length/Math.max(6,Math.floor((x1-x0)/70)));
   rows.forEach((r,i)=>{const cx=x0+slot*i+slot/2;
     vis.forEach(([k,c,l],j)=>{if(r[k]==null)return;const v=+r[k],bx=cx+(j-vis.length/2)*bw;
       g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c}"><title>${label(r.k)} · ${T(l)} ${nf(v,1)} kWh</title></rect>`;});
@@ -701,6 +723,9 @@ async function boot(){
 }
 boot();
 setInterval(()=>{if(!document.hidden){load24();if(UNIT==='day')loadBars();}},60000);
+let rsz=0;const redraw=()=>{clearTimeout(rsz);rsz=setTimeout(()=>{draw24();if(BARS)drawBars();},120);};
+if(window.ResizeObserver){const ro=new ResizeObserver(redraw);ro.observe($('c24'));ro.observe($('cb'));}
+else window.addEventListener('resize',redraw);
 </script></body></html>
 )HTML";
 
@@ -1209,20 +1234,47 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
   </div>
 </aside>
 <main class="main">
+<style>
+.ltabs{display:flex;gap:6px;margin:0 0 14px}
+.ltabs button:not(.on){background:var(--plate2);color:var(--ink)}
+.lv{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--rule2)}
+.lv.W{background:var(--warn)}.lv.E{background:var(--fault)}.lv.I{background:var(--acc)}
+#sys td:first-child,#tb td:first-child{white-space:nowrap;color:var(--dim);padding-right:16px}
+#sys td:nth-child(2){white-space:nowrap;padding-right:16px}
+</style>
 <div class="page-head">
   <div>
-    <h1>§14a Write-Debug</h1>
-    <p class="sub">SunSpec Model 123 Writes von Consolinno auf :1502</p>
+    <h1>Protokoll</h1>
+    <p class="sub" id="psub">Verbindungen, Fehler und Neustarts seit dem letzten Start.</p>
   </div>
 </div>
+<div class="ltabs">
+  <button type="button" id="tSys" class="on" onclick="tab('sys')">System</button>
+  <button type="button" id="tW" onclick="tab('w')">§14a-Writes</button>
+</div>
+
+<div id="pSys">
+<div class="card" id="sysSum">Lade…</div>
+<div class="card" style="margin-top:12px">
+<div class="row" style="margin-top:0;margin-bottom:12px">
+<button class="sec" type="button" onclick="refresh()">Aktualisieren</button>
+<button class="sec" type="button" onclick="clrSys()">Protokoll leeren</button>
+</div>
+<table><thead><tr><th>Zeit</th><th>Quelle</th><th>Meldung</th></tr></thead>
+<tbody id="sys"></tbody></table>
+</div>
+</div>
+
+<div id="pW" class="hide">
 <div class="card" id="sum">Lade…</div>
-<div class="card">
+<div class="card" style="margin-top:12px">
 <div class="row" style="margin-top:0;margin-bottom:12px">
 <button class="sec" type="button" onclick="refresh()">Aktualisieren</button>
 <button class="sec" type="button" onclick="clr()">Log leeren</button>
 </div>
 <table><thead><tr><th>Alter</th><th>FC</th><th>Addr</th><th>Wert</th><th>Hinweis</th></tr></thead>
 <tbody id="tb"></tbody></table>
+</div>
 </div>
 </main></div>
 
@@ -1255,8 +1307,32 @@ async function saveUiPrefs(){
 </script>
 <script>
 function age(ms){const s=Math.floor((Date.now()-window._boot-ms)/1000);if(s<0)return ms+'ms';if(s<60)return s+'s';return Math.floor(s/60)+'m';}
+let TAB=location.hash==='#writes'?'w':'sys';
+function tab(k){TAB=k;$('tSys').classList.toggle('on',k==='sys');$('tW').classList.toggle('on',k==='w');
+  $('pSys').classList.toggle('hide',k!=='sys');$('pW').classList.toggle('hide',k!=='w');
+  $('psub').textContent=k==='sys'?'Verbindungen, Fehler und Neustarts seit dem letzten Start.':'SunSpec Model 123: Writes von Consolinno auf Port 1502.';
+  history.replaceState(null,'',k==='w'?'#writes':'#');refresh();}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function when(e,boot){
+  const d=e.ts?new Date(e.ts*1000):new Date(boot+e.t);
+  const today=new Date().toDateString()===d.toDateString();
+  return (today?'':d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' ')+d.toLocaleTimeString('de-DE');
+}
+async function refreshSys(){
+  const d=await(await fetch('/api/events')).json();
+  const boot=Date.now()-d.uptimeMs;
+  const rate=d.hitPolls?(100*d.hitFails/d.hitPolls):0;
+  $('sysSum').innerHTML=`<div class="big" style="color:${d.hitFails?(rate>5?'var(--fault)':'var(--warn)'):'var(--acc)'}">HIT: ${d.hitFails} von ${d.hitPolls} Abfragen fehlgeschlagen</div>
+    <div class="muted">${d.hitPolls?rate.toFixed(1)+' % seit Start · ':''}läuft seit ${Math.floor(d.uptimeMs/3600000)} h ${Math.floor(d.uptimeMs/60000)%60} min${d.hitErr?' · letzte Ursache: '+esc(d.hitErr):''}</div>`;
+  const tb=$('sys');
+  tb.innerHTML=(d.events||[]).slice().reverse().map(e=>`<tr><td>${when(e,boot)}</td><td><span class="lv ${e.lv}"></span>${esc(e.src)}</td><td>${esc(e.msg)}</td></tr>`).join('')
+    ||'<tr><td colspan="3" class="muted">Noch keine Einträge.</td></tr>';
+}
+async function clrSys(){await fetch('/api/events/clear',{method:'POST'});refresh();}
 async function refresh(){
   const s=await(await fetch('/api/status')).json(); applyThemeLang(s);
+  if(TAB==='sys')return refreshSys();
   const d=await(await fetch('/api/debug')).json();
   window._boot=Date.now()-d.uptimeMs;
   const pct=(d.wMaxLimPct/100).toFixed(2);
@@ -1274,7 +1350,7 @@ async function refresh(){
   });
 }
 async function clr(){await fetch('/api/debug/clear',{method:'POST'});refresh();}
-refresh();setInterval(refresh,2000);
+tab(TAB);setInterval(()=>{if(!document.hidden)refresh();},3000);
 </script></body></html>
 )HTML";
 
@@ -1463,6 +1539,26 @@ void begin() {
   server.on("/api/debug/clear", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     DebugLog::clear();
+    req->send(200, "application/json", "{\"ok\":true}");
+  });
+
+  server.on("/api/events", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    String out = "{\"uptimeMs\":";
+    out += millis();
+    out += ",\"hitPolls\":"; out += gLive.hitPolls;
+    out += ",\"hitFails\":"; out += gLive.hitFails;
+    out += ",\"hitErr\":\"";
+    for (const char *p = HitBus::lastError(); *p; p++) if (*p != '"' && *p != '\\') out += *p;
+    out += "\",\"events\":";
+    out += EventLog::toJson(80);
+    out += "}";
+    req->send(200, "application/json", out);
+  });
+
+  server.on("/api/events/clear", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    EventLog::clear();
     req->send(200, "application/json", "{\"ok\":true}");
   });
 

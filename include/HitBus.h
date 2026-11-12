@@ -25,4 +25,5 @@ bool writeSingle(uint16_t addr, uint16_t value);
 bool writeMulti(uint16_t addr, uint16_t qty, const uint16_t *values);
 
 void close();
+const char *lastError(); // Grund des letzten Fehlschlags, für Protokoll und Anzeige
 }

@@ -14,6 +14,9 @@ namespace {
 AppConfig local;
 SemaphoreHandle_t lock = nullptr;
 constexpr uint32_t TIMEOUT_MS = 1500;
+char lastErr[40] = "";
+
+void setErr(const char *s) { strlcpy(lastErr, s, sizeof(lastErr)); }
 
 // ---- TCP: eine Verbindung, nur bei Fehler neu -------------------------------
 WiFiClient conn;
@@ -24,8 +27,14 @@ uint16_t nextTid = 1;
 bool tcpConnect() {
   if (conn.connected() && connPort == local.hitPort && strcmp(connHost, local.hitHost) == 0) return true;
   conn.stop();
-  if (!local.hitHost[0]) return false;
-  if (!conn.connect(local.hitHost, local.hitPort, int32_t(TIMEOUT_MS))) return false;
+  if (!local.hitHost[0]) {
+    setErr("kein HIT-Host eingetragen");
+    return false;
+  }
+  if (!conn.connect(local.hitHost, local.hitPort, int32_t(TIMEOUT_MS))) {
+    setErr("Verbindungsaufbau fehlgeschlagen");
+    return false;
+  }
   conn.setNoDelay(true);
   conn.setTimeout(TIMEOUT_MS);
   strlcpy(connHost, local.hitHost, sizeof(connHost));
@@ -41,13 +50,21 @@ bool tcpTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, si
     uint8_t hdr[7] = {uint8_t(tid >> 8), uint8_t(tid), 0, 0, uint8_t((len + 1) >> 8), uint8_t(len + 1), unit};
     if (conn.write(hdr, 7) == 7 && conn.write(pdu, len) == len) {
       uint8_t rh[7];
-      if (conn.readBytes(rh, 7) == 7 && rh[0] == hdr[0] && rh[1] == hdr[1]) {
+      const size_t got = conn.readBytes(rh, 7);
+      if (got == 7 && rh[0] == hdr[0] && rh[1] == hdr[1]) {
         size_t n = ((size_t(rh[4]) << 8) | rh[5]);
         if (n >= 2 && n - 1 <= respMax && conn.readBytes(resp, n - 1) == n - 1) {
           respLen = n - 1;
           return true;
         }
+        setErr("Antwort unvollständig");
+      } else if (got == 7) {
+        setErr("Antwort zu falscher Anfrage");
+      } else {
+        setErr(conn.connected() ? "keine Antwort (Timeout)" : "vom HIT getrennt");
       }
+    } else {
+      setErr("Senden fehlgeschlagen");
     }
     conn.stop(); // halbe Antwort oder vom HIT getrennt: einmal neu verbinden
   }
@@ -99,7 +116,10 @@ bool rtuTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, si
   uint8_t buf[260];
   size_t got = rtuRead(buf, 2);
   lastFrameUs = micros();
-  if (got != 2 || buf[0] != unit) return false;
+  if (got != 2 || buf[0] != unit) {
+    setErr(got ? "RS485: falsche Unit-ID" : "RS485: keine Antwort");
+    return false;
+  }
   size_t body;
   const uint8_t fc = buf[1];
   if (fc & 0x80) {
@@ -112,11 +132,17 @@ bool rtuTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, si
     body = 4; // FC5/6/15/16: Adresse + Wert/Anzahl
   }
   size_t need = body + 2; // + CRC
-  if (got + need > sizeof(buf) || rtuRead(buf + got, need) != need) return false;
+  if (got + need > sizeof(buf) || rtuRead(buf + got, need) != need) {
+    setErr("RS485: Antwort unvollständig");
+    return false;
+  }
   got += need;
   lastFrameUs = micros();
   uint16_t rc = crc16(buf, got - 2);
-  if ((rc & 0xFF) != buf[got - 2] || (rc >> 8) != buf[got - 1]) return false;
+  if ((rc & 0xFF) != buf[got - 2] || (rc >> 8) != buf[got - 1]) {
+    setErr("RS485: CRC-Fehler");
+    return false;
+  }
   respLen = got - 3; // ohne Unit und CRC
   if (respLen > respMax) return false;
   memcpy(resp, buf + 1, respLen);
@@ -129,7 +155,16 @@ bool readRegs(uint8_t fc, uint16_t addr, uint16_t qty, uint16_t *out) {
   uint8_t resp[256];
   size_t n = 0;
   if (!HitBus::transact(local.hitUnitId, pdu, 5, resp, sizeof(resp), n)) return false;
-  if (resp[0] != fc || n < 2 || resp[1] != qty * 2 || n < size_t(2 + qty * 2)) return false;
+  if (n >= 2 && resp[0] == (fc | 0x80)) {
+    char e[32];
+    snprintf(e, sizeof(e), "Modbus-Exception %u", resp[1]);
+    setErr(e);
+    return false;
+  }
+  if (resp[0] != fc || n < 2 || resp[1] != qty * 2 || n < size_t(2 + qty * 2)) {
+    setErr("Antwort hat falsche Länge");
+    return false;
+  }
   for (uint16_t i = 0; i < qty; i++) out[i] = (uint16_t(resp[2 + i * 2]) << 8) | resp[3 + i * 2];
   return true;
 }
@@ -157,9 +192,18 @@ bool forbidden(const uint8_t *pdu, size_t pduLen) {
   return addr >= SAFETY_FIRST && addr <= SAFETY_LAST;
 }
 
+const char *lastError() { return lastErr; }
+
 bool transact(uint8_t unit, const uint8_t *pdu, size_t pduLen, uint8_t *resp, size_t respMax, size_t &respLen) {
-  if (local.demoMode || !lock || forbidden(pdu, pduLen)) return false;
-  if (xSemaphoreTake(lock, pdMS_TO_TICKS(4000)) != pdTRUE) return false;
+  if (local.demoMode || !lock) return false;
+  if (forbidden(pdu, pduLen)) {
+    setErr("FC6 auf Schutzregister gesperrt");
+    return false;
+  }
+  if (xSemaphoreTake(lock, pdMS_TO_TICKS(4000)) != pdTRUE) {
+    setErr("Leitung belegt (Gateway/Steuerung)");
+    return false;
+  }
   bool ok = local.hitMode == HitLinkMode::RtuRs485 ? rtuTransact(unit, pdu, pduLen, resp, respMax, respLen)
                                               : tcpTransact(unit, pdu, pduLen, resp, respMax, respLen);
   xSemaphoreGive(lock);

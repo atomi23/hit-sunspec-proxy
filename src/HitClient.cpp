@@ -1,12 +1,15 @@
 #include "HitClient.h"
 #include "HitBus.h"
 #include "DataSource.h"
+#include "EventLog.h"
 #include <math.h>
 
 namespace {
 AppConfig local;
 uint32_t nextPoll = 0;
 bool started = false;
+uint32_t failStreak = 0;
+uint32_t failSince = 0;
 
 int16_t asI16(uint16_t u) {
   return (u >= 0x8000) ? int16_t(int32_t(u) - 0x10000) : int16_t(u);
@@ -31,24 +34,42 @@ bool doPoll() {
   uint16_t ePv[2] = {}, eImp[2] = {}, eExp[2] = {}, bat[2] = {};
   uint16_t batInfo[12] = {};
 
-  bool ok = true;
-  ok &= rd(27, 12, mppt);  delay(60);
-  ok &= rd(62, 3, volt);    delay(40);
-  ok &= rd(66, 1, freq);    delay(40);
-  ok &= rd(1804, 14, ipb);  delay(60);
-  ok &= rd(2000, 2, ePv);   delay(40);
-  ok &= rd(2040, 2, eImp);  delay(40);
-  ok &= rd(2048, 2, eExp);  delay(40);
-  ok &= rd(30009, 2, bat);  delay(40);
-  bool batOk = rd(30014, 12, batInfo);
-  delay(40);
+  struct Blk { uint16_t addr, qty; uint16_t *dst; uint16_t pause; };
+  const Blk blocks[] = {{27, 12, mppt, 60},   {62, 3, volt, 40},    {66, 1, freq, 40},
+                        {1804, 14, ipb, 60},  {2000, 2, ePv, 40},   {2040, 2, eImp, 40},
+                        {2048, 2, eExp, 40},  {30009, 2, bat, 40}};
+  gLive.hitPolls++;
+  uint16_t failAddr = 0;
+  for (const Blk &b : blocks) {
+    if (!rd(b.addr, b.qty, b.dst)) {
+      failAddr = b.addr;
+      break;
+    }
+    delay(b.pause);
+  }
 
-  if (!ok) {
+  if (failAddr) {
     gLive.hitOk = false;
     gLive.hitFails++;
+    failStreak++;
+    if (failStreak == 1) {
+      failSince = millis();
+      EventLog::add('W', "HIT", "Abfrage fehlgeschlagen bei Reg %u: %s", failAddr, HitBus::lastError());
+    } else if (failStreak % 20 == 0) {
+      EventLog::add('E', "HIT", "seit %lu s keine Daten (%lu Versuche): %s",
+                    (unsigned long)((millis() - failSince) / 1000), (unsigned long)failStreak,
+                    HitBus::lastError());
+    }
     strlcpy(gLive.status, "HIT poll fail", sizeof(gLive.status));
     return false;
   }
+  if (failStreak) {
+    EventLog::add('I', "HIT", "wieder erreichbar nach %lu Fehlversuch%s (%lu s)", (unsigned long)failStreak,
+                  failStreak == 1 ? "" : "en", (unsigned long)((millis() - failSince) / 1000));
+    failStreak = 0;
+  }
+  bool batOk = rd(30014, 12, batInfo);
+  delay(40);
 
   auto takeMppt = [&](int base, int32_t &w, float &v, float &a) {
     v = mppt[base] * 0.1f;

@@ -16,6 +16,7 @@
 #include "HitBus.h"
 #include "ModbusGateway.h"
 #include "History.h"
+#include "EventLog.h"
 
 void setup() {
   Serial.begin(115200);
@@ -28,6 +29,7 @@ void setup() {
 
   Watchdog::begin(45);
   Serial.printf("Letzter Neustart: %s\n", Watchdog::lastResetReason());
+  EventLog::add('I', "System", "Start v%s, Grund: %s", PROXY_VERSION, Watchdog::lastResetReason());
 
   NetBoot::begin(cfg);
   StatusDisplay::begin(cfg);

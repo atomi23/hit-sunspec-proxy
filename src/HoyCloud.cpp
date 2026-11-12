@@ -1,6 +1,7 @@
 #include "HoyCloud.h"
 #include "LiveData.h"
 #include "Watchdog.h"
+#include "EventLog.h"
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <NetworkClientSecure.h>
@@ -126,6 +127,7 @@ bool login() {
       return true;
     }
     Serial.printf("Cloud login abgelehnt: %.160s\n", resp.c_str()); // ohne Token, nur Fehlermeldung
+    EventLog::add('W', "Cloud", "Login abgelehnt (HTTP %d), nächster Versuch in 5 min", lastHttpCode);
   }
   token[0] = 0;
   // nur sperren, wenn Hoymiles geantwortet und abgelehnt hat; Netzwerkfehler sofort wieder versuchen
@@ -240,11 +242,13 @@ bool fetchRealtime() {
     if (!isnan(eImp)) gLive.energyImpKwh = (eImp > 10000.0f) ? (eImp / 1000.0) : double(eImp);
     if (!isnan(eExp)) gLive.energyExpKwh = (eExp > 10000.0f) ? (eExp / 1000.0) : double(eExp);
 
+    if (!gLive.cloudOk) EventLog::add('I', "Cloud", "Daten kommen an");
     gLive.cloudOk = true;
     gLive.lastCloudMs = millis();
     return true;
   }
 
+  if (gLive.cloudOk) EventLog::add('W', "Cloud", "Datenabruf fehlgeschlagen (HTTP %d)", lastHttpCode);
   gLive.cloudOk = false;
   return false;
 }

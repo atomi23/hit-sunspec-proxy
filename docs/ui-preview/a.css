@@ -53,8 +53,8 @@ a{color:var(--acc)}
 .side .foot .meta{margin-top:4px;font-size:12px;color:var(--dim);white-space:pre-line}
 .side .prefs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
 .side .prefs select{padding:7px 9px;font-size:13px;border-radius:10px}
-.main{flex:1;min-width:0;padding:32px 44px 64px;max-width:1280px}
-.page-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:24px}
+.main{flex:1;min-width:0;width:100%;padding:20px clamp(12px,1.6vw,28px) 28px;display:flex;flex-direction:column}
+.page-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;flex-shrink:0}
 .brand{display:none}
 h1{margin:0;font-size:32px;font-weight:600;line-height:1.1;letter-spacing:-.01em}
 h2{margin:0 0 12px;font-size:17px;font-weight:600}
@@ -125,8 +125,8 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 #probeBox{margin-top:12px;display:none}
 
 /* Live: Energiefluss */
-.flow{background:radial-gradient(120% 90% at 50% 0%,var(--plate2),var(--plate) 70%);border-radius:24px;padding:12px 12px 4px}
-.flow svg{display:block;width:100%;height:auto;overflow:visible}
+.flow{background:radial-gradient(120% 90% at 50% 0%,var(--plate2),var(--plate) 70%);border-radius:24px;padding:8px 8px 2px}
+.flow svg{display:block;width:100%;height:auto;max-height:58vh;overflow:visible}
 .flow .lbl{fill:var(--dim);font:400 15px var(--font)}
 .flow .val{fill:var(--ink);font:600 36px var(--font);letter-spacing:-.01em}
 .flow .val tspan{font-size:17px;font-weight:400;fill:var(--dim)}
@@ -158,21 +158,24 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 @media (prefers-reduced-motion:reduce){.flow .run.on,.flow .data.live{animation:none}}
 
 /* Live: Kennzahlen */
-.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
-.cards.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px;flex-shrink:0}
+.cards.two{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
 .cards .panel{padding:20px 22px 14px}
 .cards td:first-child{color:var(--dim)}
 .note{font-size:13px;color:var(--dim);margin:10px 0 6px}
 .foot-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:24px}
 
 /* Einstellungen: ein Bereich je Menüpunkt */
-.cfg,.main:has(.cfg) .page-head{max-width:780px}
+.cfg .card.show{columns:2 380px;column-gap:48px}
+.cfg .card label{break-after:avoid}
+.cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
+.cfg #knxRows,.cfg #probeBox{column-span:all}
 .cfg .card{display:none}
 .cfg .card.show{display:block}
 .cfg .card>strong{display:none}
 .cfg .card>label:first-of-type{margin-top:0}
 
-@media(max-width:1100px){.grid2{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr 1fr}}
+@media(max-width:1100px){.grid2{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:860px){
   .app{flex-direction:column}
   .side{width:100%;height:auto;position:relative;padding:14px 10px 8px}

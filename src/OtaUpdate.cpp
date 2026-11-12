@@ -2,6 +2,7 @@
 #include "LiveData.h"
 #include <Update.h>
 #include "AppConfig.h"
+#include "EventLog.h"
 
 namespace {
 bool busy = false;
@@ -253,6 +254,7 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
           }
           uploadOk = true;
           Serial.printf("OTA OK %u bytes\n", (unsigned)written);
+          EventLog::add('I', "OTA", "Firmware übertragen (%u Bytes), Neustart folgt", (unsigned)written);
         }
       });
 }

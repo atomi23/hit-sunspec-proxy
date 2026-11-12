@@ -289,8 +289,11 @@ static void drawPageSystem() {
   cell(28, 42, L("Datenquelle", "Data source"), originText(gLive.dataOrigin),
        gLive.dataOrigin == DataOrigin::Native ? P.acc : P.warn);
   fmtAge(age, sizeof(age), gLive.lastHitMs);
-  snprintf(v, sizeof(v), gLive.hitFails ? L("%s, %lu Fehler", "%s, %lu errors") : "%s", age,
-           (unsigned long)gLive.hitFails);
+  if (gLive.hitFails)
+    snprintf(v, sizeof(v), L("%s, %lu/%lu Fehler", "%s, %lu/%lu errors"), age, (unsigned long)gLive.hitFails,
+             (unsigned long)gLive.hitPolls);
+  else
+    snprintf(v, sizeof(v), "%s", age);
   cell(248, 42, L("HIT-Antwort", "HIT response"), v, gLive.hitOk ? P.ink : P.fault);
 
   cell(28, 82, "Consolinno", gLive.sunspecClient ? L("fragt ab", "polling") : L("wartet", "waiting"),

@@ -5,7 +5,13 @@
 <meta name="color-scheme" content="dark"/><title>Verlauf · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
 <style>
-.chart{display:block;width:100%;height:auto;overflow:visible}
+.main:has(.hist){height:100vh;overflow:auto;padding-bottom:16px}
+.hist{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.hist .panel{display:flex;flex-direction:column;min-height:0;flex:1 1 0;padding:16px 20px 12px}
+.hist .panel h2{margin-bottom:8px}
+.hist .hint{margin-top:4px}
+.chart{display:block;width:100%;flex:1 1 0;height:0;min-height:140px;overflow:visible}
+@media(max-height:720px),(max-width:860px){.main:has(.hist){height:auto;overflow:visible}.chart{flex:none;height:260px}}
 .chart .ax{stroke:var(--rule);stroke-width:1}
 .chart .zero{stroke:var(--rule2);stroke-width:1}
 .chart text{fill:var(--dim);font:400 12px var(--font)}
@@ -87,7 +93,8 @@ window.fetch=async(u,o)=>{
   </div>
 </div>
 
-<section class="panel">
+<div class="hist">
+<section class="panel day">
   <h2 data-t="h24">Letzte 24 Stunden</h2>
   <div class="legend" id="leg"></div>
   <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden"></svg>
@@ -95,7 +102,7 @@ window.fetch=async(u,o)=>{
   <p class="hint" data-t="bal">Oberhalb der Null-Linie liefern PV, Netzbezug und Akku Energie, unterhalb nehmen Haus, Einspeisung und Akku-Laden sie ab.</p>
 </section>
 
-<section class="panel" style="margin-top:16px">
+<section class="panel bars">
   <h2 data-t="hE">Energie</h2>
   <div class="tabs" id="tabs"></div>
   <div class="legend" id="legB"></div>
@@ -103,6 +110,7 @@ window.fetch=async(u,o)=>{
   <div class="kpis" id="kpis"></div>
   <p class="hint" id="since"></p>
 </section>
+</div>
 </main></div>
 
 <script>
@@ -146,7 +154,15 @@ const nf=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{min
 const SER=[['pv','var(--c-pv)'],['use','var(--c-house)'],['imp','var(--c-imp)'],['exp','var(--c-exp)'],['chg','var(--c-chg)'],['dis','var(--c-dis)']];
 const hidden=new Set();
 let D24=null;
-const X0=56,X1=944,Y0=16,Y1=264;
+const X0=56;let Y0=16,Y1=264,X1=944,W24=960,WB=960,H24=300,HB=280;
+const fit=(el,prefer)=>{
+  const r=el.getBoundingClientRect();
+  const w=Math.max(320,Math.round(r.width||960));
+  let h=Math.round(r.height||prefer);
+  if(h<120)h=prefer;
+  el.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  return {w,h};
+};
 
 function niceStep(range){const raw=range/5,p=Math.pow(10,Math.floor(Math.log10(raw||1))),m=raw/p;return (m<1.5?1:m<3?2:m<7?5:10)*p;}
 function legend(){
@@ -155,7 +171,8 @@ function legend(){
 }
 function draw24(){
   const svg=$('c24');
-  if(!D24||!D24.valid){svg.innerHTML=`<text x="480" y="150" text-anchor="middle">${T('none')}</text>`;return;}
+  if(!D24||!D24.valid){const fh=fit(svg,260);svg.innerHTML=`<text x="50%" y="${Math.round(fh.h/2)}" text-anchor="middle">${T('none')}</text>`;return;}
+  ({w:W24,h:H24}=fit(svg,300));X1=W24-16;Y0=16;Y1=H24-36;
   const n=D24.pv.length;let lo=0,hi=0;
   SER.forEach(([k])=>{if(hidden.has(k))return;D24[k].forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}});});
   if(hi-lo<100)hi=lo+100;
@@ -176,7 +193,7 @@ function draw24(){
     g+=`<path class="ln" d="`+p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('')+`" style="stroke:${c}"/>`;});});
   g+=`<line id="cur" class="cur" x1="0" x2="0" y1="${Y0}" y2="${Y1}" style="display:none"/>`;
   svg.innerHTML=g;
-  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*960/r.width;
+  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W24/r.width;
     const i=Math.round((px-X0)/(X1-X0)*(n-1));if(i<0||i>=n)return;
     const c=$('cur');c.setAttribute('x1',x(i));c.setAttribute('x2',x(i));c.style.display='';
     const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
@@ -206,14 +223,15 @@ function label(k){
 function drawBars(){
   const svg=$('cb');let rows=BARS.bars||[];
   if(UNIT==='total'){const tt=BARS.total||{};rows=[{k:T('total'),pv:+tt.pv,imp:+tt.imp,exp:+tt.exp,house:null,chg:null,dis:null}];}
-  if(!rows.length){svg.innerHTML=`<text x="480" y="140" text-anchor="middle">${T('none')}</text>`;$('kpis').innerHTML='';return;}
+  if(!rows.length){const fh=fit(svg,240);svg.innerHTML=`<text x="50%" y="${Math.round(fh.h/2)}" text-anchor="middle">${T('none')}</text>`;$('kpis').innerHTML='';return;}
   const vis=BSER.filter(([k])=>!hiddenB.has(k));
   let hi=0;rows.forEach(r=>vis.forEach(([k])=>{if(r[k]!=null)hi=Math.max(hi,+r[k]);}));if(hi<=0)hi=1;
   const step=niceStep(hi);hi=Math.ceil(hi/step)*step;
-  const y0=20,y1=244,x0=56,x1=944,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(16,slot/(vis.length+1)));
+  ({w:WB,h:HB}=fit(svg,280));
+  const y0=20,y1=HB-36,x0=56,x1=WB-16,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(22,slot/(vis.length+1)));
   const y=v=>y1-(y1-y0)*v/hi;let g='';
   for(let v=0;v<=hi+1e-6;v+=step)g+=`<line class="ax" x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}"/><text x="${x0-8}" y="${y(v)+4}" text-anchor="end">${nf(v,step<1?1:0)}</text>`;
-  const every=Math.ceil(rows.length/16);
+  const every=Math.ceil(rows.length/Math.max(6,Math.floor((x1-x0)/70)));
   rows.forEach((r,i)=>{const cx=x0+slot*i+slot/2;
     vis.forEach(([k,c,l],j)=>{if(r[k]==null)return;const v=+r[k],bx=cx+(j-vis.length/2)*bw;
       g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c}"><title>${label(r.k)} · ${T(l)} ${nf(v,1)} kWh</title></rect>`;});
@@ -246,4 +264,7 @@ async function boot(){
 }
 boot();
 setInterval(()=>{if(!document.hidden){load24();if(UNIT==='day')loadBars();}},60000);
+let rsz=0;const redraw=()=>{clearTimeout(rsz);rsz=setTimeout(()=>{draw24();if(BARS)drawBars();},120);};
+if(window.ResizeObserver){const ro=new ResizeObserver(redraw);ro.observe($('c24'));ro.observe($('cb'));}
+else window.addEventListener('resize',redraw);
 </script></body></html>
