@@ -26,7 +26,7 @@ idx = extract("INDEX_HTML")
 (OUT / "a.css").write_text(css, encoding="utf-8")
 
 mock_status = {
-    "version": "0.4.2",
+    "version": "0.5.0",
     "setupComplete": True,
     "demoMode": True,
     "ipShown": "192.0.2.80",
@@ -255,7 +255,8 @@ window.fetch=async(u,o)=>{{
 dbg = extract("DEBUG_HTML")
 up = 9 * 3600 * 1000 + 42 * 60 * 1000
 ev = [
-    (0, "I", "System", "Start v0.4.2, Grund: Software-Neustart (OTA)"),
+    (0, "I", "System", "Start v0.5.0, Grund: Neustart per Software"),
+    (7000, "I", "HTTPS", "Port 443 aktiv, selbst signiertes Zertifikat"),
     (4200, "I", "Cloud", "Daten kommen an"),
     (2 * 3600e3, "W", "HIT", "Abfrage fehlgeschlagen bei Reg 1804: keine Antwort (Timeout)"),
     (2 * 3600e3 + 26e3, "I", "HIT", "wieder erreichbar nach 1 Fehlversuch (25 s)"),

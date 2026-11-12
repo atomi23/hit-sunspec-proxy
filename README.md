@@ -6,7 +6,7 @@ verteilt die Daten an Consolinno, Home Assistant, KNX und andere Modbus-Clients.
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
-Aktuelle Firmware: **v0.4.2**
+Aktuelle Firmware: **v0.5.0**
 
 ## Architektur
 
@@ -52,6 +52,12 @@ Systemprotokoll mit HIT-Ausfällen samt Ursache, Wiederkehr, Cloud-Status, OTA u
 Die §14a-Writes von Consolinno stehen im zweiten Reiter.
 
 ![Systemprotokoll](docs/screenshots/system-log.jpg)
+
+### HTTPS
+
+Selbst signiertes Zertifikat mit Fingerabdruck zum Vergleichen, oder ein eigenes hochladen.
+
+![HTTPS](docs/screenshots/https.jpg)
 
 ### Einstellungen: HIT-Wechselrichter und KNX
 
@@ -110,6 +116,12 @@ Pins: [`PINS.md`](PINS.md)
 | `tools/parity_check.py` | Node-RED-Karte gegen die ESP-Umrechnung derselben HIT-Daten prüfen (nur lesend) |
 | `tools/make_vlw.py` | Display-Schriften (VLW) aus Barlow erzeugen |
 | `tools/embed_fonts.py` | Web-Schriften (WOFF) einbetten |
+| `tools/https_check.py` | HTTPS prüfen: Umleitung, Speichern, Zertifikat hochladen/ablehnen, optional OTA |
+| `tools/esp_soak.py` | Lasttest der Weboberfläche über HTTP oder HTTPS, auch mit offen gehaltener Verbindung |
+| `tools/modbus_watch.py` | SunSpec-Kennung laufend lesen, langsame Antworten und Ausfälle melden |
+| `tools/serial_log.py` | Seriellen Log mitschreiben |
+
+Zugangsdaten für die Werkzeuge kommen aus `ESP_USER` / `ESP_PASS`, nie aus dem Repo.
 
 ## Build
 
