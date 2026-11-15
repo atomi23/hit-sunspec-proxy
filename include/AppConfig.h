@@ -38,7 +38,7 @@ struct AppConfig {
   bool demoMode = false;
 
   // SunSpec / Consolinno
-  uint16_t sunspecPort = 1502;
+  uint16_t sunspecPort = 1502; // wie früher Node-RED; 502 bleibt fürs HIT-Gateway
   uint8_t sunspecUnitId = 1;
   bool invertPowerSign = false;
 
@@ -71,6 +71,7 @@ struct AppConfig {
   char tasmotaUser[32] = "";
   char tasmotaPass[64] = "";
   bool tasmotaMeterSpoof = false;
+  bool tasmotaLiveGrid = false; // Live-View/Display: Netz vom Tasmota statt HIT
 
   // MQTT (Publish → HA + optional Ingest-Fallback)
   bool mqttEnabled = false;

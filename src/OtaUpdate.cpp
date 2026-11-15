@@ -221,13 +221,18 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
           busy = true;
           strlcpy(gLive.status, "OTA flash…", sizeof(gLive.status));
 
+          // Abgebrochener Upload (VPN/Timeout) lässt Update sonst mit „No Error“ hängen
+          if (Update.isRunning()) Update.abort();
+
           // Multipart: Content-Length ≠ Bin-Größe → UNKNOWN
           if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
-            snprintf(errBuf, sizeof(errBuf), "begin: %s", Update.errorString());
+            const char *why = Update.errorString();
+            if (!why || !why[0] || strcmp(why, "No Error") == 0) why = "OTA-Slot belegt — Gerät neu starten und erneut versuchen";
+            snprintf(errBuf, sizeof(errBuf), "begin: %s", why);
             busy = false;
             return;
           }
-          Serial.printf("OTA begin %s\n", filename.c_str());
+          Serial.printf("OTA begin %s freeSketch=%u\n", filename.c_str(), (unsigned)ESP.getFreeSketchSpace());
         }
 
         if (errBuf[0] || !busy) return;

@@ -4,7 +4,7 @@
 #include <cmath>
 
 // Füllt SunSpec GEN24-ähnliche Holding-Register (wie Node-RED consolinno_fn_map)
-// Optional: Model 201 AC-Meter aus Tasmota (tasmotaMeterSpoof)
+  // Optional: Model 203 AC-Meter (3ph) aus Tasmota-Summe + HIT-Phasen (tasmotaMeterSpoof)
 
 namespace SunSpecMap {
 
@@ -172,38 +172,69 @@ void build(uint16_t *regs, size_t n, const LiveData &live, const AppConfig &cfg)
   regs[356] = 10000; regs[357] = 10000;
   regs[365] = sfNeg(-2); regs[366] = sfNeg(-2); regs[369] = sfNeg(-2);
 
-  // Optional SunSpec Model 201 (single-phase meter) from Tasmota
+  // Optional SunSpec Model 203 (dreiphasiger Zähler). Tasmota E320 liefert nur die Summe —
+  // Phasenleistung daher zu je ~1/3, Spannungen vom HIT.
   int next = 370;
   if (cfg.tasmotaMeterSpoof && live.tasmotaOk) {
     const int32_t mW = live.tasmotaPowerW;
+    const int32_t w1 = mW / 3, w2 = mW / 3, w3 = mW - w1 - w2;
     const uint32_t whImp = uint32_t(llround(live.tasmotaTotalKwh * 1000.0));
     const uint32_t whExp = uint32_t(llround(live.tasmotaExportKwh * 1000.0));
-    const float v = v1 > 50 ? v1 : 230.0f;
-    const int32_t mA = int32_t(lround(fabs(double(mW)) / max(v, 1.0f) * 100.0)); // A_SF -2
+    const float va = v1 > 50 ? v1 : 230.0f, vb = v2 > 50 ? v2 : 230.0f, vc = v3 > 50 ? v3 : 230.0f;
+    auto amp = [](int32_t w, float v) {
+      return uint16_t(lround(fabs(double(w)) / max(v, 1.0f) * 100.0)); // A_SF -2
+    };
+    const uint16_t a1m = amp(w1, va), a2m = amp(w2, vb), a3m = amp(w3, vc);
 
-    regs[next + 0] = 201;
-    regs[next + 1] = 50; // length
-    regs[next + 2] = uint16_t(mA);           // A
-    regs[next + 3] = sfNeg(-2);              // A_SF
-    regs[next + 4] = uint16_t(lround(v * 10)); // PhV
-    regs[next + 5] = sfNeg(-1);              // PhV_SF
-    regs[next + 6] = 500;                    // Hz * 0.1
-    regs[next + 7] = sfNeg(-1);              // Hz_SF
-    regs[next + 8] = sn16(mW);               // W
-    regs[next + 9] = 0;                      // W_SF
-    regs[next + 10] = uint16_t(labs(mW));    // VA
-    regs[next + 11] = 0;
-    regs[next + 12] = 0;                     // VAR
-    regs[next + 13] = 0;
-    regs[next + 14] = 1000;                  // PF 1.000
-    regs[next + 15] = sfNeg(-3);
-    putU32(regs, next + 16, whExp);          // TotWhExp
-    regs[next + 18] = 0;                     // TotWhExp_SF (Wh)
-    putU32(regs, next + 19, whImp);          // TotWhImp
-    regs[next + 21] = 0;
-    // rest zero / unused through L=50
-    putStr(regs, next + 40, live.tasmotaSensorKey[0] ? live.tasmotaSensorKey : "Tasmota", 8);
-    next += 52; // 2 header + 50
+    regs[next + 0] = 203;
+    regs[next + 1] = 105;
+    regs[next + 2] = uint16_t(a1m + a2m + a3m); // A
+    regs[next + 3] = a1m;                       // AphA
+    regs[next + 4] = a2m;
+    regs[next + 5] = a3m;
+    regs[next + 6] = sfNeg(-2);                 // A_SF
+    regs[next + 7] = uint16_t(lround(((va + vb + vc) / 3.0f) * 10)); // PhV avg
+    regs[next + 8] = uint16_t(lround(va * 10));
+    regs[next + 9] = uint16_t(lround(vb * 10));
+    regs[next + 10] = uint16_t(lround(vc * 10));
+    regs[next + 11] = sfNeg(-1);                // PhV_SF
+    regs[next + 12] = uint16_t(lround(va * 10 * 1.732f)); // PPV approx
+    regs[next + 13] = uint16_t(lround(va * 10 * 1.732f));
+    regs[next + 14] = uint16_t(lround(vb * 10 * 1.732f));
+    regs[next + 15] = uint16_t(lround(vc * 10 * 1.732f));
+    regs[next + 16] = sfNeg(-1);                // PPV_SF
+    regs[next + 17] = uint16_t(lround((live.freqHz > 40 ? live.freqHz : 50.0f) * 100));
+    regs[next + 18] = sfNeg(-2);                // Hz_SF
+    regs[next + 19] = sn16(mW);                 // W
+    regs[next + 20] = sn16(w1);
+    regs[next + 21] = sn16(w2);
+    regs[next + 22] = sn16(w3);
+    regs[next + 23] = 0;                        // W_SF
+    regs[next + 24] = uint16_t(labs(mW));       // VA
+    regs[next + 25] = uint16_t(labs(w1));
+    regs[next + 26] = uint16_t(labs(w2));
+    regs[next + 27] = uint16_t(labs(w3));
+    regs[next + 28] = 0;
+    // VAR… PF
+    regs[next + 34] = 1000;
+    regs[next + 35] = 1000;
+    regs[next + 36] = 1000;
+    regs[next + 37] = 1000;
+    regs[next + 38] = sfNeg(-3);                // PF_SF
+    const uint32_t whExp1 = whExp / 3, whExp2 = whExp / 3, whExp3 = whExp - whExp1 - whExp2;
+    const uint32_t whImp1 = whImp / 3, whImp2 = whImp / 3, whImp3 = whImp - whImp1 - whImp2;
+    putU32(regs, next + 39, whExp);             // TotWhExp
+    putU32(regs, next + 41, whExp1);
+    putU32(regs, next + 43, whExp2);
+    putU32(regs, next + 45, whExp3);
+    regs[next + 47] = 0;                        // TotWhExp_SF Wh
+    putU32(regs, next + 48, whImp);             // TotWhImp
+    putU32(regs, next + 50, whImp1);
+    putU32(regs, next + 52, whImp2);
+    putU32(regs, next + 54, whImp3);
+    regs[next + 56] = 0;
+    putStr(regs, next + 90, live.tasmotaSensorKey[0] ? live.tasmotaSensorKey : "Tasmota", 8);
+    next += 107; // 2 header + 105
   }
 
   // End model

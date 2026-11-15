@@ -170,7 +170,16 @@ void begin(const AppConfig &cfg) {
 }
 
 void applyConfig(const AppConfig &cfg) {
+  const bool portChanged = cfg.sunspecPort != local.sunspecPort;
   local = cfg;
+  if (portChanged && started) {
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+      if (clients[i]) clients[i].stop();
+    }
+    server.end();
+    server = WiFiServer(local.sunspecPort);
+    server.begin();
+  }
   rebuildMap();
 }
 

@@ -417,6 +417,14 @@ const T=k=>(TX[LANG]||TX.de)[k];
 const $=id=>document.getElementById(id);
 const num=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
+// Netz: Bezug positiv, Einspeisung mit Minus; Farbe Weiß→Rot / Gelb→Grün
+const wattGrid=n=>{const v=Number(n)||0;return (v<0?'−':'')+num(Math.abs(v))+'<tspan dx="6">W</tspan>';};
+const gridFill=n=>{
+  const v=Number(n)||0,t=Math.min(1,Math.abs(v)/2000);
+  const mix=(a,b)=>Math.round(a+(b-a)*t);
+  if(v>=0){const r=mix(237,239),g=mix(239,111),b=mix(236,98);return`rgb(${r},${g},${b})`;} // ink→rot
+  const r=mix(241,46),g=mix(196,180),b=mix(83,120);return`rgb(${r},${g},${b})`; // gelb→grün
+};
 const rows=r=>r.map(([k,v])=>`<tr><td>${k}</td><td class="n">${v}</td></tr>`).join('');
 function run(id,w,forward){const e=$(id);const on=Math.abs(w)>20;e.classList.toggle('on',on);e.classList.toggle('rev',on&&!forward);}
 const chip=(state,label)=>`<span class="chip ${state}"><span class="dot"></span>${label}</span>`;
@@ -430,7 +438,9 @@ async function refresh(){
   $('ip').textContent=s.ipShown||'—';
   $('demo').classList.toggle('hide',!s.demoMode);
 
-  const pv=Number(s.pvW)||0, bat=Number(s.batW)||0, grid=Number(s.gridW)||0;
+  const pv=Number(s.pvW)||0, bat=Number(s.batW)||0;
+  const useTas=!!(s.tasmotaOk&&s.tasmotaLiveGrid);
+  const grid=useTas?(Number(s.tasmotaPowerW)||0):(Number(s.gridW)||0);
   const house=Math.max(0,pv+bat+grid);
   $('vPv').innerHTML=watt(pv);
   $('dPv').textContent=T('today')+' '+num(s.energyPvKwh)+' kWh';
@@ -439,8 +449,10 @@ async function refresh(){
   $('dBat').textContent=(bat>20?T('discharge'):(bat<-20?T('charge'):T('idle')))+', '+num(soc)+' %';
   $('socRing').setAttribute('stroke-dasharray',(326.7*soc/100).toFixed(1)+' 327');
   $('socRing').style.stroke=soc<15?'var(--fault)':(soc<30?'var(--warn)':'var(--acc)');
-  $('vGrid').innerHTML=watt(grid);
-  $('dGrid').textContent=grid>20?T('imp'):(grid<-20?T('exp'):'');
+  $('vGrid').innerHTML=wattGrid(grid);
+  $('vGrid').style.fill=gridFill(grid);
+  const gridDir=grid>20?T('imp'):(grid<-20?T('exp'):'');
+  $('dGrid').textContent=useTas?(gridDir?(T('tas')+' · '+gridDir):T('tas')):gridDir;
   $('vHouse').innerHTML=watt(house);
   run('fPv',pv,true); run('fBat',bat,bat>0); run('fGrid',grid,grid<0); run('fHouse',house,true);
   $('dHit').textContent=s.hitOk?T('hitOk'):T('hitBad');
@@ -460,16 +472,20 @@ async function refresh(){
   const str=[1,2,3,4].map(i=>[T('string')+' '+i,num(s['pv'+i+'W'])+' W']);
   str.push([T('total'),`<b>${num(pv)} W</b>`]);
   $('tStr').innerHTML=rows(str);
+  const phW=w=>{const v=Number(w)||0;const t=(v<0?'−':'')+num(Math.abs(v));return`<span style="color:${gridFill(v)}">${t}</span>`;};
   $('tPh').innerHTML=`<tr><th>${T('phase')}</th><th class="n">V</th><th class="n">A</th><th class="n">W</th></tr>`+
-    [1,2,3].map(i=>`<tr><td>L${i}</td><td class="n">${num(s['v'+i],1)}</td><td class="n">${num(s['i'+i],1)}</td><td class="n">${num(s['gridW'+i])}</td></tr>`).join('');
+    [1,2,3].map(i=>`<tr><td>L${i}</td><td class="n">${num(s['v'+i],1)}</td><td class="n">${num(s['i'+i],1)}</td><td class="n">${phW(s['gridW'+i])}</td></tr>`).join('');
   $('nHz').textContent=T('freq')+' '+num(s.freqHz,2)+' Hz';
   $('tEn').innerHTML=rows([
     [T('yield'),num(s.energyPvKwh,1)+' kWh'],[T('eimp'),num(s.energyImpKwh,1)+' kWh'],[T('eexp'),num(s.energyExpKwh,1)+' kWh'],
-    [T('batv'),num(s.batV,1)+' V'],[T('bata'),num(s.batA,1)+' A'],[T('soh'),num(s.soh)+' %']]);
+    [T('soc'),num(soc)+' %'],[T('batv'),num(s.batV,1)+' V'],
+    [T('bata'),(()=>{const a=-(Number(s.batA)||0);return (a>0?'+':'')+num(a,1)+' A';})()],
+    [T('soh'),num(s.soh)+' %']]);
   $('tLim').innerHTML=rows([[T('lim'),s.wMaxLimEna?T('limOn'):T('limOff')],[T('limVal'),num((Number(s.wMaxLimPct)||0)/100,1)+' %']]);
   $('nLim').textContent=s.lastWriteNote||T('noWrite');
   if(s.tasmotaOk){
-    $('tTas').innerHTML=rows([[T('power'),num(s.tasmotaPowerW)+' W'],[T('eimp'),num(s.tasmotaTotalKwh,2)+' kWh'],[T('eexp'),num(s.tasmotaExportKwh,2)+' kWh']]);
+    const tp=Number(s.tasmotaPowerW)||0;
+    $('tTas').innerHTML=rows([[T('power'),`<span style="color:${gridFill(tp)}">${(tp<0?'−':'')+num(Math.abs(tp))} W</span>`],[T('eimp'),num(s.tasmotaTotalKwh,2)+' kWh'],[T('eexp'),num(s.tasmotaExportKwh,2)+' kWh']]);
     $('nTas').textContent=s.tasmotaSensorKey||'';
   }else{$('tTas').innerHTML='';$('nTas').textContent=T('tasOff');}
   $('age').textContent=T('age')(Math.floor((s.lastHitAgeMs||0)/1000));
@@ -894,14 +910,16 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <button class="sec" type="button" onclick="applyCtrl()">Jetzt an HIT schreiben</button>
 </div>
 <div class="card" id="tasmota" data-sub="Optionaler Netzzähler mit Tasmota-Lesekopf."><strong>Tasmota-Zähler</strong>
-<label><input name="tasmotaEnabled" type="checkbox"/> aktiv (Display)</label>
+<label><input name="tasmotaEnabled" type="checkbox"/> aktiv</label>
+<label><input name="tasmotaLiveGrid" type="checkbox"/> Im Live-View als Netzzähler (sonst HIT)</label>
 <label><input name="tasmotaMeterSpoof" type="checkbox"/> Meter-Spoof für Consolinno (optional)</label>
 <label>Tasmota IP</label><input name="tasmotaHost" placeholder="192.0.2.60"/>
 <label>Port</label><input name="tasmotaPort" type="number"/>
 <label>Poll (ms)</label><input name="tasmotaPollMs" type="number"/>
 <label>User (optional)</label><input name="tasmotaUser"/>
 <label>Passwort (optional)</label><input name="tasmotaPass" type="password"/>
-<p class="hint">E320: Power / E_in / E_out. Meter-Spoof hängt SunSpec Model 201 an :1502.</p>
+<p class="hint">E320 liefert nur die Summe (Power / E_in / E_out), keine Phasen.
+Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spannungen vom HIT.</p>
 <button class="sec" type="button" onclick="probeTas()" style="margin-top:10px">One-Click: Tasmota auslesen</button>
 <div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
 </div>
@@ -1171,14 +1189,14 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
 <div class="card hide" id="s3">
 <span class="pill">Schritt 4 / 5</span>
 <strong style="margin-top:10px">Consolinno anbinden</strong>
-<p class="hint">In der Consolinno-App Gerät als Fronius / SunSpec Hybrid (o.ä.) mit:</p>
+<p class="hint">In der Consolinno-App „Fronius Hybrid (SunSpec)“ oder „SunSpec Generic“ wählen.
+Consolinno sucht im Netz selbst (Port 502, wie ein Fronius). Keine IP nötig.</p>
 <div class="ip" id="proxyIp">…</div>
 <ul>
-<li>IP = diese Proxy-IP (Display)</li>
-<li>Port = <code id="ssPort">1502</code></li>
+<li>SunSpec-Port am Proxy: <code id="ssPort">502</code> (Standard für den Scan)</li>
 <li>Unit / Slave = <code>1</code></li>
 </ul>
-<p class="hint">Den HIT nicht zusätzlich direkt in Consolinno eintragen, sonst sehen beide Wege den HIT gleichzeitig.</p>
+<p class="hint">Den HIT nicht zusätzlich direkt in Consolinno eintragen. Modbus-Gateway dann auf einen anderen Port legen oder auslassen.</p>
 <div class="row"><button class="sec" type="button" onclick="go(2)">Zurück</button><button type="button" onclick="go(4)">Weiter</button></div>
 </div>
 
@@ -1534,6 +1552,7 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["displayPageS"].isNull()) c.displayPageMs = constrain(o["displayPageS"].as<uint32_t>(), 3u, 600u) * 1000;
   if (!o["displayTimeoutS"].isNull()) c.displayTimeoutS = constrain(o["displayTimeoutS"].as<uint32_t>(), 0u, 36000u);
   if (!o["tasmotaEnabled"].isNull()) c.tasmotaEnabled = o["tasmotaEnabled"];
+  if (!o["tasmotaLiveGrid"].isNull()) c.tasmotaLiveGrid = o["tasmotaLiveGrid"];
   if (!o["tasmotaMeterSpoof"].isNull()) c.tasmotaMeterSpoof = o["tasmotaMeterSpoof"];
   if (o["tasmotaHost"].is<const char *>()) strlcpy(c.tasmotaHost, o["tasmotaHost"], sizeof(c.tasmotaHost));
   if (!o["tasmotaPort"].isNull()) c.tasmotaPort = o["tasmotaPort"];
@@ -1805,6 +1824,7 @@ void begin() {
     doc["energyImpKwh"] = gLive.energyImpKwh;
     doc["energyExpKwh"] = gLive.energyExpKwh;
     doc["tasmotaOk"] = gLive.tasmotaOk;
+    doc["tasmotaLiveGrid"] = c.tasmotaLiveGrid;
     doc["tasmotaPowerW"] = gLive.tasmotaPowerW;
     doc["tasmotaTotalKwh"] = gLive.tasmotaTotalKwh;
     doc["tasmotaExportKwh"] = gLive.tasmotaExportKwh;
@@ -1867,6 +1887,7 @@ void begin() {
     doc["displayAutoPage"] = c.displayAutoPage;
     doc["displayTimeoutS"] = c.displayTimeoutS;
     doc["tasmotaEnabled"] = c.tasmotaEnabled;
+    doc["tasmotaLiveGrid"] = c.tasmotaLiveGrid;
     doc["tasmotaMeterSpoof"] = c.tasmotaMeterSpoof;
     doc["tasmotaHost"] = c.tasmotaHost;
     doc["tasmotaPort"] = c.tasmotaPort;

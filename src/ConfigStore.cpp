@@ -124,6 +124,7 @@ bool load() {
   strlcpy(cfg.tasmotaUser, prefs.getString("tasuser", cfg.tasmotaUser).c_str(), sizeof(cfg.tasmotaUser));
   strlcpy(cfg.tasmotaPass, prefs.getString("taspass", cfg.tasmotaPass).c_str(), sizeof(cfg.tasmotaPass));
   cfg.tasmotaMeterSpoof = prefs.getBool("tasspoof", cfg.tasmotaMeterSpoof);
+  cfg.tasmotaLiveGrid = prefs.getBool("taslive", cfg.tasmotaLiveGrid);
 
   cfg.mqttEnabled = prefs.getBool("mqena", cfg.mqttEnabled);
   strlcpy(cfg.mqttHost, prefs.getString("mqhost", cfg.mqttHost).c_str(), sizeof(cfg.mqttHost));
@@ -227,6 +228,7 @@ bool save() {
   prefs.putString("tasuser", cfg.tasmotaUser);
   prefs.putString("taspass", cfg.tasmotaPass);
   prefs.putBool("tasspoof", cfg.tasmotaMeterSpoof);
+  prefs.putBool("taslive", cfg.tasmotaLiveGrid);
 
   prefs.putBool("mqena", cfg.mqttEnabled);
   prefs.putString("mqhost", cfg.mqttHost);

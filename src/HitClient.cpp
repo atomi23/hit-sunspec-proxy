@@ -3,6 +3,9 @@
 #include "DataSource.h"
 #include "EventLog.h"
 #include <math.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 
 namespace {
 AppConfig local;
@@ -10,6 +13,10 @@ uint32_t nextPoll = 0;
 bool started = false;
 uint32_t failStreak = 0;
 uint32_t failSince = 0;
+SemaphoreHandle_t cfgLock = nullptr;
+AppConfig pendingCfg;
+bool cfgPending = false;
+volatile bool forcePoll = false;
 
 int16_t asI16(uint16_t u) {
   return (u >= 0x8000) ? int16_t(int32_t(u) - 0x10000) : int16_t(u);
@@ -32,12 +39,13 @@ bool doPoll() {
   uint16_t mppt[12] = {};
   uint16_t volt[3] = {}, ipb[14] = {}, freq[1] = {};
   uint16_t ePv[2] = {}, eImp[2] = {}, eExp[2] = {}, bat[2] = {};
-  uint16_t batInfo[12] = {};
+  // V2.8: 1909 Soc, 1910 Soh, 1911 Voltage×0.1, 1912.. Current I32×0.1; 30020 Soc (Backup)
+  uint16_t batInfo[6] = {}, batSocAlt[1] = {};
 
   struct Blk { uint16_t addr, qty; uint16_t *dst; uint16_t pause; };
   const Blk blocks[] = {{27, 12, mppt, 60},   {62, 3, volt, 40},    {66, 1, freq, 40},
                         {1804, 14, ipb, 60},  {2000, 2, ePv, 40},   {2040, 2, eImp, 40},
-                        {2048, 2, eExp, 40},  {30009, 2, bat, 40}};
+                        {2048, 2, eExp, 40},  {30009, 2, bat, 40},  {1909, 6, batInfo, 40}};
   gLive.hitPolls++;
   uint16_t failAddr = 0;
   for (const Blk &b : blocks) {
@@ -45,7 +53,7 @@ bool doPoll() {
       failAddr = b.addr;
       break;
     }
-    delay(b.pause);
+    vTaskDelay(pdMS_TO_TICKS(b.pause));
   }
 
   if (failAddr) {
@@ -68,8 +76,8 @@ bool doPoll() {
                   failStreak == 1 ? "" : "en", (unsigned long)((millis() - failSince) / 1000));
     failStreak = 0;
   }
-  bool batOk = rd(30014, 12, batInfo);
-  delay(40);
+  const bool socAltOk = rd(30020, 1, batSocAlt);
+  vTaskDelay(pdMS_TO_TICKS(40));
 
   auto takeMppt = [&](int base, int32_t &w, float &v, float &a) {
     v = mppt[base] * 0.1f;
@@ -107,21 +115,22 @@ bool doPoll() {
   gLive.energyExpKwh = asU32(eExp[0], eExp[1]) * 0.1;
   gLive.batW = asI32(bat[0], bat[1]);
 
-  if (batOk) {
-    gLive.batV = batInfo[0] * 0.1f;
-    // Strom ggf. in Block; sonst aus P/U
-    float rawA = asI16(batInfo[1]) * 0.01f;
-    gLive.batA = (fabsf(rawA) > 0.001f) ? rawA
-                                        : (gLive.batV > 1.0f ? float(gLive.batW) / gLive.batV : 0);
-    gLive.soc = batInfo[6];
-    gLive.soh = batInfo[7];
-    if (gLive.soc > 100 && gLive.soc <= 1000) gLive.soc /= 10;
-    if (gLive.soh > 100 && gLive.soh <= 1000) gLive.soh /= 10;
-    if (gLive.soc > 100) gLive.soc = 100;
-    if (gLive.soh > 100) gLive.soh = 100;
-  } else {
-    gLive.batA = gLive.batV > 1.0f ? float(gLive.batW) / gLive.batV : 0;
+  gLive.soc = batInfo[0];
+  gLive.soh = batInfo[1];
+  gLive.batV = batInfo[2] * 0.1f;
+  // Strom: I32 ab 1912 (×0.1), sonst aus P/U
+  const float rawA = asI32(batInfo[3], batInfo[4]) * 0.1f;
+  gLive.batA = (fabsf(rawA) > 0.001f) ? rawA
+                                      : (gLive.batV > 1.0f ? float(gLive.batW) / gLive.batV : 0);
+  if (socAltOk && batSocAlt[0] && batSocAlt[0] <= 1000) {
+    uint16_t s = batSocAlt[0];
+    if (s > 100) s /= 10;
+    if (s <= 100) gLive.soc = s;
   }
+  if (gLive.soc > 100 && gLive.soc <= 1000) gLive.soc /= 10;
+  if (gLive.soh > 100 && gLive.soh <= 1000) gLive.soh /= 10;
+  if (gLive.soc > 100) gLive.soc = 100;
+  if (gLive.soh > 100) gLive.soh = 100;
 
   gLive.hitOk = true;
   gLive.lastHitMs = millis();
@@ -129,19 +138,33 @@ bool doPoll() {
   strlcpy(gLive.status, "HIT ok", sizeof(gLive.status));
   return true;
 }
-} // namespace
 
-namespace HitClient {
-
-void begin(const AppConfig &cfg) {
-  local = cfg;
-  started = true;
-  nextPoll = 0;
+void takeConfig() {
+  if (!cfgLock) return;
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  if (cfgPending) {
+    local = pendingCfg;
+    cfgPending = false;
+    nextPoll = 0;
+  }
+  xSemaphoreGive(cfgLock);
 }
 
-void applyConfig(const AppConfig &cfg) {
-  local = cfg;
-  nextPoll = 0;
+bool doDemo();
+bool pollOnce();
+
+// HIT-Poll dauert mit Timeouts leicht mehrere Sekunden — eigene Task, sonst
+// verhungern SunSpec (Consolinno) und die Weboberfläche.
+void taskMain(void *) {
+  for (;;) {
+    takeConfig();
+    if (started && (forcePoll || millis() >= nextPoll)) {
+      forcePoll = false;
+      nextPoll = millis() + max<uint32_t>(5000, local.hitPollMs);
+      pollOnce();
+    }
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
 }
 
 bool doDemo() {
@@ -193,17 +216,42 @@ bool doDemo() {
   return true;
 }
 
-bool pollNow() {
+bool pollOnce() {
   if (local.demoMode) return doDemo();
   return doPoll();
 }
 
-void loop() {
-  if (!started) return;
-  if (millis() >= nextPoll) {
-    nextPoll = millis() + max<uint32_t>(5000, local.hitPollMs);
-    pollNow();
-  }
+} // namespace
+
+namespace HitClient {
+
+void begin(const AppConfig &cfg) {
+  local = cfg;
+  started = true;
+  nextPoll = 0;
+  cfgLock = xSemaphoreCreateMutex();
+  xTaskCreatePinnedToCore(taskMain, "hit", 8192, nullptr, 1, nullptr, 0);
 }
+
+void applyConfig(const AppConfig &cfg) {
+  if (!cfgLock) {
+    local = cfg;
+    nextPoll = 0;
+    return;
+  }
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  pendingCfg = cfg;
+  cfgPending = true;
+  xSemaphoreGive(cfgLock);
+}
+
+bool pollNow() {
+  forcePoll = true;
+  // Setup/erster Poll: synchron, danach nur anstoßen
+  if (millis() < 5000) return pollOnce();
+  return true;
+}
+
+void loop() {}
 
 } // namespace HitClient

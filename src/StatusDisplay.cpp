@@ -168,15 +168,34 @@ static void footer() {
   }
 }
 
+// Netzfarbe: Bezug Weiß→Rot, Einspeisung Gelb→Grün (Skala ~2 kW)
+static uint16_t blend565(uint16_t a, uint16_t b, float t) {
+  if (t <= 0) return a;
+  if (t >= 1) return b;
+  const int ar = (a >> 11) & 0x1f, ag = (a >> 5) & 0x3f, ab = a & 0x1f;
+  const int br = (b >> 11) & 0x1f, bg = (b >> 5) & 0x3f, bb = b & 0x1f;
+  const int r = ar + int((br - ar) * t);
+  const int g = ag + int((bg - ag) * t);
+  const int bl = ab + int((bb - ab) * t);
+  return uint16_t((r << 11) | (g << 5) | bl);
+}
+static uint16_t gridPowerColor(long w) {
+  const float t = fabsf(float(w)) / 2000.0f;
+  const float u = t > 1.0f ? 1.0f : t;
+  if (w >= 0) return blend565(P.ink, P.fault, u);            // Bezug: hell → rot
+  return blend565(rgb(0xf1, 0xc4, 0x53), P.acc, u);          // Einsp.: gelb → grün
+}
+
 // Zeile im Fluss-Panel: Farbpunkt, Name, Zustand, Wert
-static void flowRow(int y, uint16_t dot, const char *name, const char *state, long watts) {
+static void flowRow(int y, uint16_t dot, const char *name, const char *state, long watts,
+                    uint16_t valCol = 0, bool signedWatts = false) {
   gfx->fillCircle(270, y - 6, 4, dot);
   text(fLbl, P.ink, P.card, middle_left, name, 282, y - 7);
   text(fSm, P.dim, P.card, middle_left, state, 282, y + 10);
   char v[20], num[16];
-  fmtInt(num, sizeof(num), watts);
+  fmtInt(num, sizeof(num), signedWatts ? watts : (watts < 0 ? -watts : watts));
   snprintf(v, sizeof(v), "%s W", num);
-  text(fVal, P.ink, P.card, middle_right, v, 454, y + 1);
+  text(fVal, valCol ? valCol : P.ink, P.card, middle_right, v, 454, y + 1);
 }
 
 // ---- Seiten -----------------------------------------------------------------
@@ -195,15 +214,17 @@ static void drawPageLive() {
   text(fSm, P.dim, P.bg, middle_left, line, 16, 142);
 
   card(252, 30, 216, 122);
-  const long bat = gLive.batW, grid = gLive.gridW;
+  const long bat = gLive.batW;
+  const bool useTas = local.tasmotaLiveGrid && gLive.tasmotaOk;
+  const long grid = useTas ? gLive.tasmotaPowerW : gLive.gridW;
   const long house = long(gLive.pvW) + bat + grid;
   flowRow(54, P.acc, L("Akku", "Battery"),
           bat < -20 ? L("lädt", "charging") : bat > 20 ? L("entlädt", "discharging") : L("ruht", "idle"),
           bat < 0 ? -bat : bat);
   gfx->drawFastHLine(266, 71, 188, P.rule);
-  flowRow(93, P.grid, L("Netz", "Grid"),
+  flowRow(93, gridPowerColor(grid), useTas ? L("Zähler", "Meter") : L("Netz", "Grid"),
           grid > 20 ? L("Bezug", "import") : grid < -20 ? L("Einspeisung", "export") : L("ausgeglichen", "balanced"),
-          grid < 0 ? -grid : grid);
+          grid, gridPowerColor(grid), true);
   gfx->drawFastHLine(266, 110, 188, P.rule);
   flowRow(132, P.ink, L("Haus", "Home"), L("Verbrauch", "consumption"), house < 0 ? 0 : house);
 
@@ -269,9 +290,9 @@ static void drawPageDetails() {
   kv(262, 452, 156, P.card, L("Frequenz", "Frequency"), v, P.ink);
   gfx->drawFastHLine(262, 172, 190, P.rule);
   const long meter = gLive.tasmotaOk ? gLive.tasmotaPowerW : gLive.gridW;
-  fmtInt(a, sizeof(a), meter < 0 ? -meter : meter);
+  fmtInt(a, sizeof(a), meter); // Bezug +, Einspeisung −
   snprintf(v, sizeof(v), "%s W %s", a, meter < 0 ? L("Einsp.", "export") : L("Bezug", "import"));
-  kv(262, 452, 186, P.card, gLive.tasmotaOk ? L("Zähler", "Meter") : L("Netz", "Grid"), v, P.grid);
+  kv(262, 452, 186, P.card, gLive.tasmotaOk ? L("Zähler", "Meter") : L("Netz", "Grid"), v, gridPowerColor(meter));
 
   footer();
 }
