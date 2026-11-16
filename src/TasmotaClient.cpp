@@ -162,7 +162,7 @@ bool probe(String &rawOut, String &summaryOut) {
 
 void loop() {
   if (!started || !local.tasmotaEnabled) return;
-  if (millis() < nextPoll) return;
+  if (int32_t(millis() - nextPoll) < 0) return;
   nextPoll = millis() + max<uint32_t>(2000, local.tasmotaPollMs);
   pollNow();
 }

@@ -472,7 +472,7 @@ void loop() {
 
   if (!local.setupComplete) {
     wake();
-    if (millis() >= nextDraw) {
+    if (int32_t(millis() - nextDraw) >= 0) {
       nextDraw = millis() + 1500;
       redraw();
     }
@@ -505,14 +505,14 @@ void loop() {
   }
   // auch mit ausgeschaltetem Licht weiterzeichnen: die Web-Live-Ansicht liest den Puffer
 
-  if (local.displayAutoPage && millis() >= nextPage) {
+  if (local.displayAutoPage && int32_t(millis() - nextPage) >= 0) {
     nextPage = millis() + local.displayPageMs;
     page = (page + 1) % PAGES;
     redraw();
-  } else if (!local.displayAutoPage && page != 0 && millis() - lastActivity > 30000) {
+  } else if (!local.displayAutoPage && page != 0 && int32_t(millis() - lastActivity) > 30000) {
     page = 0; // ohne Automatik nach dem Blättern zurück zur Live-Seite
     redraw();
-  } else if (millis() >= nextDraw) {
+  } else if (int32_t(millis() - nextDraw) >= 0) {
     nextDraw = millis() + 1000;
     redraw();
   }

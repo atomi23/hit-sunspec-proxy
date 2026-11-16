@@ -6,7 +6,15 @@ andere Modbus-Clients.
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
-Aktuelle Firmware: **v0.5.1**
+Aktuelle Firmware: **v0.5.6** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.6)
+
+### Neu in v0.5.6
+- HIT-Poll in eigener FreeRTOS-Task (UI/Consolinno bleiben responsiv)
+- Tasmota wählbar als Live-Netzzähler; optional SunSpec **Model 203** (3ph-Spoof aus Summe + HIT-Spannungen)
+- KNX DPT9 korrekt skaliert; FC16 Power-Limit erst nach vollständigem Registersatz
+- Web-Callbacks (Poll, HIT-Schreiben, Tasmota-Probe) laufen in der Hauptschleife, nicht im Async-Task
+- Passwörter werden in `/api/config` nicht mehr im Klartext ausgeliefert
+- `millis()`-Rollover-fest; Platform `espressif32 @ 53.3.13` gepinnt; eigene 16‑MB-Partitionstabelle
 
 ## Display am Gerät
 
@@ -23,17 +31,17 @@ Die drei Seiten auf dem T-Connect-Pro: Live, Strings und Netz, System. Demo-Date
 Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assistant, andere Modbus-Clients
    (eine Verbindung)     ├── MQTT + Discovery ──→ Home Assistant
           ESP32          ├── KNX IP Routing ──→ KNX-Bus
-                         └── Display, Web-UI
+                         └── Display, Web-UI, optional Tasmota-Zähler
 ```
 
 | Pfad | Pflicht? | Rolle |
 |------|----------|--------|
 | HIT (Modbus TCP oder RS485) | ja | Datenquelle, einzige Verbindung zum HIT |
-| SunSpec :1502 | ja | Consolinno HEMS (GEN24-Emulation, Modelle 1/103/120/121/122/123/160/124) |
+| SunSpec :1502 | ja | Consolinno HEMS (GEN24-Emulation, Modelle 1/103/120–124/160; optional Meter 203) |
 | Modbus-Gateway | nein | Andere Modbus-Clients lesen den HIT über den ESP |
 | MQTT | nein | HA-Sensoren per Discovery, optional MQTT als Ersatzquelle |
 | KNX IP | nein | Multicast-Routing aller wählbaren Live-Werte |
-| Tasmota | nein | Netzzähler, optional als SunSpec Model 201 |
+| Tasmota | nein | Netzzähler für Live-View und optional SunSpec Model 203 |
 | Hoymiles-Cloud | nein | S-Miles nur lesen, Ersatzquelle wenn HIT und MQTT ausfallen |
 | HIT-Schreiben | nein | Akku-Grenzen 306–309, APC 279/280, standardmäßig aus |
 
@@ -99,10 +107,12 @@ Selbst signiertes Zertifikat mit Fingerabdruck zum Vergleichen, oder ein eigenes
 
 ## Inbetriebnahme
 
-1. Erstes Flashen per USB: `pio run -e t-connect-pro -t upload`
-2. Das Display zeigt WLAN-Name, Passwort und einen QR-Code. Mit dem Geräte-WLAN verbinden.
+1. Erstes Flashen per USB: `pio run -e t-connect-pro -t upload`  
+   (oder Release-`firmware.bin` unter *Firmware und Reset* per OTA — bei hängendem OTA vorher neu starten)
+2. Das Display zeigt WLAN-Name, Zugangscode und einen QR-Code. Mit dem Geräte-WLAN verbinden.
 3. Browser `http://192.168.4.1/` → Einrichtung (HIT-Adresse, Netzwerk)
-4. Consolinno: Proxy-IP, Port **1502**, Unit-ID **1**
+4. Consolinno: Gerät als Fronius Hybrid / SunSpec, **Proxy-IP**, Port **1502**, Unit-ID **1**  
+   (Scan nur auf 502 findet den Proxy nicht, solange SunSpec auf 1502 lauscht)
 5. Danach läuft die Oberfläche über `https://<esp-ip>/`. Der Browser warnt beim ersten Aufruf, weil das
    Zertifikat selbst signiert ist; einmal bestätigen. Unter *Netzwerk und Zugang* steht danach der
    SHA-256-Fingerabdruck zum Vergleich mit dem im Browser. Ohne Warnung geht es mit einem eigenen Zertifikat.
@@ -136,9 +146,15 @@ pio run -e t-connect-pro
 pio run -e t-connect-pro -t upload
 ```
 
+Platform und Partitionen sind im Repo festgelegt (`espressif32 @ 53.3.13`, `partitions_16MB.csv`:
+2× ~4 MB OTA + ~8 MB LittleFS). Nach einem Partitionstabellen-Wechsel einmal per USB flashen;
+OTA zwischen App-Slots bleibt danach möglich.
+
 ## Privatsphäre
 
 Nur Pseudodaten (RFC‑5737 `192.0.2.x`). Keine echten Anlagenwerte, Adressen oder Zugangsdaten im Repo.
+Gespeicherte Passwörter (Web, MQTT, Tasmota, Cloud) werden über die API nicht ausgeliefert;
+leere Felder beim Speichern lassen bestehende Werte unverändert.
 
 ## Support & Donation
 

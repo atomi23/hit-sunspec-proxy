@@ -55,7 +55,7 @@ size_t count() { return used; }
 uint32_t warnings() { return warnCount; }
 
 String toJson(size_t maxN) {
-  static SysEvt snap[N];
+  SysEvt snap[N]; // lokal: parallele /api/events-Aufrufe dürfen sich nicht in die Quere kommen
   size_t n, start;
   portENTER_CRITICAL(&mux);
   n = used < maxN ? used : maxN;

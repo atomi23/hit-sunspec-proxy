@@ -554,7 +554,7 @@ void applyConfig(const AppConfig &cfg) {
 
 void loop() {
   if (startAfterMs) {
-    if (!networkReady() && millis() < startAfterMs) return;
+    if (!networkReady() && int32_t(millis() - startAfterMs) < 0) return;
     startAfterMs = 0;
     start(false);
     return;
@@ -563,7 +563,7 @@ void loop() {
   if (p != P_NONE) restartAt = millis() + 1500; // Antwort auf die auslösende Anfrage erst zustellen lassen
   static bool regen = false;
   if (p == P_REGENERATE) regen = true;
-  if (restartAt && millis() >= restartAt) {
+  if (restartAt && int32_t(millis() - restartAt) >= 0) {
     restartAt = 0;
     start(regen);
     regen = false;

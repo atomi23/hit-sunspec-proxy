@@ -120,7 +120,7 @@ bool ensureConnected() {
     gLive.mqttOk = true;
     return true;
   }
-  if (millis() < nextReconnect) return false;
+  if (int32_t(millis() - nextReconnect) < 0) return false;
   nextReconnect = millis() + 5000;
 
   mqtt.setServer(local.mqttHost, local.mqttPort);
@@ -223,7 +223,7 @@ void loop() {
   }
   if (!ensureConnected()) return;
   mqtt.loop();
-  if (local.mqttEnabled && millis() >= nextPub) {
+  if (local.mqttEnabled && int32_t(millis() - nextPub) >= 0) {
     nextPub = millis() + max<uint32_t>(2000, local.mqttPublishMs);
     publishNow();
   }

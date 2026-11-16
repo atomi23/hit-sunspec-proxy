@@ -10,6 +10,7 @@ bool busy = false;
 bool rebootPending = false;
 bool uploadOk = false;
 bool factoryPending = false;
+uint32_t rebootAt = 0;
 char errBuf[96] = "";
 size_t written = 0;
 
@@ -180,6 +181,7 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
   server.on("/api/restart", HTTP_POST, [requireAuth](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     strlcpy(gLive.status, "Neustart", sizeof(gLive.status));
+    rebootAt = millis() + 1000;
     rebootPending = true; // loop() startet nach 1 s neu, die Antwort geht vorher raus
     req->send(200, "application/json", "{\"ok\":true}");
   });
@@ -210,6 +212,7 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
         }
         strlcpy(gLive.status, "OTA OK reboot", sizeof(gLive.status));
         req->send(200, "application/json", "{\"ok\":true,\"reboot\":true}");
+        rebootAt = millis() + 1000;
         rebootPending = true;
       },
       [requireAuth](AsyncWebServerRequest *req, String filename, size_t index, uint8_t *data, size_t len, bool final) {
@@ -274,9 +277,7 @@ void loop() {
     ESP.restart();
   }
   if (!rebootPending) return;
-  static uint32_t t0 = 0;
-  if (!t0) t0 = millis();
-  if (millis() - t0 < 1000) return;
+  if (int32_t(millis() - rebootAt) < 0) return;
   Serial.println("OTA reboot now");
   ESP.restart();
 }

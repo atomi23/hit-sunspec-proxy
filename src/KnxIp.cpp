@@ -60,10 +60,11 @@ void encodeU32be(uint8_t *out, uint32_t v) {
 }
 
 void encodeDpt9(uint8_t *out, float value) {
+  // KNX DPT9: decoded = 0.01 * mantissa * 2^exp → Mantisse in 0,01-Schritten
   if (value > 670760.0f) value = 670760.0f;
   if (value < -670760.0f) value = -670760.0f;
+  float v = value * 100.0f;
   int exp = 0;
-  float v = value;
   while ((v > 2047.0f || v < -2048.0f) && exp < 15) {
     v *= 0.5f;
     exp++;
@@ -275,7 +276,7 @@ void loop() {
     gLive.knxOk = false;
     return;
   }
-  if (millis() < nextPub) return;
+  if (int32_t(millis() - nextPub) < 0) return;
   nextPub = millis() + max<uint32_t>(2000, local.knxPublishMs);
   publish();
 }

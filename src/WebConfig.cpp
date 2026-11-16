@@ -21,6 +21,7 @@
 #include "HitBus.h"
 #include "NetBoot.h"
 #include "ModbusGateway.h"
+#include "DataBroker.h"
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
@@ -857,7 +858,7 @@ Die neue Adresse steht danach auf dem Display (Seite System).</p>
 <p class="hint">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
 und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich neu anmelden. Das eigene Web-Passwort bleibt gültig.</p>
 <label>Benutzername</label><input name="webUser"/>
-<label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
+<label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer = unverändert / nur Zugangscode"/>
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 <label><input name="httpsEnabled" type="checkbox"/> HTTPS (Port 443)</label>
 <label><input name="httpsRedirect" type="checkbox"/> Aufrufe über HTTP auf HTTPS umleiten</label>
@@ -917,7 +918,7 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <label>Port</label><input name="tasmotaPort" type="number"/>
 <label>Poll (ms)</label><input name="tasmotaPollMs" type="number"/>
 <label>User (optional)</label><input name="tasmotaUser"/>
-<label>Passwort (optional)</label><input name="tasmotaPass" type="password"/>
+<label>Passwort (optional)</label><input name="tasmotaPass" type="password" placeholder="leer = unverändert"/>
 <p class="hint">E320 liefert nur die Summe (Power / E_in / E_out), keine Phasen.
 Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spannungen vom HIT.</p>
 <button class="sec" type="button" onclick="probeTas()" style="margin-top:10px">One-Click: Tasmota auslesen</button>
@@ -929,7 +930,7 @@ Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spann
 <label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
 <label>Port</label><input name="mqttPort" type="number"/>
 <label>User</label><input name="mqttUser"/>
-<label>Passwort</label><input name="mqttPass" type="password"/>
+<label>Passwort</label><input name="mqttPass" type="password" placeholder="leer = unverändert"/>
 <label>Topic-Basis</label><input name="mqttBase" placeholder="hitproxy"/>
 <label>Publish (ms)</label><input name="mqttPublishMs" type="number"/>
 <p class="hint">State: &lt;basis&gt;/state · inkl. data_origin</p>
@@ -942,7 +943,7 @@ Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spann
 <label><input name="cloudEnabled" type="checkbox"/> aktiv (wenn HIT &amp; MQTT-in tot)</label>
 <label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
 <label>Cloud User / E-Mail</label><input name="cloudUser"/>
-<label>Passwort</label><input name="cloudPass" type="password"/>
+<label>Passwort</label><input name="cloudPass" type="password" placeholder="leer = unverändert"/>
 <label>Station / Plant ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567"/>
 <label>Poll (ms)</label><input name="cloudPollMs" type="number"/>
 <label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
@@ -1105,18 +1106,25 @@ async function newCode(){
   if(r&&r.ok)location.reload();
 }
 async function applyCtrl(){
-  const f=document.getElementById('f');
   await save();
-  const r=await(await fetch('/api/control/apply',{method:'POST'})).json();
-  alert(r.ok?'An HIT geschrieben':('Fehler: '+(r.error||'?')));
+  const start=await(await fetch('/api/control/apply',{method:'POST'})).json();
+  let r=start;
+  for(let i=0;i<40&&(r.pending||!r.done);i++){await new Promise(x=>setTimeout(x,250));r=await(await fetch('/api/control/result')).json();}
+  alert(r.ok?'An HIT geschrieben':('Fehler: '+(r.error||'timeout')));
 }
 async function probeTas(){
   const f=document.getElementById('f');
   const body={tasmotaHost:f.tasmotaHost.value,tasmotaPort:Number(f.tasmotaPort.value),
     tasmotaUser:f.tasmotaUser.value,tasmotaPass:f.tasmotaPass.value};
-  const r=await(await fetch('/api/tasmota/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
   document.getElementById('probeBox').style.display='block';
-  document.getElementById('probeSum').textContent=r.summary|| (r.ok?'OK':'Fehler');
+  document.getElementById('probeSum').textContent='lese…';
+  document.getElementById('probeSum').style.color='var(--dim)';
+  document.getElementById('probeRaw').textContent='';
+  const start=await(await fetch('/api/tasmota/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  if(!start.pending&&!start.ok){document.getElementById('probeSum').textContent=start.summary||'Fehler';document.getElementById('probeSum').style.color='var(--fault)';return;}
+  let r=start;
+  for(let i=0;i<40&&r.pending;i++){await new Promise(x=>setTimeout(x,250));r=await(await fetch('/api/tasmota/probe/result')).json();}
+  document.getElementById('probeSum').textContent=r.summary||(r.ok?'OK':'Fehler');
   document.getElementById('probeSum').style.color=r.ok?'var(--acc)':'var(--fault)';
   document.getElementById('probeRaw').textContent=r.raw||'';
   if(r.ok){f.tasmotaEnabled.checked=true;refresh();}
@@ -1190,13 +1198,13 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
 <span class="pill">Schritt 4 / 5</span>
 <strong style="margin-top:10px">Consolinno anbinden</strong>
 <p class="hint">In der Consolinno-App „Fronius Hybrid (SunSpec)“ oder „SunSpec Generic“ wählen.
-Consolinno sucht im Netz selbst (Port 502, wie ein Fronius). Keine IP nötig.</p>
+IP = diese Proxy-Adresse, Port = <b>1502</b> (SunSpec). Automatischer Scan auf 502 findet den Proxy nur, wenn SunSpec dort lauscht — Standard hier ist 1502.</p>
 <div class="ip" id="proxyIp">…</div>
 <ul>
-<li>SunSpec-Port am Proxy: <code id="ssPort">502</code> (Standard für den Scan)</li>
+<li>SunSpec-Port am Proxy: <code id="ssPort">1502</code></li>
 <li>Unit / Slave = <code>1</code></li>
 </ul>
-<p class="hint">Den HIT nicht zusätzlich direkt in Consolinno eintragen. Modbus-Gateway dann auf einen anderen Port legen oder auslassen.</p>
+<p class="hint">Den HIT nicht zusätzlich direkt in Consolinno eintragen. Modbus-Gateway (:502) dann auslassen oder auf einen anderen Port legen.</p>
 <div class="row"><button class="sec" type="button" onclick="go(2)">Zurück</button><button type="button" onclick="go(4)">Weiter</button></div>
 </div>
 
@@ -1432,7 +1440,7 @@ async function refresh(){
   document.getElementById('sum').innerHTML=`
     <div class="big">${ena?'BEGRENZT':'Frei'} · ${pct} %</div>
     <div class="muted">WMaxLimPct_Ena=${ena?1:0} · raw=${d.wMaxLimPct} (SF-2) · HEMS-Client ${d.sunspecClient?'verbunden':'—'} · Writes ${d.count}
-    ${d.lastNote?('<br>Zuletzt: '+d.lastNote+' (Addr '+d.lastAddr+' = '+d.lastVal+')'):'<br>Noch kein Write empfangen — in Consolinno §14a/LPP testen.'}</div>
+    ${d.lastNote?('<br>Zuletzt: '+esc(d.lastNote)+' (Addr '+d.lastAddr+' = '+d.lastVal+')'):'<br>Noch kein Write empfangen — in Consolinno §14a/LPP testen.'}</div>
     <div class="muted" style="margin-top:8px">HIT-Weiterleitung: ${d.sunspecWriteToHit?'an':'aus'} · Write-Enable: ${d.hitWriteEnabled?'an':'aus'}</div>`;
   const tb=document.getElementById('tb'); tb.innerHTML='';
   (d.events||[]).slice().reverse().forEach(e=>{
@@ -1483,6 +1491,14 @@ const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size
 // gespeichert wurde. Deshalb erst antworten, dann in der Hauptschleife übernehmen.
 volatile uint8_t applyPending = 0; // 1 = übernehmen, 2 = übernehmen und HIT sofort abfragen
 volatile uint32_t applyAt = 0;
+// Langsame Arbeit nie im async_tcp-Task (SPI/HTTP/MQTT/HIT)
+volatile uint8_t workFlags = 0;
+constexpr uint8_t W_POLL = 1, W_CTRL = 2, W_NEWCODE = 4, W_PROBE = 8;
+volatile bool ctrlDone = false, ctrlOk = false;
+char ctrlErr[96] = "";
+AppConfig probeReq;
+volatile bool probePending = false, probeDone = false, probeOk = false;
+char probeSummary[192] = "", probeRaw[2048] = "";
 
 void scheduleApply(bool pollHit) {
   applyAt = millis() + 300;
@@ -1510,6 +1526,58 @@ void runPendingApply() {
   SunSpecServer::rebuildMap();
 }
 
+void runDeferredWork() {
+  const uint8_t f = workFlags;
+  if (!f) return;
+  workFlags = 0;
+  if (f & W_NEWCODE) {
+    auto &c = ConfigStore::get();
+    NetBoot::applyConfig(c);
+    StatusDisplay::applyConfig(c);
+  }
+  if (f & W_POLL) {
+    HitClient::pollNow();
+    DataBroker::reconcile();
+    TasmotaClient::pollNow();
+    SunSpecServer::rebuildMap();
+    MqttHa::publishNow();
+  }
+  if (f & W_CTRL) {
+    ctrlOk = HitControl::applyAll();
+    strlcpy(ctrlErr, HitControl::lastError().c_str(), sizeof(ctrlErr));
+    ctrlDone = true;
+  }
+  if (f & W_PROBE) {
+    auto &c = ConfigStore::get();
+    TasmotaClient::applyConfig(probeReq);
+    String raw, summary;
+    probeOk = TasmotaClient::probe(raw, summary);
+    strlcpy(probeSummary, summary.c_str(), sizeof(probeSummary));
+    strlcpy(probeRaw, raw.c_str(), sizeof(probeRaw));
+    TasmotaClient::applyConfig(c);
+    if (probeOk) {
+      c.tasmotaEnabled = true;
+      strlcpy(c.tasmotaHost, probeReq.tasmotaHost, sizeof(c.tasmotaHost));
+      c.tasmotaPort = probeReq.tasmotaPort;
+      strlcpy(c.tasmotaUser, probeReq.tasmotaUser, sizeof(c.tasmotaUser));
+      if (probeReq.tasmotaPass[0])
+        strlcpy(c.tasmotaPass, probeReq.tasmotaPass, sizeof(c.tasmotaPass));
+      ConfigStore::save();
+      TasmotaClient::applyConfig(c);
+      SunSpecServer::rebuildMap();
+    }
+    probeDone = true;
+    probePending = false;
+  }
+}
+
+void jsonEscapeAppend(String &out, const char *s) {
+  for (; s && *s; s++) {
+    if (*s == '"' || *s == '\\') out += '\\';
+    if (uint8_t(*s) >= 0x20) out += *s;
+  }
+}
+
 void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["useEthernet"].isNull()) c.useEthernet = o["useEthernet"];
   if (!o["wifiEnabled"].isNull()) c.wifiEnabled = o["wifiEnabled"];
@@ -1523,7 +1591,10 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (o["staSsid"].is<const char *>() && !c.staSsid[0]) c.staPass[0] = '\0';
   // wifiPass / displayCode: random — nicht aus Form überschreiben außer explizit
   if (o["webUser"].is<const char *>()) strlcpy(c.webUser, o["webUser"], sizeof(c.webUser));
-  if (o["webPass"].is<const char *>()) strlcpy(c.webPass, o["webPass"], sizeof(c.webPass));
+  // Passwörter nie ausliefern; leeres Feld = unverändert
+  if (o["webPass"].is<const char *>() && o["webPass"].as<const char *>()[0])
+    strlcpy(c.webPass, o["webPass"], sizeof(c.webPass));
+  if (!o["webPassClear"].isNull() && o["webPassClear"].as<bool>()) c.webPass[0] = '\0';
   if (!o["httpsEnabled"].isNull()) c.httpsEnabled = o["httpsEnabled"];
   if (!o["httpsRedirect"].isNull()) c.httpsRedirect = o["httpsRedirect"];
   if (!o["hitWriteEnabled"].isNull()) c.hitWriteEnabled = o["hitWriteEnabled"];
@@ -1558,13 +1629,15 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["tasmotaPort"].isNull()) c.tasmotaPort = o["tasmotaPort"];
   if (!o["tasmotaPollMs"].isNull()) c.tasmotaPollMs = o["tasmotaPollMs"];
   if (o["tasmotaUser"].is<const char *>()) strlcpy(c.tasmotaUser, o["tasmotaUser"], sizeof(c.tasmotaUser));
-  if (o["tasmotaPass"].is<const char *>()) strlcpy(c.tasmotaPass, o["tasmotaPass"], sizeof(c.tasmotaPass));
+  if (o["tasmotaPass"].is<const char *>() && o["tasmotaPass"].as<const char *>()[0])
+    strlcpy(c.tasmotaPass, o["tasmotaPass"], sizeof(c.tasmotaPass));
   if (!o["mqttEnabled"].isNull()) c.mqttEnabled = o["mqttEnabled"];
   if (!o["mqttDiscovery"].isNull()) c.mqttDiscovery = o["mqttDiscovery"];
   if (o["mqttHost"].is<const char *>()) strlcpy(c.mqttHost, o["mqttHost"], sizeof(c.mqttHost));
   if (!o["mqttPort"].isNull()) c.mqttPort = o["mqttPort"];
   if (o["mqttUser"].is<const char *>()) strlcpy(c.mqttUser, o["mqttUser"], sizeof(c.mqttUser));
-  if (o["mqttPass"].is<const char *>()) strlcpy(c.mqttPass, o["mqttPass"], sizeof(c.mqttPass));
+  if (o["mqttPass"].is<const char *>() && o["mqttPass"].as<const char *>()[0])
+    strlcpy(c.mqttPass, o["mqttPass"], sizeof(c.mqttPass));
   if (o["mqttBase"].is<const char *>()) strlcpy(c.mqttBase, o["mqttBase"], sizeof(c.mqttBase));
   if (!o["mqttPublishMs"].isNull()) c.mqttPublishMs = o["mqttPublishMs"];
   if (!o["mqttIngestEnabled"].isNull()) c.mqttIngestEnabled = o["mqttIngestEnabled"];
@@ -1573,7 +1646,8 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["cloudEnabled"].isNull()) c.cloudEnabled = o["cloudEnabled"];
   if (o["cloudHost"].is<const char *>()) strlcpy(c.cloudHost, o["cloudHost"], sizeof(c.cloudHost));
   if (o["cloudUser"].is<const char *>()) strlcpy(c.cloudUser, o["cloudUser"], sizeof(c.cloudUser));
-  if (o["cloudPass"].is<const char *>()) strlcpy(c.cloudPass, o["cloudPass"], sizeof(c.cloudPass));
+  if (o["cloudPass"].is<const char *>() && o["cloudPass"].as<const char *>()[0])
+    strlcpy(c.cloudPass, o["cloudPass"], sizeof(c.cloudPass));
   if (o["cloudStationId"].is<const char *>()) strlcpy(c.cloudStationId, o["cloudStationId"], sizeof(c.cloudStationId));
   if (!o["cloudPollMs"].isNull()) c.cloudPollMs = o["cloudPollMs"];
   if (!o["cloudMaxAgeMs"].isNull()) c.cloudMaxAgeMs = o["cloudMaxAgeMs"];
@@ -1680,7 +1754,9 @@ void begin() {
     out += ",\"count\":"; out += DebugLog::count();
     out += ",\"lastAddr\":"; out += DebugLog::lastAddr();
     out += ",\"lastVal\":"; out += DebugLog::lastValue();
-    out += ",\"lastNote\":\""; out += DebugLog::lastNote(); out += "\"";
+    out += ",\"lastNote\":\"";
+    jsonEscapeAppend(out, DebugLog::lastNote());
+    out += "\"";
     out += ",\"events\":"; out += ev;
     out += "}";
     req->send(200, "application/json", out);
@@ -1857,7 +1933,8 @@ void begin() {
     doc["staPassSet"] = c.staPass[0] != 0;
     doc["wifiPass"] = c.displayCode[0] ? c.displayCode : c.wifiPass; // UI zeigt Display-Code
     doc["webUser"] = c.webUser;
-    doc["webPass"] = c.webPass;
+    doc["webPass"] = "";
+    doc["webPassSet"] = c.webPass[0] != 0;
     doc["httpsEnabled"] = c.httpsEnabled;
     doc["httpsRedirect"] = c.httpsRedirect;
     doc["displayCode"] = c.displayCode;
@@ -1893,13 +1970,15 @@ void begin() {
     doc["tasmotaPort"] = c.tasmotaPort;
     doc["tasmotaPollMs"] = c.tasmotaPollMs;
     doc["tasmotaUser"] = c.tasmotaUser;
-    doc["tasmotaPass"] = c.tasmotaPass;
+    doc["tasmotaPass"] = "";
+    doc["tasmotaPassSet"] = c.tasmotaPass[0] != 0;
     doc["mqttEnabled"] = c.mqttEnabled;
     doc["mqttDiscovery"] = c.mqttDiscovery;
     doc["mqttHost"] = c.mqttHost;
     doc["mqttPort"] = c.mqttPort;
     doc["mqttUser"] = c.mqttUser;
-    doc["mqttPass"] = c.mqttPass;
+    doc["mqttPass"] = "";
+    doc["mqttPassSet"] = c.mqttPass[0] != 0;
     doc["mqttBase"] = c.mqttBase;
     doc["mqttPublishMs"] = c.mqttPublishMs;
     doc["mqttIngestEnabled"] = c.mqttIngestEnabled;
@@ -1908,7 +1987,8 @@ void begin() {
     doc["cloudEnabled"] = c.cloudEnabled;
     doc["cloudHost"] = c.cloudHost;
     doc["cloudUser"] = c.cloudUser;
-    doc["cloudPass"] = c.cloudPass;
+    doc["cloudPass"] = "";
+    doc["cloudPassSet"] = c.cloudPass[0] != 0;
     doc["cloudStationId"] = c.cloudStationId;
     doc["cloudPollMs"] = c.cloudPollMs;
     doc["cloudMaxAgeMs"] = c.cloudMaxAgeMs;
@@ -1970,10 +2050,20 @@ void begin() {
 
   server.on("/api/control/apply", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    bool ok = HitControl::applyAll();
+    ctrlDone = false;
+    ctrlOk = false;
+    ctrlErr[0] = '\0';
+    workFlags |= W_CTRL;
+    req->send(200, "application/json", "{\"ok\":true,\"pending\":true,\"done\":false}");
+  });
+
+  server.on("/api/control/result", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
     JsonDocument out;
-    out["ok"] = ok;
-    out["error"] = HitControl::lastError();
+    out["pending"] = !ctrlDone;
+    out["done"] = ctrlDone;
+    out["ok"] = ctrlDone && ctrlOk;
+    out["error"] = ctrlErr;
     String s; serializeJson(out, s);
     req->send(200, "application/json", s);
   });
@@ -2028,9 +2118,7 @@ void begin() {
   server.on("/api/access/new-code", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     ConfigStore::newDisplayCode();
-    auto &c = ConfigStore::get();
-    NetBoot::applyConfig(c);     // Geräte-WLAN mit neuem Passwort neu starten
-    StatusDisplay::applyConfig(c);
+    workFlags |= W_NEWCODE; // NetBoot + Display in der Hauptschleife (SPI!)
     req->send(200, "application/json", "{\"ok\":true}");
   });
 
@@ -2042,11 +2130,7 @@ void begin() {
 
   server.on("/api/poll", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    HitClient::pollNow();
-    DataBroker::reconcile();
-    TasmotaClient::pollNow();
-    SunSpecServer::rebuildMap();
-    MqttHa::publishNow();
+    workFlags |= W_POLL;
     req->send(200, "application/json", "{\"ok\":true}");
   });
 
@@ -2055,48 +2139,44 @@ void begin() {
               const char *body = fullBody(req, data, len, index, total);
               if (!body) return;
               if (!requireAuth(req)) return;
+              if (probePending) {
+                req->send(409, "application/json", "{\"ok\":false,\"pending\":true,\"summary\":\"Probe läuft bereits\"}");
+                return;
+              }
               JsonDocument in;
               deserializeJson(in, body);
               auto &c = ConfigStore::get();
-              // temporär Host aus Request nutzen (ohne Speichern), dann zurück
-              AppConfig tmp = c;
+              probeReq = c;
               if (in["tasmotaHost"].is<const char *>())
-                strlcpy(tmp.tasmotaHost, in["tasmotaHost"], sizeof(tmp.tasmotaHost));
-              if (!in["tasmotaPort"].isNull()) tmp.tasmotaPort = in["tasmotaPort"];
+                strlcpy(probeReq.tasmotaHost, in["tasmotaHost"], sizeof(probeReq.tasmotaHost));
+              if (!in["tasmotaPort"].isNull()) probeReq.tasmotaPort = in["tasmotaPort"];
               if (in["tasmotaUser"].is<const char *>())
-                strlcpy(tmp.tasmotaUser, in["tasmotaUser"], sizeof(tmp.tasmotaUser));
-              if (in["tasmotaPass"].is<const char *>())
-                strlcpy(tmp.tasmotaPass, in["tasmotaPass"], sizeof(tmp.tasmotaPass));
-              tmp.tasmotaEnabled = true;
-              TasmotaClient::applyConfig(tmp);
-
-              String raw, summary;
-              bool ok = TasmotaClient::probe(raw, summary);
-
-              // Config wiederherstellen, Live-Werte bleiben
-              TasmotaClient::applyConfig(c);
-              if (ok) {
-                c.tasmotaEnabled = true;
-                strlcpy(c.tasmotaHost, tmp.tasmotaHost, sizeof(c.tasmotaHost));
-                c.tasmotaPort = tmp.tasmotaPort;
-                strlcpy(c.tasmotaUser, tmp.tasmotaUser, sizeof(c.tasmotaUser));
-                strlcpy(c.tasmotaPass, tmp.tasmotaPass, sizeof(c.tasmotaPass));
-                ConfigStore::save();
-                TasmotaClient::applyConfig(c);
-                SunSpecServer::rebuildMap();
-              }
-
-              JsonDocument out;
-              out["ok"] = ok;
-              out["summary"] = summary;
-              out["raw"] = raw;
-              out["powerW"] = gLive.tasmotaPowerW;
-              out["e_in"] = gLive.tasmotaTotalKwh;
-              out["e_out"] = gLive.tasmotaExportKwh;
-              out["sensor"] = gLive.tasmotaSensorKey;
-              String s; serializeJson(out, s);
-              req->send(200, "application/json", s);
+                strlcpy(probeReq.tasmotaUser, in["tasmotaUser"], sizeof(probeReq.tasmotaUser));
+              if (in["tasmotaPass"].is<const char *>() && in["tasmotaPass"].as<const char *>()[0])
+                strlcpy(probeReq.tasmotaPass, in["tasmotaPass"], sizeof(probeReq.tasmotaPass));
+              probeReq.tasmotaEnabled = true;
+              probeDone = false;
+              probeOk = false;
+              probeSummary[0] = probeRaw[0] = '\0';
+              probePending = true;
+              workFlags |= W_PROBE;
+              req->send(200, "application/json", "{\"ok\":true,\"pending\":true}");
             });
+
+  server.on("/api/tasmota/probe/result", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    JsonDocument out;
+    out["pending"] = probePending || !probeDone;
+    out["ok"] = probeOk;
+    out["summary"] = probeSummary;
+    out["raw"] = probeRaw;
+    out["powerW"] = gLive.tasmotaPowerW;
+    out["e_in"] = gLive.tasmotaTotalKwh;
+    out["e_out"] = gLive.tasmotaExportKwh;
+    out["sensor"] = gLive.tasmotaSensorKey;
+    String s; serializeJson(out, s);
+    req->send(200, "application/json", s);
+  });
 
   OtaUpdate::registerRoutes(server, requireAuth);
 
@@ -2105,6 +2185,7 @@ void begin() {
 
 void loop() {
   runPendingApply();
+  runDeferredWork();
   OtaUpdate::loop();
   HttpsServer::loop();
 }

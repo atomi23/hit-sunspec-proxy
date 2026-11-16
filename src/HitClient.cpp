@@ -158,7 +158,7 @@ bool pollOnce();
 void taskMain(void *) {
   for (;;) {
     takeConfig();
-    if (started && (forcePoll || millis() >= nextPoll)) {
+    if (started && (forcePoll || int32_t(millis() - nextPoll) >= 0)) {
       forcePoll = false;
       nextPoll = millis() + max<uint32_t>(5000, local.hitPollMs);
       pollOnce();

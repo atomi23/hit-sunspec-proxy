@@ -124,7 +124,7 @@ void loop(const AppConfig &cfg) {
     startWifi(pending);
   }
   static uint32_t next = 0;
-  if (millis() < next) return;
+  if (int32_t(millis() - next) < 0) return;
   next = millis() + 2000;
   refreshIps(cfg);
 }

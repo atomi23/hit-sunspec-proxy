@@ -44,9 +44,9 @@ void noteForAddr(uint16_t addr, uint16_t value, char *out, size_t n) {
   }
 }
 
-void onHoldingWrite(uint16_t wireAddr, uint16_t value, uint8_t fc) {
+bool onHoldingWrite(uint16_t wireAddr, uint16_t value, uint8_t fc) {
   int idx = toLocal(wireAddr);
-  if (idx < 0) return;
+  if (idx < 0) return false;
   uint16_t addr = uint16_t(idx);
   holding[addr] = value;
 
@@ -56,12 +56,17 @@ void onHoldingWrite(uint16_t wireAddr, uint16_t value, uint8_t fc) {
 
   if (addr == M123 + OFF_WMAX) {
     gLive.wMaxLimPct = value;
-  } else if (addr == M123 + OFF_WMAX_ENA) {
-    gLive.wMaxLimEna = value != 0;
-  } else {
-    return;
+    return true;
   }
-  HitControl::onSunSpecPowerLimit(gLive.wMaxLimPct, gLive.wMaxLimEna);
+  if (addr == M123 + OFF_WMAX_ENA) {
+    gLive.wMaxLimEna = value != 0;
+    return true;
+  }
+  return false;
+}
+
+void applyPowerLimitIfNeeded(bool touched) {
+  if (touched) HitControl::onSunSpecPowerLimit(gLive.wMaxLimPct, gLive.wMaxLimEna);
 }
 
 void sendException(WiFiClient &c, const uint8_t *hdr, uint8_t fc, uint8_t code) {
@@ -114,7 +119,7 @@ void handleClient(WiFiClient &c) {
     if (rem < 4) return;
     uint16_t addr = (uint16_t(pdu[0]) << 8) | pdu[1];
     uint16_t value = (uint16_t(pdu[2]) << 8) | pdu[3];
-    onHoldingWrite(addr, value, 6);
+    applyPowerLimitIfNeeded(onHoldingWrite(addr, value, 6));
     uint8_t resp[12];
     writeU16(resp, tid);
     resp[2] = 0; resp[3] = 0;
@@ -125,16 +130,18 @@ void handleClient(WiFiClient &c) {
     writeU16(resp + 10, value);
     c.write(resp, 12);
   } else if (fc == 16) {
-    // Write multiple holdings
+    // Write multiple holdings — erst alle Register, dann einmal HIT anstoßen
     if (rem < 5) return;
     uint16_t addr = (uint16_t(pdu[0]) << 8) | pdu[1];
     uint16_t qty = (uint16_t(pdu[2]) << 8) | pdu[3];
     uint8_t bc = pdu[4];
     if (qty == 0 || qty > 123 || bc != qty * 2 || rem < 5 + bc) return;
+    bool lim = false;
     for (uint16_t i = 0; i < qty; i++) {
       uint16_t value = (uint16_t(pdu[5 + i * 2]) << 8) | pdu[6 + i * 2];
-      onHoldingWrite(addr + i, value, 16);
+      lim = onHoldingWrite(addr + i, value, 16) || lim;
     }
+    applyPowerLimitIfNeeded(lim);
     uint8_t resp[12];
     writeU16(resp, tid);
     resp[2] = 0; resp[3] = 0;
@@ -185,7 +192,7 @@ void applyConfig(const AppConfig &cfg) {
 
 void loop() {
   if (!started) return;
-  if (millis() >= nextRebuild) {
+  if (int32_t(millis() - nextRebuild) >= 0) {
     nextRebuild = millis() + 2000;
     rebuildMap();
   }

@@ -53,7 +53,7 @@ void build(uint16_t *regs, size_t n, const LiveData &live, const AppConfig &cfg)
   float i1 = live.i1, i2 = live.i2, i3 = live.i3;
 
   uint32_t wh = 0;
-  if (live.energyPvKwh > 100.0) {
+  if (live.energyPvKwh > 0.1) {
     wh = uint32_t(llround(live.energyPvKwh * 1000.0));
   }
   const uint16_t whHi = (wh >> 16) & 0xffff;
