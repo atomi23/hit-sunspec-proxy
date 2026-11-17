@@ -14,7 +14,7 @@ Aktuelle Firmware: **v0.5.7** — [Release mit `firmware.bin`](https://github.co
 ### Neu in v0.5.7
 - **KNX:** Zuordnungstabelle nach Bereichen gruppiert, Zeilen hinterlegt, ungültige oder doppelte Adressen rot;
   **Import/Export der Gruppenadressen im ETS-Format** (XML und CSV)
-- Neue Build-Variante **`wt32-eth01`**; `t-poe-pro` baut wieder (passende Partitionstabelle)
+- Neue Build-Variante **`wt32-eth01`**; `t-poe-pro` korrigiert (Takt, PHY-Reset, RS485-Pins, 16 MB Flash, PSRAM laut LilyGO)
 - Schutz gegen CSRF: fremde Webseiten können über ein gespeichertes Login nichts mehr auslösen
 - OTA-Update gehört genau einer Anfrage; Login wird vor dem Annehmen großer Anfragen geprüft
 - Home Assistant: keine Zählerstände 0 mehr vor den ersten Daten (verhinderte doppelt gezählte Energie)
@@ -174,9 +174,9 @@ OTA zwischen App-Slots bleibt danach möglich.
 |-----|-------|----------|
 | `t-connect-pro` (Standard) | LILYGO T-Connect-Pro, ESP32-S3, 16 MB | Display, Touch, W5500, RS485 TX 17 / RX 18 |
 | `wt32-eth01` | WT32-ETH01, ESP32, 4 MB | ohne Display; LAN8720 (PHY 1, Takt GPIO0, Enable GPIO16); RS485 über externen Wandler mit Auto-Richtung an IO17 (TX) / IO5 (RX) |
-| `t-poe-pro` | LILYGO T-POE-Pro, ESP32 | LAN8720 PoE; Display wird nicht angesteuert |
+| `t-poe-pro` | [LILYGO T-POE-Pro](https://lilygo.cc/products/t-poe-pro), ESP32-WROVER-E, 16 MB, 8 MB PSRAM | ohne Display; LAN8720 mit PoE; RS485 auf der Platine (TX 32 / RX 33) |
 
-Die Varianten mit ESP32 nutzen `min_spiffs.csv` (2× 1,9 MB OTA).
+Der WT32-ETH01 nutzt `min_spiffs.csv` (2× 1,9 MB OTA), der T-POE-Pro wie der T-Connect-Pro `partitions_16MB.csv`.
 Der WT32-ETH01 wird über einen USB-Seriell-Adapter an TX0/RX0 geflasht (IO0 beim Einschalten auf GND):
 
 ```bash
