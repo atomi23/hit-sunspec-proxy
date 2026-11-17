@@ -164,6 +164,11 @@ bool load() {
           if (a[i]["g"].is<const char *>())
             strlcpy(cfg.knxCh[i].ga, a[i]["g"], sizeof(cfg.knxCh[i].ga));
           cfg.knxCh[i].dpt = a[i]["d"] | 0;
+          // bis v0.5.6 falsche Typnummern: Strom 14.033 (ist Frequenz), Frequenz 14.035 (Wärmekapazität).
+          // Gleiche 4-Byte-Kodierung, nur die angezeigte Nummer ändert sich.
+          const KnxValKind kind = knxMeta(i).kind;
+          if (kind == KnxValKind::Amp && cfg.knxCh[i].dpt == 14033) cfg.knxCh[i].dpt = 14019;
+          if (kind == KnxValKind::Hz && cfg.knxCh[i].dpt == 14035) cfg.knxCh[i].dpt = 14033;
         }
       }
     }

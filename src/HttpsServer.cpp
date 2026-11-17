@@ -370,13 +370,19 @@ esp_err_t proxyInner(httpd_req_t *r) {
   head += r->uri;
   head += " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n";
   char val[256];
-  for (const char *h : {"Authorization", "Content-Type"}) {
+  for (const char *h : {"Authorization", "Content-Type", "Origin", "Sec-Fetch-Site"}) {
     if (httpd_req_get_hdr_value_str(r, h, val, sizeof(val)) == ESP_OK) {
       head += h;
       head += ": ";
       head += val;
       head += "\r\n";
     }
+  }
+  // für die Herkunftsprüfung (CSRF) der Weboberfläche, die hier nur 127.0.0.1 als Host sieht
+  if (httpd_req_get_hdr_value_str(r, "Host", val, sizeof(val)) == ESP_OK) {
+    head += "X-Forwarded-Host: ";
+    head += val;
+    head += "\r\n";
   }
   if (r->content_len) head += "Content-Length: " + String(r->content_len) + "\r\n";
   head += "\r\n";

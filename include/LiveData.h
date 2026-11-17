@@ -20,6 +20,7 @@ struct LiveData {
   uint32_t lastMapMs = 0;
   uint32_t hitFails = 0;
   uint32_t hitPolls = 0;
+  uint32_t hitPollsDone = 0; // abgeschlossene Abfragen (Erfolg oder Fehler)
 
   int32_t pvW = 0;
   int32_t pv1W = 0, pv2W = 0, pv3W = 0, pv4W = 0;

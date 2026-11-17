@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="/a.css"/>
 </head><body>
 <script>
-const MOCK={"version": "0.5.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const MOCK={"version": "0.5.7", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
 MOCK.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const _f=window.fetch;
 window.fetch=async(u,o)=>{
@@ -205,6 +205,14 @@ const T=k=>(TX[LANG]||TX.de)[k];
 const $=id=>document.getElementById(id);
 const num=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
+// Netz: Bezug positiv, Einspeisung mit Minus; Farbe Weiß→Rot / Gelb→Grün
+const wattGrid=n=>{const v=Number(n)||0;return (v<0?'−':'')+num(Math.abs(v))+'<tspan dx="6">W</tspan>';};
+const gridFill=n=>{
+  const v=Number(n)||0,t=Math.min(1,Math.abs(v)/2000);
+  const mix=(a,b)=>Math.round(a+(b-a)*t);
+  if(v>=0){const r=mix(237,239),g=mix(239,111),b=mix(236,98);return`rgb(${r},${g},${b})`;} // ink→rot
+  const r=mix(241,46),g=mix(196,180),b=mix(83,120);return`rgb(${r},${g},${b})`; // gelb→grün
+};
 const rows=r=>r.map(([k,v])=>`<tr><td>${k}</td><td class="n">${v}</td></tr>`).join('');
 function run(id,w,forward){const e=$(id);const on=Math.abs(w)>20;e.classList.toggle('on',on);e.classList.toggle('rev',on&&!forward);}
 const chip=(state,label)=>`<span class="chip ${state}"><span class="dot"></span>${label}</span>`;
@@ -218,7 +226,9 @@ async function refresh(){
   $('ip').textContent=s.ipShown||'—';
   $('demo').classList.toggle('hide',!s.demoMode);
 
-  const pv=Number(s.pvW)||0, bat=Number(s.batW)||0, grid=Number(s.gridW)||0;
+  const pv=Number(s.pvW)||0, bat=Number(s.batW)||0;
+  const useTas=!!(s.tasmotaOk&&s.tasmotaLiveGrid);
+  const grid=useTas?(Number(s.tasmotaPowerW)||0):(Number(s.gridW)||0);
   const house=Math.max(0,pv+bat+grid);
   $('vPv').innerHTML=watt(pv);
   $('dPv').textContent=T('today')+' '+num(s.energyPvKwh)+' kWh';
@@ -227,8 +237,10 @@ async function refresh(){
   $('dBat').textContent=(bat>20?T('discharge'):(bat<-20?T('charge'):T('idle')))+', '+num(soc)+' %';
   $('socRing').setAttribute('stroke-dasharray',(326.7*soc/100).toFixed(1)+' 327');
   $('socRing').style.stroke=soc<15?'var(--fault)':(soc<30?'var(--warn)':'var(--acc)');
-  $('vGrid').innerHTML=watt(grid);
-  $('dGrid').textContent=grid>20?T('imp'):(grid<-20?T('exp'):'');
+  $('vGrid').innerHTML=wattGrid(grid);
+  $('vGrid').style.fill=gridFill(grid);
+  const gridDir=grid>20?T('imp'):(grid<-20?T('exp'):'');
+  $('dGrid').textContent=useTas?(gridDir?(T('tas')+' · '+gridDir):T('tas')):gridDir;
   $('vHouse').innerHTML=watt(house);
   run('fPv',pv,true); run('fBat',bat,bat>0); run('fGrid',grid,grid<0); run('fHouse',house,true);
   $('dHit').textContent=s.hitOk?T('hitOk'):T('hitBad');
@@ -248,16 +260,20 @@ async function refresh(){
   const str=[1,2,3,4].map(i=>[T('string')+' '+i,num(s['pv'+i+'W'])+' W']);
   str.push([T('total'),`<b>${num(pv)} W</b>`]);
   $('tStr').innerHTML=rows(str);
+  const phW=w=>{const v=Number(w)||0;const t=(v<0?'−':'')+num(Math.abs(v));return`<span style="color:${gridFill(v)}">${t}</span>`;};
   $('tPh').innerHTML=`<tr><th>${T('phase')}</th><th class="n">V</th><th class="n">A</th><th class="n">W</th></tr>`+
-    [1,2,3].map(i=>`<tr><td>L${i}</td><td class="n">${num(s['v'+i],1)}</td><td class="n">${num(s['i'+i],1)}</td><td class="n">${num(s['gridW'+i])}</td></tr>`).join('');
+    [1,2,3].map(i=>`<tr><td>L${i}</td><td class="n">${num(s['v'+i],1)}</td><td class="n">${num(s['i'+i],1)}</td><td class="n">${phW(s['gridW'+i])}</td></tr>`).join('');
   $('nHz').textContent=T('freq')+' '+num(s.freqHz,2)+' Hz';
   $('tEn').innerHTML=rows([
     [T('yield'),num(s.energyPvKwh,1)+' kWh'],[T('eimp'),num(s.energyImpKwh,1)+' kWh'],[T('eexp'),num(s.energyExpKwh,1)+' kWh'],
-    [T('batv'),num(s.batV,1)+' V'],[T('bata'),num(s.batA,1)+' A'],[T('soh'),num(s.soh)+' %']]);
+    [T('soc'),num(soc)+' %'],[T('batv'),num(s.batV,1)+' V'],
+    [T('bata'),(()=>{const a=-(Number(s.batA)||0);return (a>0?'+':'')+num(a,1)+' A';})()],
+    [T('soh'),num(s.soh)+' %']]);
   $('tLim').innerHTML=rows([[T('lim'),s.wMaxLimEna?T('limOn'):T('limOff')],[T('limVal'),num((Number(s.wMaxLimPct)||0)/100,1)+' %']]);
   $('nLim').textContent=s.lastWriteNote||T('noWrite');
   if(s.tasmotaOk){
-    $('tTas').innerHTML=rows([[T('power'),num(s.tasmotaPowerW)+' W'],[T('eimp'),num(s.tasmotaTotalKwh,2)+' kWh'],[T('eexp'),num(s.tasmotaExportKwh,2)+' kWh']]);
+    const tp=Number(s.tasmotaPowerW)||0;
+    $('tTas').innerHTML=rows([[T('power'),`<span style="color:${gridFill(tp)}">${(tp<0?'−':'')+num(Math.abs(tp))} W</span>`],[T('eimp'),num(s.tasmotaTotalKwh,2)+' kWh'],[T('eexp'),num(s.tasmotaExportKwh,2)+' kWh']]);
     $('nTas').textContent=s.tasmotaSensorKey||'';
   }else{$('tTas').innerHTML='';$('nTas').textContent=T('tasOff');}
   $('age').textContent=T('age')(Math.floor((s.lastHitAgeMs||0)/1000));

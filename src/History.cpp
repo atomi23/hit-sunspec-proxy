@@ -61,21 +61,32 @@ void save() {
   const size_t n = f.write(reinterpret_cast<const uint8_t *>(st), sizeof(Store));
   f.close();
   if (n == sizeof(Store)) {
-    LittleFS.remove("/hist.bin");
-    LittleFS.rename("/hist.tmp", "/hist.bin");
+    // rename ersetzt die alte Datei in einem Schritt; erst löschen ließe bei Stromausfall keine Datei übrig
+    if (!LittleFS.rename("/hist.tmp", "/hist.bin")) {
+      LittleFS.remove("/hist.bin");
+      LittleFS.rename("/hist.tmp", "/hist.bin");
+    }
     dirty = false;
   }
 }
 
-void load() {
-  if (!LittleFS.exists("/hist.bin")) return; // erster Start
-  File f = LittleFS.open("/hist.bin", "r");
-  if (!f) return;
-  if (f.size() == sizeof(Store)) f.read(reinterpret_cast<uint8_t *>(st), sizeof(Store));
+bool loadFrom(const char *path) {
+  if (!LittleFS.exists(path)) return false;
+  File f = LittleFS.open(path, "r");
+  if (!f) return false;
+  const bool sizeOk = f.size() == sizeof(Store) &&
+                      f.read(reinterpret_cast<uint8_t *>(st), sizeof(Store)) == sizeof(Store);
   f.close();
-  if (st->magic != MAGIC || st->version != VERSION || st->nDays > MAX_DAYS || st->nMonths > MAX_MONTHS) {
-    memset(st, 0, sizeof(Store));
-  }
+  if (sizeOk && st->magic == MAGIC && st->version == VERSION && st->nDays <= MAX_DAYS &&
+      st->nMonths <= MAX_MONTHS)
+    return true;
+  memset(st, 0, sizeof(Store));
+  return false;
+}
+
+void load() {
+  // hist.tmp bleibt übrig, wenn der Strom zwischen Schreiben und Umbenennen weg war
+  if (!loadFrom("/hist.bin")) loadFrom("/hist.tmp");
 }
 
 void addMonth(const Bar &d) {
@@ -228,12 +239,15 @@ void day(JsonDocument &out) {
   out["end"] = uint64_t(nowSlot) * SLOT_S;
   JsonArray pv = out["pv"].to<JsonArray>(), bat = out["bat"].to<JsonArray>();
   JsonArray grid = out["grid"].to<JsonArray>(), house = out["house"].to<JsonArray>();
+  // läuft im Web-Task, flushSlot() in der Hauptschleife setzt sumN zwischendurch auf 0: einmal kopieren
+  const int32_t n = int32_t(sumN);
+  const int32_t sPv = sumPv, sBat = sumBat, sGrid = sumGrid, sHouse = sumHouse;
   for (int k = SLOTS - 1; k >= 0; k--) {
     const uint32_t s = nowSlot - uint32_t(k);
     const int i = s % SLOTS;
-    if (s == nowSlot && sumN) { // laufender Slot
-      pv.add(sumPv / int32_t(sumN)); bat.add(sumBat / int32_t(sumN));
-      grid.add(sumGrid / int32_t(sumN)); house.add(sumHouse / int32_t(sumN));
+    if (s == nowSlot && n) { // laufender Slot
+      pv.add(sPv / n); bat.add(sBat / n);
+      grid.add(sGrid / n); house.add(sHouse / n);
     } else if (st->slotStamp[i] == s) {
       pv.add(st->slots[i].pv); bat.add(st->slots[i].bat);
       grid.add(st->slots[i].grid); house.add(st->slots[i].house);
@@ -268,6 +282,7 @@ void bars(const char *unit, int count, JsonDocument &out) {
   } else if (!strcmp(unit, "month") || !strcmp(unit, "year")) {
     // Monate plus laufender Monat; Jahre daraus summiert. Liste auf dem Heap, der Web-Task-Stack ist klein
     Bar *list = static_cast<Bar *>(heap_caps_malloc(sizeof(Bar) * (MAX_MONTHS + 1), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!list) list = static_cast<Bar *>(malloc(sizeof(Bar) * (MAX_MONTHS + 1))); // Board ohne PSRAM
     if (!list) return;
     int n = 0;
     for (int i = 0; i < st->nMonths; i++) list[n++] = st->months[i];

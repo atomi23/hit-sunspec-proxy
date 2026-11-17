@@ -217,8 +217,9 @@ bool doDemo() {
 }
 
 bool pollOnce() {
-  if (local.demoMode) return doDemo();
-  return doPoll();
+  const bool ok = local.demoMode ? doDemo() : doPoll();
+  gLive.hitPollsDone++;
+  return ok;
 }
 
 } // namespace
@@ -246,9 +247,9 @@ void applyConfig(const AppConfig &cfg) {
 }
 
 bool pollNow() {
+  // Nur anstoßen: die HIT-Task pollt selbst. Ein zusätzlicher synchroner Poll lief sonst
+  // parallel zur Task (geteilte Zähler, gLive von zwei Tasks beschrieben) und blockierte setup().
   forcePoll = true;
-  // Setup/erster Poll: synchron, danach nur anstoßen
-  if (millis() < 5000) return pollOnce();
   return true;
 }
 

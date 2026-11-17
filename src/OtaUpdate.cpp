@@ -13,6 +13,8 @@ bool factoryPending = false;
 uint32_t rebootAt = 0;
 char errBuf[96] = "";
 size_t written = 0;
+// Request, der gerade flasht. Andere Uploads (auch nicht angemeldete Folge-Stücke) dürfen nicht hineinschreiben.
+AsyncWebServerRequest *owner = nullptr;
 
 const char OTA_HTML[] PROGMEM = R"HTML(
 <!doctype html>
@@ -201,6 +203,11 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
       "/api/ota", HTTP_POST,
       [requireAuth](AsyncWebServerRequest *req) {
         if (!requireAuth(req)) return;
+        if (req != owner) {
+          req->send(409, "application/json", "{\"ok\":false,\"error\":\"anderes Update läuft oder nicht angemeldet\"}");
+          return;
+        }
+        owner = nullptr;
         busy = false;
         if (!uploadOk || Update.hasError() || errBuf[0]) {
           String e = errBuf[0] ? String(errBuf) : String(Update.errorString());
@@ -218,6 +225,15 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
       [requireAuth](AsyncWebServerRequest *req, String filename, size_t index, uint8_t *data, size_t len, bool final) {
         if (index == 0) {
           if (!requireAuth(req)) return;
+          if (busy && owner && owner != req) return; // anderer Upload läuft schon
+          owner = req;
+          // Verbindung weg, bevor das Bild fertig ist: Flash-Vorgang verwerfen und freigeben
+          req->onDisconnect([req]() {
+            if (owner != req) return;
+            owner = nullptr;
+            if (Update.isRunning()) Update.abort();
+            busy = false;
+          });
           errBuf[0] = '\0';
           uploadOk = false;
           written = 0;
@@ -238,7 +254,7 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
           Serial.printf("OTA begin %s freeSketch=%u\n", filename.c_str(), (unsigned)ESP.getFreeSketchSpace());
         }
 
-        if (errBuf[0] || !busy) return;
+        if (req != owner || errBuf[0] || !busy) return;
 
         if (len) {
           if (Update.write(data, len) != len) {

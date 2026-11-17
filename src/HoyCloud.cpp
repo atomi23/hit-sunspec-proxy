@@ -228,6 +228,9 @@ bool fetchRealtime() {
     float eExp = num(reflux["grid_out_eq"]["total_eq"]);
 
     if (isnan(pv) && isnan(bat) && isnan(soc)) continue;
+    // Der Abruf dauert bis zu einige zehn Sekunden; ist der HIT inzwischen wieder da, sind seine
+    // Werte neuer. Sie nicht überschreiben (SunSpec liefert gLive an das HEMS).
+    if (gLive.hitOk) return false;
 
     if (!isnan(pv)) gLive.pvW = int32_t(lroundf(pv));
     if (!isnan(bat)) gLive.batW = int32_t(lroundf(bat));
@@ -240,11 +243,13 @@ bool fetchRealtime() {
       gLive.soc = s;
     }
     if (!isnan(ePv)) {
-      // Hoymiles total_eq oft Wh
-      gLive.energyPvKwh = (ePv > 10000.0f) ? (ePv / 1000.0) : double(ePv);
+      // total_eq liefert die Cloud in Wh; nur die Ausweichfelder werden nach Größe geraten
+      const bool wh = !data["total_eq"].isNull() || !data["reflux_station_data"]["total_eq"].isNull();
+      gLive.energyPvKwh = (wh || ePv > 10000.0f) ? (ePv / 1000.0) : double(ePv);
     }
-    if (!isnan(eImp)) gLive.energyImpKwh = (eImp > 10000.0f) ? (eImp / 1000.0) : double(eImp);
-    if (!isnan(eExp)) gLive.energyExpKwh = (eExp > 10000.0f) ? (eExp / 1000.0) : double(eExp);
+    // grid_in_eq/grid_out_eq.total_eq sind immer Wh (siehe oben)
+    if (!isnan(eImp)) gLive.energyImpKwh = eImp / 1000.0;
+    if (!isnan(eExp)) gLive.energyExpKwh = eExp / 1000.0;
 
     if (!gLive.cloudOk) EventLog::add('I', "Cloud", "Daten kommen an");
     gLive.cloudOk = true;

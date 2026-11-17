@@ -17,7 +17,7 @@ struct IngestSnap {
   bool valid = false;
   int32_t pvW = 0, batW = 0, gridW = 0;
   uint16_t soc = 0;
-  double energyPvKwh = 0, energyImpKwh = 0, energyExpKwh = 0;
+  double energyPvKwh = NAN, energyImpKwh = NAN, energyExpKwh = NAN; // NAN = nicht geliefert
   uint32_t atMs = 0;
 } ingest;
 
@@ -36,7 +36,9 @@ void publishDiscoveryOne(const char *objId, const char *name, const char *unit,
   doc["avty_t"] = topicAvail();
   doc["pl_avail"] = "online";
   doc["pl_not_avail"] = "offline";
-  doc["val_tpl"] = String("{{ value_json.") + jsonKey + " }}";
+  // fehlt der Schlüssel (noch keine Daten), wird der Sensor "unbekannt" statt 0: eine 0 hielte
+  // Home Assistant bei total_increasing für einen Zählerreset und zählte danach alles doppelt
+  doc["val_tpl"] = String("{{ value_json.") + jsonKey + " | default(None) }}";
   if (unit && unit[0]) doc["unit_of_meas"] = unit;
   if (deviceClass && deviceClass[0]) doc["dev_cla"] = deviceClass;
   if (stateClass && stateClass[0]) doc["stat_cla"] = stateClass;
@@ -161,7 +163,11 @@ void begin(const AppConfig &cfg) {
 }
 
 void applyConfig(const AppConfig &cfg) {
-  if (mqtt.connected()) mqtt.disconnect();
+  if (mqtt.connected()) {
+    // sauberes Trennen löst das Testament nicht aus; sonst bliebe "online" stehen
+    if (local.mqttEnabled) mqtt.publish(topicAvail().c_str(), "offline", true);
+    mqtt.disconnect();
+  }
   local = cfg;
   discoverySent = false;
   nextPub = 0;
@@ -181,13 +187,16 @@ void publishNow() {
   doc["bat_w"] = gLive.batW;
   doc["grid_w"] = gLive.gridW;
   doc["soc"] = gLive.soc;
-  doc["energy_pv_kwh"] = round(gLive.energyPvKwh * 10.0) / 10.0;
-  doc["energy_imp_kwh"] = round(gLive.energyImpKwh * 10.0) / 10.0;
-  doc["energy_exp_kwh"] = round(gLive.energyExpKwh * 10.0) / 10.0;
+  // Zählerstände nur senden, wenn sie gelesen wurden (siehe val_tpl)
+  if (gLive.energyPvKwh > 0) doc["energy_pv_kwh"] = round(gLive.energyPvKwh * 10.0) / 10.0;
+  if (gLive.energyImpKwh > 0) doc["energy_imp_kwh"] = round(gLive.energyImpKwh * 10.0) / 10.0;
+  if (gLive.energyExpKwh > 0) doc["energy_exp_kwh"] = round(gLive.energyExpKwh * 10.0) / 10.0;
   doc["tasmota_ok"] = gLive.tasmotaOk;
-  doc["tasmota_w"] = gLive.tasmotaPowerW;
-  doc["tasmota_in_kwh"] = round(gLive.tasmotaTotalKwh * 1000.0) / 1000.0;
-  doc["tasmota_out_kwh"] = round(gLive.tasmotaExportKwh * 1000.0) / 1000.0;
+  if (gLive.tasmotaOk) {
+    doc["tasmota_w"] = gLive.tasmotaPowerW;
+    if (gLive.tasmotaTotalKwh > 0) doc["tasmota_in_kwh"] = round(gLive.tasmotaTotalKwh * 1000.0) / 1000.0;
+    if (gLive.tasmotaExportKwh > 0) doc["tasmota_out_kwh"] = round(gLive.tasmotaExportKwh * 1000.0) / 1000.0;
+  }
   doc["hit_ok"] = gLive.hitOk;
   doc["cloud_ok"] = gLive.cloudOk;
   doc["data_origin"] = dataOriginLabel(gLive.dataOrigin);
@@ -209,9 +218,9 @@ void applyIngestToLive() {
   gLive.batW = ingest.batW;
   gLive.gridW = ingest.gridW;
   gLive.soc = ingest.soc;
-  gLive.energyPvKwh = ingest.energyPvKwh;
-  gLive.energyImpKwh = ingest.energyImpKwh;
-  gLive.energyExpKwh = ingest.energyExpKwh;
+  if (!isnan(ingest.energyPvKwh)) gLive.energyPvKwh = ingest.energyPvKwh;
+  if (!isnan(ingest.energyImpKwh)) gLive.energyImpKwh = ingest.energyImpKwh;
+  if (!isnan(ingest.energyExpKwh)) gLive.energyExpKwh = ingest.energyExpKwh;
   gLive.mqttIngestOk = true;
   gLive.lastMqttIngestMs = ingest.atMs;
 }

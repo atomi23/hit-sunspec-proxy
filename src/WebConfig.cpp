@@ -212,6 +212,29 @@ textarea:focus{border-color:var(--acc);outline:none}
 .cfg .card>strong{display:none}
 .cfg .card>label:first-of-type{margin-top:0}
 
+/* KNX-Zuordnung */
+.knx-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:18px 0 6px}
+.knx-tools button{padding:7px 14px;font-size:13px}
+.knx-wrap{overflow-x:auto}
+.knx-tbl{min-width:560px;max-width:860px;border-collapse:separate;border-spacing:0;font-size:14px}
+.knx-tbl th{position:sticky;top:0;z-index:1;background:var(--plate);padding:8px 10px;border-bottom:1px solid var(--rule2)}
+.knx-tbl td{padding:4px 10px;border-bottom:1px solid var(--rule);vertical-align:middle}
+.knx-tbl td:first-child,.knx-tbl th:first-child{width:34px;text-align:center}
+.knx-tbl td:nth-child(3),.knx-tbl th:nth-child(3){width:150px}
+.knx-tbl td:nth-child(4),.knx-tbl th:nth-child(4){width:170px}
+.knx-tbl tr.grp td{text-align:left;padding:16px 10px 6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--dim);border-bottom:1px solid var(--rule2)}
+.knx-tbl tr.grp td span{font-weight:400;letter-spacing:0;text-transform:none;margin-left:8px}
+.knx-tbl tbody tr.alt td{background:var(--plate2)}
+.knx-tbl tbody tr:not(.grp):hover td,.knx-tbl tbody tr:not(.grp):focus-within td{background:color-mix(in srgb,var(--acc) 10%,var(--plate))}
+.knx-tbl tr.on td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
+.knx-tbl tr:not(.on):not(.grp) .knx-l{color:var(--dim)}
+.knx-tbl .knx-l small{display:block;font:400 11px ui-monospace,Consolas,monospace;color:var(--dim)}
+.knx-tbl input:not([type=checkbox]),.knx-tbl select{padding:6px 10px;font-size:14px;border-radius:8px}
+.knx-tbl input.bad-ga{border-color:var(--fault)}
+.knx-tbl tr.imp td{animation:knximp 1.6s ease-out}
+@keyframes knximp{from{background:color-mix(in srgb,var(--acc) 30%,var(--plate))}}
+
 @media(max-width:1100px){.grid2{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:860px){
   .app{flex-direction:column}
@@ -618,7 +641,7 @@ async function saveUiPrefs(){
 <script>
 const TX={
  de:{title:'Verlauf',sub:'Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.',h24:'Letzte 24 Stunden',hE:'Energie',
-   pv:'PV',house:'Haus',use:'Haus',grid:'Netz',bat:'Akku',days:'Tage',months:'Monate',years:'Jahre',total:'Gesamt',
+   pv:'PV',house:'Haus',grid:'Netz',bat:'Akku',days:'Tage',months:'Monate',years:'Jahre',total:'Gesamt',
    gen:'Erzeugt',use:'Verbraucht',imp:'Bezug',exp:'Einspeisung',chg:'Akku laden',dis:'Akku entladen',
    aut:'Autarkie',self:'Eigenverbrauch',none:'Noch keine Daten. Der Verlauf beginnt, sobald der ESP Messwerte und die Uhrzeit hat.',
    since:d=>'Aufzeichnung seit '+d+'. Erzeugung, Bezug und Einspeisung aus den HIT-Zählern, Verbrauch und Akku vom ESP aufsummiert.',
@@ -627,7 +650,7 @@ const TX={
    pos:'Flächen: PV, Netzbezug und Akku entladen. Linien: rot das Haus, gelb Akku laden, grün die Einspeisung.',
    mBal:'Bilanz',mPos:'Alles positiv'},
  en:{title:'History',sub:'Power over the last 24 hours and energy per day, month and year.',h24:'Last 24 hours',hE:'Energy',
-   pv:'Solar',house:'Home',use:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
+   pv:'Solar',house:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
    gen:'Produced',use:'Consumed',imp:'Import',exp:'Export',chg:'Battery charge',dis:'Battery discharge',
    aut:'Self-sufficiency',self:'Self-consumption',none:'No data yet. History starts once the ESP has readings and the time.',
    since:d=>'Recording since '+d+'. Production, import and export from the HIT counters; consumption and battery summed by the ESP.',
@@ -965,8 +988,21 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <label>Intervall (ms)</label><input name="knxPublishMs" type="number"/>
 <label><input name="knxOnlyOnChange" type="checkbox"/> nur bei Änderung</label>
 <label>Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
-<p class="hint">Pro Zeile: aktivieren → <strong>Gruppenadresse manuell</strong> als Text <code>H/M/L</code> (z.B. <code>1/2/10</code>) → DPT ggf. anpassen.</p>
-<div id="knxRows" style="margin-top:10px;display:grid;gap:8px"></div>
+<p class="hint">Pro Zeile: Haken setzen, Gruppenadresse dreistufig <code>H/M/U</code> (z.B. <code>1/2/10</code>), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</p>
+<div id="knxRows">
+<div class="knx-tools">
+<button type="button" class="sec" onclick="knxExport('xml')" title="Gruppenadressen-Export im ETS-Format, in ETS 5/6 importierbar">Export ETS (XML)</button>
+<button type="button" class="sec" onclick="knxExport('csv')" title="ETS-CSV (1/1, Semikolon)">Export CSV</button>
+<button type="button" class="sec" onclick="document.getElementById('knxFile').click()" title="ETS-Gruppenadressen-Export (XML oder CSV)">Import XML/CSV</button>
+<input type="file" id="knxFile" accept=".xml,.csv,.txt" hidden onchange="knxImport(this)"/>
+<span class="meta" id="knxMsg"></span>
+</div>
+<div class="knx-wrap"><table class="knx-tbl"><thead><tr><th title="senden">An</th><th>Messwert</th><th>Gruppenadresse</th><th>Datenpunkttyp</th></tr></thead>
+<tbody id="knxBody"></tbody></table></div>
+<p class="hint">Export: aktive Zeilen mit gültiger Adresse. Import: ETS → Gruppenadressen → Export (XML oder CSV).
+Zugeordnet wird über die Beschreibung <code>hit-sunspec-proxy:&lt;id&gt;</code> (steht in jedem Export), sonst über den Namen.
+Danach Speichern.</p>
+</div>
 </div>
 </form>
 <div class="row">
@@ -1004,29 +1040,192 @@ async function saveUiPrefs(){
 }
 </script>
 <script>
+const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
+let KNX_META=[];
 function dptOpts(kind,cur){
-  const m={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14033,'14.033 A'],[9001,'9.001']],Hz:[[14035,'14.035 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.019 kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
-  return (m[kind]||m.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
+  return (KNX_DPT[kind]||KNX_DPT.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
 }
+function knxGrp(id){
+  if(/^pv/.test(id))return 'PV';
+  if(/^(bat|soc|soh)/.test(id))return 'Batterie';
+  if(/^(grid|v\d|i\d|freq)/.test(id))return 'Netz';
+  if(/^e/.test(id))return 'Energie HIT';
+  if(/^tas/.test(id))return 'Tasmota-Zähler';
+  return 'Consolinno';
+}
+const knxEsc=s=>String(s??'').replace(/[&<>"']/g,x=>'&#'+x.charCodeAt(0)+';');
+function gaParse(s){const m=/^\s*(\d{1,2})\/(\d)\/(\d{1,3})\s*$/.exec(String(s||''));if(!m)return -1;
+  const a=+m[1],b=+m[2],c=+m[3];return(a>31||b>7||c>255)?-1:(a<<11)|(b<<8)|c;}
+const gaStr=n=>`${n>>11}/${(n>>8)&7}/${n&255}`;
+function knxEl(k,i){return document.querySelector(`#knxBody [data-knx=${k}][data-i="${i}"]`);}
 function renderKnx(meta,ch){
-  const box=document.getElementById('knxRows'); if(!box)return;
-  box.innerHTML=meta.map((m,i)=>{
-    const c=(ch&&ch[i])||{}; const dpt=c.dpt||m.dpt;
-    return `<div style="display:grid;grid-template-columns:28px minmax(120px,1.2fr) minmax(100px,.9fr) minmax(120px,.9fr);gap:6px;align-items:center">
-      <input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} title="aktivieren"/>
-      <span style="font-size:.82rem">${m.label}<br><span class="hint">${m.id}</span></span>
-      <input data-knx="g" data-i="${i}" type="text" inputmode="text" autocomplete="off" placeholder="GA z.B. 1/2/${10+i}" value="${c.ga||''}" title="Gruppenadresse manuell H/M/L"/>
-      <select data-knx="d" data-i="${i}" title="DPT">${dptOpts(m.kind,dpt)}</select></div>`;
-  }).join('');
+  KNX_META=meta;
+  const body=document.getElementById('knxBody'); if(!body)return;
+  let html='',last='',alt=false;
+  meta.forEach((m,i)=>{
+    const g=knxGrp(m.id);
+    if(g!==last){html+=`<tr class="grp"><td colspan="4">${knxEsc(g)}<span></span></td></tr>`;last=g;alt=false;}
+    const c=(ch&&ch[i])||{};
+    html+=`<tr data-row="${i}" class="${c.ena?'on':''}${alt?' alt':''}">
+      <td><input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} aria-label="${knxEsc(m.label)} senden"/></td>
+      <td class="knx-l">${knxEsc(m.label)}<small>${knxEsc(m.id)}</small></td>
+      <td><input data-knx="g" data-i="${i}" type="text" autocomplete="off" spellcheck="false" placeholder="z.B. 1/2/${10+i}" value="${knxEsc(c.ga)}" aria-label="Gruppenadresse ${knxEsc(m.label)}"/></td>
+      <td><select data-knx="d" data-i="${i}" aria-label="Datenpunkttyp ${knxEsc(m.label)}">${dptOpts(m.kind,c.dpt||m.dpt)}</select></td></tr>`;
+    alt=!alt;
+  });
+  body.innerHTML=html;
+  knxCheck();
 }
+// Markiert ungültige, fehlende und doppelte Adressen und zählt aktive Zeilen je Gruppe.
+function knxCheck(){
+  const rows=[...document.querySelectorAll('#knxBody tr[data-row]')];
+  const seen={};
+  rows.forEach(r=>{const n=gaParse(r.querySelector('[data-knx=g]').value);
+    if(n>=0&&r.querySelector('[data-knx=e]').checked)seen[n]=(seen[n]||0)+1;});
+  rows.forEach(r=>{
+    const e=r.querySelector('[data-knx=e]'),g=r.querySelector('[data-knx=g]');const v=g.value.trim(),n=gaParse(v);
+    r.classList.toggle('on',e.checked);
+    let msg='';
+    if(v&&n<0)msg='Ungültig, Format H/M/U (0-31/0-7/0-255)';
+    else if(e.checked&&!v)msg='Aktiv, aber ohne Gruppenadresse';
+    else if(e.checked&&seen[n]>1)msg='Adresse mehrfach vergeben';
+    g.classList.toggle('bad-ga',!!msg);g.title=msg||'Gruppenadresse H/M/U';
+  });
+  document.querySelectorAll('#knxBody tr.grp').forEach(gr=>{
+    let on=0,all=0;
+    for(let r=gr.nextElementSibling;r&&!r.classList.contains('grp');r=r.nextElementSibling){all++;if(r.classList.contains('on'))on++;}
+    gr.querySelector('span').textContent=`${on} von ${all} aktiv`;
+  });
+}
+{const kb=document.getElementById('knxBody');
+ if(kb)['input','change'].forEach(ev=>kb.addEventListener(ev,e=>{const t=e.target;
+   // erste gültige Adresse in einer leeren Zeile setzt den Haken einmalig mit
+   if(t.dataset.knx==='g'&&!t.defaultValue&&!t.dataset.auto&&gaParse(t.value)>=0){const cb=knxEl('e',t.dataset.i);if(cb&&!cb.checked)cb.checked=true;t.dataset.auto=1;}
+   knxCheck();}));}
 function collectKnx(){
-  const n=document.querySelectorAll('#knxRows [data-knx=e]').length; const out=[];
-  for(let i=0;i<n;i++){
-    const e=document.querySelector(`#knxRows [data-knx=e][data-i="${i}"]`);
-    const g=document.querySelector(`#knxRows [data-knx=g][data-i="${i}"]`);
-    const d=document.querySelector(`#knxRows [data-knx=d][data-i="${i}"]`);
-    out.push({ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0});
-  } return out;
+  return KNX_META.map((m,i)=>{const e=knxEl('e',i),g=knxEl('g',i),d=knxEl('d',i);
+    return {ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0};});
+}
+function knxMsg(t,ok){const m=document.getElementById('knxMsg');m.textContent=t;m.style.color=ok?'var(--acc)':'var(--fault)';}
+function dptEts(kind,dpt){return (kind==='EnergyKwh'&&dpt===14019)?'DPT-14':`DPST-${Math.floor(dpt/1000)}-${dpt%1000}`;}
+function knxDownload(name,text,type){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);
+}
+const KNX_TAG='hit-sunspec-proxy:';
+// Export im Format von ETS "Gruppenadressen exportieren" (XML ga-export/01 bzw. CSV 1/1)
+function knxExport(fmt){
+  const rows=collectKnx().map((c,i)=>({m:KNX_META[i],ena:c.ena,n:gaParse(c.ga),dpt:c.dpt}))
+    .filter(r=>r.ena&&r.n>=0).sort((a,b)=>a.n-b.n);
+  if(!rows.length){knxMsg('Keine aktive Zeile mit gültiger Gruppenadresse',false);return;}
+  const tree=new Map();
+  rows.forEach(r=>{const h=r.n>>11,mi=(r.n>>8)&7;if(!tree.has(h))tree.set(h,new Map());
+    const t=tree.get(h);if(!t.has(mi))t.set(mi,[]);t.get(mi).push(r);});
+  const midName=list=>{const g=new Set(list.map(r=>knxGrp(r.m.id)));return g.size===1?[...g][0]:'Messwerte';};
+  let out;
+  if(fmt==='xml'){
+    const x=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+    out='<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<GroupAddress-Export xmlns="http://knx.org/xml/ga-export/01">\n';
+    tree.forEach((mids,h)=>{
+      out+=`  <GroupRange Name="HIT-Proxy" RangeStart="${h<<11}" RangeEnd="${(h<<11)+2047}">\n`;
+      mids.forEach((list,mi)=>{const s=(h<<11)|(mi<<8);
+        out+=`    <GroupRange Name="${x(midName(list))}" RangeStart="${s}" RangeEnd="${s+255}">\n`;
+        list.forEach(r=>{out+=`      <GroupAddress Name="${x(r.m.label)}" Address="${gaStr(r.n)}" Description="${x(KNX_TAG+r.m.id)}" DPTs="${dptEts(r.m.kind,r.dpt)}" />\n`;});
+        out+='    </GroupRange>\n';});
+      out+='  </GroupRange>\n';});
+    out+='</GroupAddress-Export>\n';
+    knxDownload('hit-proxy-knx.xml',out,'application/xml');
+  }else{
+    const line=a=>a.map(s=>'"'+String(s).replace(/"/g,'""')+'"').join(';')+'\r\n';
+    out='\ufeff'+line(['Group name','Address','Central','Unfiltered','Description','DatapointType','Security']);
+    tree.forEach((mids,h)=>{out+=line(['HIT-Proxy',`${h}/-/-`,'','','','','Auto']);
+      mids.forEach((list,mi)=>{out+=line([midName(list),`${h}/${mi}/-`,'','','','','Auto']);
+        list.forEach(r=>{out+=line([r.m.label,gaStr(r.n),'','',KNX_TAG+r.m.id,dptEts(r.m.kind,r.dpt),'Auto']);});});});
+    knxDownload('hit-proxy-knx.csv',out,'text/csv');
+  }
+  knxMsg(rows.length+' Adressen exportiert',true);
+}
+function knxDecode(buf){
+  const u=new Uint8Array(buf);
+  if(u[0]===0xFF&&u[1]===0xFE)return new TextDecoder('utf-16le').decode(buf);
+  if(u[0]===0xFE&&u[1]===0xFF)return new TextDecoder('utf-16be').decode(buf);
+  try{return new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){return new TextDecoder('windows-1252').decode(buf);}
+}
+function knxParseXml(t){
+  const d=new DOMParser().parseFromString(t,'application/xml');
+  if(d.getElementsByTagName('parsererror').length)throw new Error('kein gültiges XML');
+  return [...d.getElementsByTagName('GroupAddress')].map(g=>{
+    let a=g.getAttribute('Address')||'';
+    if(/^\d+$/.test(a))a=gaStr(+a&0xFFFF); // .knxproj speichert die Adresse als Zahl
+    return {name:g.getAttribute('Name')||'',addr:a,desc:g.getAttribute('Description')||'',
+      dpt:g.getAttribute('DPTs')||g.getAttribute('DatapointType')||''};
+  });
+}
+function knxCsvRows(t){
+  const first=t.split(/\r?\n/,1)[0];
+  const sep=[';','\t',','].map(s=>[s,first.split(s).length]).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else if(c==='"')q=true;
+    else if(c===sep){row.push(f);f='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f='';}
+    else f+=c;}
+  if(f||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+function knxParseCsv(t){
+  const rows=knxCsvRows(t).filter(r=>r.some(c=>c.trim()));
+  if(!rows.length)return [];
+  const isGa=s=>gaParse(s)>=0;
+  const hdr=rows[0].some(isGa)?null:rows.shift().map(h=>h.trim().toLowerCase());
+  const col=re=>hdr?hdr.findIndex(h=>re.test(h)):-1;
+  const ai=col(/^(address|adresse)$/),ni=col(/^(group name|name|sub|gruppenname|untergruppe)$/),
+        di=col(/descr|beschreib/),pi=col(/datapoint|dpt|datenpunkt/);
+  return rows.map(r=>{
+    const a=ai>=0?r[ai]:r.find(isGa);if(!a||!isGa(a))return null;
+    const idx=ai>=0?ai:r.indexOf(a);
+    let name=ni>=0?(r[ni]||''):'';
+    if(!name.trim())name=r.slice(0,idx).reverse().find(c=>c.trim())||'';
+    return {name:name.trim(),addr:a.trim(),desc:di>=0?(r[di]||''):'',dpt:pi>=0?(r[pi]||''):''};
+  }).filter(Boolean);
+}
+// "DPST-14-56", "DPT-14", "14.056" -> passende Option für die Messgröße, sonst 0 (unverändert)
+function knxPickDpt(kind,s){
+  s=String(s||'').trim().split(/[,\s]+/)[0];
+  let main=-1,dpt=0,m;
+  if((m=/^DPST-(\d+)-(\d+)$/i.exec(s)||/^(\d+)\.(\d+)$/.exec(s))){main=+m[1];dpt=main*1000+(+m[2]);}
+  else if((m=/^DPT-(\d+)$/i.exec(s))){main=+m[1];}
+  else return 0;
+  const opts=(KNX_DPT[kind]||[]).map(o=>o[0]);
+  if(dpt&&opts.includes(dpt))return dpt;
+  const same=opts.filter(v=>Math.floor(v/1000)===main);
+  return same.length===1?same[0]:0;
+}
+async function knxImport(inp){
+  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
+  let list;
+  try{const t=knxDecode(await f.arrayBuffer());list=/^\s*</.test(t)?knxParseXml(t):knxParseCsv(t);}
+  catch(e){knxMsg('Datei nicht lesbar: '+e.message,false);return;}
+  if(!list.length){knxMsg('Keine Gruppenadressen in der Datei gefunden',false);return;}
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9äöüß%]+/g,'');
+  const byId=new Map(KNX_META.map((m,i)=>[m.id,i])),byName=new Map(KNX_META.map((m,i)=>[norm(m.label),i]));
+  const done=new Set();let miss=0;
+  list.forEach(g=>{
+    const tm=/hit-sunspec-proxy:([a-z0-9_]+)/i.exec(g.desc);
+    let i=tm?byId.get(tm[1].toLowerCase()):undefined;
+    if(i===undefined)i=byName.get(norm(g.name));
+    if(i===undefined)i=byId.get(g.name.trim().toLowerCase());
+    const n=gaParse(g.addr);
+    if(i===undefined||n<0){miss++;return;}
+    knxEl('g',i).value=gaStr(n);knxEl('e',i).checked=true;
+    const d=knxPickDpt(KNX_META[i].kind,g.dpt);if(d)knxEl('d',i).value=String(d);
+    done.add(i);
+  });
+  done.forEach(i=>{const r=knxEl('e',i).closest('tr');r.classList.remove('imp');void r.offsetWidth;r.classList.add('imp');});
+  knxCheck();
+  if(!done.size){knxMsg(`Keine der ${list.length} Adressen passt zu einem Messwert`,false);return;}
+  knxMsg(`${done.size} Messwerte zugeordnet`+(miss?`, ${miss} Adressen ohne Zuordnung`:'')+'. Zum Übernehmen Speichern.',true);
 }
 function route(){
   const cards=[...document.querySelectorAll('#f > .card')];
@@ -1251,12 +1450,15 @@ async function testHit(){
   const msg=document.getElementById('hitMsg');
   if(document.getElementById('demoMode').checked){msg.innerHTML='<span class="ok">Demo gewählt — HIT-Test übersprungen.</span>';return;}
   const body={hitHost:document.getElementById('hitHost').value.trim(),hitPort:Number(document.getElementById('hitPort').value),
-    hitUnitId:Number(document.getElementById('hitUnitId').value),demoMode:false,hitMode:0};
+    hitUnitId:Number(document.getElementById('hitUnitId').value),demoMode:false,hitMode:0,setupComplete:false};
   if(!body.hitHost){msg.innerHTML='<span class="bad">HIT-IP fehlt</span>';return;}
   msg.textContent='Speichern & pollen…';
+  const s0=await(await fetch('/api/status')).json();
   await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   await fetch('/api/poll',{method:'POST'});
-  const s=await(await fetch('/api/status')).json();
+  // die Abfrage läuft im Hintergrund; auf ihr Ergebnis warten (max. ~15 s)
+  let s=s0;
+  for(let i=0;i<30;i++){await new Promise(x=>setTimeout(x,500));s=await(await fetch('/api/status')).json();if(s.hitPollsDone>s0.hitPollsDone)break;}
   msg.innerHTML=s.hitOk?('<span class="ok">HIT ok — '+s.pvW+' W PV, SoC '+s.soc+' %</span>'):('<span class="bad">Kein HIT — IP/Netz prüfen ('+(s.status||'')+')</span>');
 }
 async function finish(){
@@ -1454,7 +1656,31 @@ tab(TAB);setInterval(()=>{if(!document.hidden)refresh();},3000);
 </script></body></html>
 )HTML";
 
+// Basic-Auth schickt der Browser auch bei Anfragen fremder Seiten mit (CSRF). Ändernde Anfragen
+// deshalb nur von der eigenen Oberfläche annehmen. Werkzeuge ohne Origin/Sec-Fetch-Site (curl,
+// Python) bleiben erlaubt. Über den HTTPS-Proxy (127.0.0.1) kommt der Host als X-Forwarded-Host.
+bool crossSite(AsyncWebServerRequest *req) {
+  const auto m = req->method();
+  if (m == HTTP_GET || m == HTTP_HEAD || m == HTTP_OPTIONS) return false;
+  if (req->hasHeader("Sec-Fetch-Site")) {
+    const String &s = req->header("Sec-Fetch-Site");
+    return !(s.equalsIgnoreCase("same-origin") || s.equalsIgnoreCase("none"));
+  }
+  if (!req->hasHeader("Origin")) return false;
+  String origin = req->header("Origin");
+  const int p = origin.indexOf("://");
+  if (p >= 0) origin = origin.substring(p + 3);
+  String host = req->host();
+  const bool local = req->client() && req->client()->remoteIP() == IPAddress(127, 0, 0, 1);
+  if (local && req->hasHeader("X-Forwarded-Host")) host = req->header("X-Forwarded-Host");
+  return !origin.equalsIgnoreCase(host);
+}
+
 bool requireAuth(AsyncWebServerRequest *req) {
+  if (crossSite(req)) {
+    req->send(403, "application/json", "{\"ok\":false,\"error\":\"cross-site request\"}");
+    return false;
+  }
   auto &c = ConfigStore::get();
   const char *user = c.webUser[0] ? c.webUser : "admin";
   if (c.displayCode[0] && req->authenticate(user, c.displayCode)) return true;
@@ -1475,6 +1701,8 @@ const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size
     return nullptr;
   }
   if (index == 0) {
+    // Anmeldung prüfen, bevor Speicher reserviert wird (Header sind schon da)
+    if (!requireAuth(req)) return nullptr;
     req->_tempObject = calloc(total + 1, 1);
     if (!req->_tempObject) {
       req->send(500, "application/json", "{\"ok\":false,\"error\":\"no memory\"}");
@@ -1494,6 +1722,7 @@ volatile uint32_t applyAt = 0;
 // Langsame Arbeit nie im async_tcp-Task (SPI/HTTP/MQTT/HIT)
 volatile uint8_t workFlags = 0;
 constexpr uint8_t W_POLL = 1, W_CTRL = 2, W_NEWCODE = 4, W_PROBE = 8;
+void addWork(uint8_t w) { __atomic_fetch_or(&workFlags, w, __ATOMIC_SEQ_CST); }
 volatile bool ctrlDone = false, ctrlOk = false;
 char ctrlErr[96] = "";
 AppConfig probeReq;
@@ -1527,9 +1756,11 @@ void runPendingApply() {
 }
 
 void runDeferredWork() {
-  const uint8_t f = workFlags;
+  // Erst die gerade gespeicherten Einstellungen übernehmen, sonst pollt/schreibt man mit den alten
+  if (applyPending) return;
+  // Web-Task setzt Bits auf dem anderen Kern: atomar abholen, sonst geht ein Auftrag verloren
+  const uint8_t f = __atomic_exchange_n(&workFlags, uint8_t(0), __ATOMIC_SEQ_CST);
   if (!f) return;
-  workFlags = 0;
   if (f & W_NEWCODE) {
     auto &c = ConfigStore::get();
     NetBoot::applyConfig(c);
@@ -1578,12 +1809,24 @@ void jsonEscapeAppend(String &out, const char *s) {
   }
 }
 
+// Leere Formularfelder kommen als 0: dann den alten Wert behalten
+uint16_t port(JsonVariantConst v, uint16_t old) {
+  const long p = v.as<long>();
+  return (p >= 1 && p <= 65535) ? uint16_t(p) : old;
+}
+uint8_t unitId(JsonVariantConst v, uint8_t old) {
+  const long u = v.as<long>();
+  return (u >= 1 && u <= 247) ? uint8_t(u) : old;
+}
+
 void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["useEthernet"].isNull()) c.useEthernet = o["useEthernet"];
   if (!o["wifiEnabled"].isNull()) c.wifiEnabled = o["wifiEnabled"];
   if (!o["wifiApMode"].isNull()) c.wifiApMode = o["wifiApMode"];
   if (!o["setupComplete"].isNull()) c.setupComplete = o["setupComplete"];
-  if (o["wifiSsid"].is<const char *>()) strlcpy(c.wifiSsid, o["wifiSsid"], sizeof(c.wifiSsid));
+  // leerer Name würde das Geräte-WLAN abschalten (softAP lehnt ihn ab)
+  if (o["wifiSsid"].is<const char *>() && o["wifiSsid"].as<const char *>()[0])
+    strlcpy(c.wifiSsid, o["wifiSsid"], sizeof(c.wifiSsid));
   if (o["staSsid"].is<const char *>()) strlcpy(c.staSsid, o["staSsid"], sizeof(c.staSsid));
   // Passwort wird nie ausgeliefert; leeres Feld heißt unverändert
   if (o["staPass"].is<const char *>() && o["staPass"].as<const char *>()[0])
@@ -1605,20 +1848,21 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["batMinSoc"].isNull()) c.batMinSoc = o["batMinSoc"];
   if (!o["apcEnabled"].isNull()) c.apcEnabled = o["apcEnabled"];
   if (!o["apcPwrLmtPct10"].isNull()) c.apcPwrLmtPct10 = o["apcPwrLmtPct10"];
-  if (!o["hitMode"].isNull()) c.hitMode = static_cast<HitLinkMode>(o["hitMode"].as<int>());
+  if (!o["hitMode"].isNull())
+    c.hitMode = o["hitMode"].as<int>() == 1 ? HitLinkMode::RtuRs485 : HitLinkMode::Tcp;
   if (o["hitHost"].is<const char *>()) strlcpy(c.hitHost, o["hitHost"], sizeof(c.hitHost));
-  if (!o["hitPort"].isNull()) c.hitPort = o["hitPort"];
-  if (!o["hitUnitId"].isNull()) c.hitUnitId = o["hitUnitId"];
+  if (!o["hitPort"].isNull()) c.hitPort = port(o["hitPort"], c.hitPort);
+  if (!o["hitUnitId"].isNull()) c.hitUnitId = unitId(o["hitUnitId"], c.hitUnitId);
   if (!o["hitPollMs"].isNull()) c.hitPollMs = o["hitPollMs"];
   if (!o["hitRtuBaud"].isNull()) c.hitRtuBaud = o["hitRtuBaud"];
   if (!o["demoMode"].isNull()) c.demoMode = o["demoMode"];
-  if (!o["sunspecPort"].isNull()) c.sunspecPort = o["sunspecPort"];
-  if (!o["sunspecUnitId"].isNull()) c.sunspecUnitId = o["sunspecUnitId"];
+  if (!o["sunspecPort"].isNull()) c.sunspecPort = port(o["sunspecPort"], c.sunspecPort);
+  if (!o["sunspecUnitId"].isNull()) c.sunspecUnitId = unitId(o["sunspecUnitId"], c.sunspecUnitId);
   if (!o["invertPowerSign"].isNull()) c.invertPowerSign = o["invertPowerSign"];
   if (!o["gatewayEnabled"].isNull()) c.gatewayEnabled = o["gatewayEnabled"];
-  if (!o["gatewayPort"].isNull()) c.gatewayPort = o["gatewayPort"];
+  if (!o["gatewayPort"].isNull()) c.gatewayPort = port(o["gatewayPort"], c.gatewayPort);
   if (!o["displayEnabled"].isNull()) c.displayEnabled = o["displayEnabled"];
-  if (!o["displayBrightness"].isNull()) c.displayBrightness = o["displayBrightness"];
+  if (!o["displayBrightness"].isNull()) c.displayBrightness = constrain(o["displayBrightness"].as<int>(), 0, 255);
   if (!o["displayAutoPage"].isNull()) c.displayAutoPage = o["displayAutoPage"];
   if (!o["displayPageS"].isNull()) c.displayPageMs = constrain(o["displayPageS"].as<uint32_t>(), 3u, 600u) * 1000;
   if (!o["displayTimeoutS"].isNull()) c.displayTimeoutS = constrain(o["displayTimeoutS"].as<uint32_t>(), 0u, 36000u);
@@ -1626,7 +1870,7 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["tasmotaLiveGrid"].isNull()) c.tasmotaLiveGrid = o["tasmotaLiveGrid"];
   if (!o["tasmotaMeterSpoof"].isNull()) c.tasmotaMeterSpoof = o["tasmotaMeterSpoof"];
   if (o["tasmotaHost"].is<const char *>()) strlcpy(c.tasmotaHost, o["tasmotaHost"], sizeof(c.tasmotaHost));
-  if (!o["tasmotaPort"].isNull()) c.tasmotaPort = o["tasmotaPort"];
+  if (!o["tasmotaPort"].isNull()) c.tasmotaPort = port(o["tasmotaPort"], c.tasmotaPort);
   if (!o["tasmotaPollMs"].isNull()) c.tasmotaPollMs = o["tasmotaPollMs"];
   if (o["tasmotaUser"].is<const char *>()) strlcpy(c.tasmotaUser, o["tasmotaUser"], sizeof(c.tasmotaUser));
   if (o["tasmotaPass"].is<const char *>() && o["tasmotaPass"].as<const char *>()[0])
@@ -1634,7 +1878,7 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["mqttEnabled"].isNull()) c.mqttEnabled = o["mqttEnabled"];
   if (!o["mqttDiscovery"].isNull()) c.mqttDiscovery = o["mqttDiscovery"];
   if (o["mqttHost"].is<const char *>()) strlcpy(c.mqttHost, o["mqttHost"], sizeof(c.mqttHost));
-  if (!o["mqttPort"].isNull()) c.mqttPort = o["mqttPort"];
+  if (!o["mqttPort"].isNull()) c.mqttPort = port(o["mqttPort"], c.mqttPort);
   if (o["mqttUser"].is<const char *>()) strlcpy(c.mqttUser, o["mqttUser"], sizeof(c.mqttUser));
   if (o["mqttPass"].is<const char *>() && o["mqttPass"].as<const char *>()[0])
     strlcpy(c.mqttPass, o["mqttPass"], sizeof(c.mqttPass));
@@ -1862,6 +2106,7 @@ void begin() {
     doc["ipWifi"] = gLive.ipWifi;
     doc["hitHost"] = c.hitHost;
     doc["hitOk"] = gLive.hitOk;
+    doc["hitPollsDone"] = gLive.hitPollsDone;
     doc["ethOk"] = gLive.ethOk;
     doc["wifiOk"] = gLive.wifiOk;
     doc["sunspecClient"] = gLive.sunspecClient;
@@ -2053,7 +2298,7 @@ void begin() {
     ctrlDone = false;
     ctrlOk = false;
     ctrlErr[0] = '\0';
-    workFlags |= W_CTRL;
+    addWork(W_CTRL);
     req->send(200, "application/json", "{\"ok\":true,\"pending\":true,\"done\":false}");
   });
 
@@ -2118,7 +2363,7 @@ void begin() {
   server.on("/api/access/new-code", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     ConfigStore::newDisplayCode();
-    workFlags |= W_NEWCODE; // NetBoot + Display in der Hauptschleife (SPI!)
+    addWork(W_NEWCODE); // NetBoot + Display in der Hauptschleife (SPI!)
     req->send(200, "application/json", "{\"ok\":true}");
   });
 
@@ -2130,7 +2375,7 @@ void begin() {
 
   server.on("/api/poll", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    workFlags |= W_POLL;
+    addWork(W_POLL);
     req->send(200, "application/json", "{\"ok\":true}");
   });
 
@@ -2159,7 +2404,7 @@ void begin() {
               probeOk = false;
               probeSummary[0] = probeRaw[0] = '\0';
               probePending = true;
-              workFlags |= W_PROBE;
+              addWork(W_PROBE);
               req->send(200, "application/json", "{\"ok\":true,\"pending\":true}");
             });
 

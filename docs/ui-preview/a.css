@@ -181,6 +181,29 @@ textarea:focus{border-color:var(--acc);outline:none}
 .cfg .card>strong{display:none}
 .cfg .card>label:first-of-type{margin-top:0}
 
+/* KNX-Zuordnung */
+.knx-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:18px 0 6px}
+.knx-tools button{padding:7px 14px;font-size:13px}
+.knx-wrap{overflow-x:auto}
+.knx-tbl{min-width:560px;max-width:860px;border-collapse:separate;border-spacing:0;font-size:14px}
+.knx-tbl th{position:sticky;top:0;z-index:1;background:var(--plate);padding:8px 10px;border-bottom:1px solid var(--rule2)}
+.knx-tbl td{padding:4px 10px;border-bottom:1px solid var(--rule);vertical-align:middle}
+.knx-tbl td:first-child,.knx-tbl th:first-child{width:34px;text-align:center}
+.knx-tbl td:nth-child(3),.knx-tbl th:nth-child(3){width:150px}
+.knx-tbl td:nth-child(4),.knx-tbl th:nth-child(4){width:170px}
+.knx-tbl tr.grp td{text-align:left;padding:16px 10px 6px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--dim);border-bottom:1px solid var(--rule2)}
+.knx-tbl tr.grp td span{font-weight:400;letter-spacing:0;text-transform:none;margin-left:8px}
+.knx-tbl tbody tr.alt td{background:var(--plate2)}
+.knx-tbl tbody tr:not(.grp):hover td,.knx-tbl tbody tr:not(.grp):focus-within td{background:color-mix(in srgb,var(--acc) 10%,var(--plate))}
+.knx-tbl tr.on td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
+.knx-tbl tr:not(.on):not(.grp) .knx-l{color:var(--dim)}
+.knx-tbl .knx-l small{display:block;font:400 11px ui-monospace,Consolas,monospace;color:var(--dim)}
+.knx-tbl input:not([type=checkbox]),.knx-tbl select{padding:6px 10px;font-size:14px;border-radius:8px}
+.knx-tbl input.bad-ga{border-color:var(--fault)}
+.knx-tbl tr.imp td{animation:knximp 1.6s ease-out}
+@keyframes knximp{from{background:color-mix(in srgb,var(--acc) 30%,var(--plate))}}
+
 @media(max-width:1100px){.grid2{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:860px){
   .app{flex-direction:column}

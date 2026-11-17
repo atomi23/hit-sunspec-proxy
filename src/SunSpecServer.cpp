@@ -82,21 +82,22 @@ void sendException(WiFiClient &c, const uint8_t *hdr, uint8_t fc, uint8_t code) 
 
 void handleClient(WiFiClient &c) {
   uint8_t hdr[8];
-  if (c.readBytes(hdr, 8) != 8) return;
+  // Bei kaputten Rahmen die Verbindung schließen: sonst liest man ab jetzt mitten aus Daten
+  if (c.readBytes(hdr, 8) != 8) { c.stop(); return; }
   uint16_t tid = (uint16_t(hdr[0]) << 8) | hdr[1];
   uint16_t len = (uint16_t(hdr[4]) << 8) | hdr[5];
   uint8_t unit = hdr[6];
   uint8_t fc = hdr[7];
   (void)unit;
 
-  if (len < 2) return;
+  if (hdr[2] || hdr[3] || len < 2) { c.stop(); return; }
   int rem = int(len) - 2;
-  if (rem < 0 || rem > 256) return;
+  if (rem < 0 || rem > 256) { c.stop(); return; }
   uint8_t pdu[256];
-  if (rem > 0 && c.readBytes(pdu, rem) != rem) return;
+  if (rem > 0 && int(c.readBytes(pdu, rem)) != rem) { c.stop(); return; }
 
   if (fc == 3 || fc == 4) {
-    if (rem < 4) return;
+    if (rem < 4) { sendException(c, hdr, fc, 0x03); return; }
     uint16_t addr = (uint16_t(pdu[0]) << 8) | pdu[1];
     uint16_t qty = (uint16_t(pdu[2]) << 8) | pdu[3];
     if (qty == 0 || qty > 125) { sendException(c, hdr, fc, 0x03); return; }
@@ -116,7 +117,7 @@ void handleClient(WiFiClient &c) {
     c.write(resp, 9 + qty * 2);
   } else if (fc == 6) {
     // Write single holding
-    if (rem < 4) return;
+    if (rem < 4) { sendException(c, hdr, fc, 0x03); return; }
     uint16_t addr = (uint16_t(pdu[0]) << 8) | pdu[1];
     uint16_t value = (uint16_t(pdu[2]) << 8) | pdu[3];
     applyPowerLimitIfNeeded(onHoldingWrite(addr, value, 6));
@@ -131,11 +132,11 @@ void handleClient(WiFiClient &c) {
     c.write(resp, 12);
   } else if (fc == 16) {
     // Write multiple holdings — erst alle Register, dann einmal HIT anstoßen
-    if (rem < 5) return;
+    if (rem < 5) { sendException(c, hdr, fc, 0x03); return; }
     uint16_t addr = (uint16_t(pdu[0]) << 8) | pdu[1];
     uint16_t qty = (uint16_t(pdu[2]) << 8) | pdu[3];
     uint8_t bc = pdu[4];
-    if (qty == 0 || qty > 123 || bc != qty * 2 || rem < 5 + bc) return;
+    if (qty == 0 || qty > 123 || bc != qty * 2 || rem < 5 + bc) { sendException(c, hdr, fc, 0x03); return; }
     bool lim = false;
     for (uint16_t i = 0; i < qty; i++) {
       uint16_t value = (uint16_t(pdu[5 + i * 2]) << 8) | pdu[6 + i * 2];

@@ -9,15 +9,31 @@ AppConfig local;
 uint32_t nextPoll = 0;
 bool started = false;
 
-void buildUrl(char *url, size_t n, const char *cmnd) {
-  if (local.tasmotaUser[0] && local.tasmotaPass[0]) {
-    snprintf(url, n, "http://%s:%u/cm?user=%s&password=%s&cmnd=%s",
-             local.tasmotaHost, local.tasmotaPort,
-             local.tasmotaUser, local.tasmotaPass, cmnd);
-  } else {
-    snprintf(url, n, "http://%s:%u/cm?cmnd=%s",
-             local.tasmotaHost, local.tasmotaPort, cmnd);
+// Zugangsdaten stehen in der Query: & # % + Leerzeichen usw. müssen kodiert werden
+String urlEncode(const char *s) {
+  static const char hex[] = "0123456789ABCDEF";
+  String out;
+  for (; *s; s++) {
+    const uint8_t c = uint8_t(*s);
+    if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+      out += char(c);
+    } else {
+      out += '%';
+      out += hex[c >> 4];
+      out += hex[c & 15];
+    }
   }
+  return out;
+}
+
+String buildUrl(const char *cmnd) {
+  String url = String("http://") + local.tasmotaHost + ":" + local.tasmotaPort + "/cm?";
+  if (local.tasmotaUser[0] && local.tasmotaPass[0]) {
+    url += "user=" + urlEncode(local.tasmotaUser) + "&password=" + urlEncode(local.tasmotaPass) + "&";
+  }
+  url += "cmnd=";
+  url += cmnd;
+  return url;
 }
 
 bool parseEnergy(JsonVariantConst root, String *sensorKeyOut = nullptr) {
@@ -61,8 +77,12 @@ bool parseEnergy(JsonVariantConst root, String *sensorKeyOut = nullptr) {
   else if (!energy["E_out"].isNull()) gLive.tasmotaExportKwh = energy["E_out"].as<double>();
   else if (!energy["Heute_Einsp"].isNull()) gLive.tasmotaExportKwh = energy["Heute_Einsp"].as<double>();
 
-  if (!energy["Meter_Number"].isNull()) {
-    strlcpy(gLive.tasmotaMeterId, energy["Meter_Number"].as<const char *>(), sizeof(gLive.tasmotaMeterId));
+  // Meter_Number kommt je nach Skript als Text oder als Zahl; as<const char*>() wäre bei Zahl nullptr
+  JsonVariantConst meter = energy["Meter_Number"];
+  if (meter.is<const char *>()) {
+    strlcpy(gLive.tasmotaMeterId, meter.as<const char *>(), sizeof(gLive.tasmotaMeterId));
+  } else if (meter.is<double>()) {
+    snprintf(gLive.tasmotaMeterId, sizeof(gLive.tasmotaMeterId), "%.0f", meter.as<double>());
   }
 
   return true;
@@ -70,8 +90,7 @@ bool parseEnergy(JsonVariantConst root, String *sensorKeyOut = nullptr) {
 
 bool fetchStatus8(String &bodyOut) {
   HTTPClient http;
-  char url[192];
-  buildUrl(url, sizeof(url), "Status%208");
+  const String url = buildUrl("Status%208");
   http.setConnectTimeout(2000);
   http.setTimeout(3000);
   if (!http.begin(url)) return false;

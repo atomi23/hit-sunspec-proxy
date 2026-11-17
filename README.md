@@ -6,9 +6,24 @@ andere Modbus-Clients.
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
-Aktuelle Firmware: **v0.5.6** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.6)
+Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 
-### Neu in v0.5.6
+Aktuelle Firmware: **v0.5.7** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.7)
+
+### Neu in v0.5.7
+- **KNX:** Zuordnungstabelle nach Bereichen gruppiert, Zeilen hinterlegt, ungültige oder doppelte Adressen rot;
+  **Import/Export der Gruppenadressen im ETS-Format** (XML und CSV)
+- Neue Build-Variante **`wt32-eth01`**; `t-poe-pro` baut wieder (passende Partitionstabelle)
+- Schutz gegen CSRF: fremde Webseiten können über ein gespeichertes Login nichts mehr auslösen
+- OTA-Update gehört genau einer Anfrage; Login wird vor dem Annehmen großer Anfragen geprüft
+- Home Assistant: keine Zählerstände 0 mehr vor den ersten Daten (verhinderte doppelt gezählte Energie)
+- Cloud: Zählerstände in Wh werden immer richtig umgerechnet, auch unter 10 kWh
+- „Jetzt an HIT schreiben“ schreibt die gerade gespeicherten Werte; „HIT testen“ im Setup wartet auf eine frische Abfrage
+- Tasmota: Absturz bei numerischer Zählernummer behoben, Zugangsdaten URL-kodiert
+- Verlauf übersteht einen Stromausfall beim Speichern; KNX-Typnummern für Strom/Frequenz korrigiert (14.019/14.033)
+- Ungültige Eingaben (Port 0, Unit-ID 0, leerer WLAN-Name …) werden nicht mehr gespeichert
+
+### v0.5.6
 - HIT-Poll in eigener FreeRTOS-Task (UI/Consolinno bleiben responsiv)
 - Tasmota wählbar als Live-Netzzähler; optional SunSpec **Model 203** (3ph-Spoof aus Summe + HIT-Spannungen)
 - KNX DPT9 korrekt skaliert; FC16 Power-Limit erst nach vollständigem Registersatz
@@ -78,6 +93,10 @@ Selbst signiertes Zertifikat mit Fingerabdruck zum Vergleichen, oder ein eigenes
 ### Einstellungen: HIT-Wechselrichter und KNX
 
 ![HIT-Wechselrichter](docs/screenshots/web-config.jpg)
+
+KNX: je Messwert Gruppenadresse und Datenpunkttyp, nach Bereichen gruppiert. Die Adressen lassen sich als
+ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importieren, oder aus einem ETS-Export
+übernehmen. Zugeordnet wird über die Beschreibung `hit-sunspec-proxy:<id>`, sonst über den Namen.
 
 ![KNX](docs/screenshots/web-config-knx.jpg)
 
@@ -149,6 +168,19 @@ pio run -e t-connect-pro -t upload
 Platform und Partitionen sind im Repo festgelegt (`espressif32 @ 53.3.13`, `partitions_16MB.csv`:
 2× ~4 MB OTA + ~8 MB LittleFS). Nach einem Partitionstabellen-Wechsel einmal per USB flashen;
 OTA zwischen App-Slots bleibt danach möglich.
+
+| Env | Board | Hinweise |
+|-----|-------|----------|
+| `t-connect-pro` (Standard) | LILYGO T-Connect-Pro, ESP32-S3, 16 MB | Display, Touch, W5500, RS485 TX 17 / RX 18 |
+| `wt32-eth01` | WT32-ETH01, ESP32, 4 MB | ohne Display; LAN8720 (PHY 1, Takt GPIO0, Enable GPIO16); RS485 über externen Wandler mit Auto-Richtung an IO17 (TX) / IO5 (RX) |
+| `t-poe-pro` | LILYGO T-POE-Pro, ESP32 | LAN8720 PoE; Display wird nicht angesteuert |
+
+Die Varianten mit ESP32 nutzen `min_spiffs.csv` (2× 1,9 MB OTA).
+Der WT32-ETH01 wird über einen USB-Seriell-Adapter an TX0/RX0 geflasht (IO0 beim Einschalten auf GND):
+
+```bash
+pio run -e wt32-eth01 -t upload
+```
 
 ## Privatsphäre
 

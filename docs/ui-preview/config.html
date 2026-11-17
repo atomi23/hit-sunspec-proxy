@@ -6,9 +6,9 @@
 <link rel="stylesheet" href="/a.css"/>
 </head><body>
 <script>
-const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14033, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14033, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14033, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14033, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14033, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14035, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}]};
-const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 14033}, {"ena": true, "ga": "1/2/38", "dpt": 14035}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
-const STATUS={"version": "0.5.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14019, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14019, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14019, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14019, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14033, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}]};
+const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/38", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
+const STATUS={"version": "0.5.7", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
 const TLS={subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
   sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
   chain:1,source:"self",running:true,enabled:true};
@@ -110,7 +110,7 @@ Die neue Adresse steht danach auf dem Display (Seite System).</p>
 <p class="hint">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
 und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich neu anmelden. Das eigene Web-Passwort bleibt gültig.</p>
 <label>Benutzername</label><input name="webUser"/>
-<label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer lassen = nur Zugangscode"/>
+<label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer = unverändert / nur Zugangscode"/>
 <p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 <label><input name="httpsEnabled" type="checkbox"/> HTTPS (Port 443)</label>
 <label><input name="httpsRedirect" type="checkbox"/> Aufrufe über HTTP auf HTTPS umleiten</label>
@@ -163,14 +163,16 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <button class="sec" type="button" onclick="applyCtrl()">Jetzt an HIT schreiben</button>
 </div>
 <div class="card" id="tasmota" data-sub="Optionaler Netzzähler mit Tasmota-Lesekopf."><strong>Tasmota-Zähler</strong>
-<label><input name="tasmotaEnabled" type="checkbox"/> aktiv (Display)</label>
+<label><input name="tasmotaEnabled" type="checkbox"/> aktiv</label>
+<label><input name="tasmotaLiveGrid" type="checkbox"/> Im Live-View als Netzzähler (sonst HIT)</label>
 <label><input name="tasmotaMeterSpoof" type="checkbox"/> Meter-Spoof für Consolinno (optional)</label>
 <label>Tasmota IP</label><input name="tasmotaHost" placeholder="192.0.2.60"/>
 <label>Port</label><input name="tasmotaPort" type="number"/>
 <label>Poll (ms)</label><input name="tasmotaPollMs" type="number"/>
 <label>User (optional)</label><input name="tasmotaUser"/>
-<label>Passwort (optional)</label><input name="tasmotaPass" type="password"/>
-<p class="hint">E320: Power / E_in / E_out. Meter-Spoof hängt SunSpec Model 201 an :1502.</p>
+<label>Passwort (optional)</label><input name="tasmotaPass" type="password" placeholder="leer = unverändert"/>
+<p class="hint">E320 liefert nur die Summe (Power / E_in / E_out), keine Phasen.
+Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spannungen vom HIT.</p>
 <button class="sec" type="button" onclick="probeTas()" style="margin-top:10px">One-Click: Tasmota auslesen</button>
 <div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
 </div>
@@ -180,7 +182,7 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
 <label>Port</label><input name="mqttPort" type="number"/>
 <label>User</label><input name="mqttUser"/>
-<label>Passwort</label><input name="mqttPass" type="password"/>
+<label>Passwort</label><input name="mqttPass" type="password" placeholder="leer = unverändert"/>
 <label>Topic-Basis</label><input name="mqttBase" placeholder="hitproxy"/>
 <label>Publish (ms)</label><input name="mqttPublishMs" type="number"/>
 <p class="hint">State: &lt;basis&gt;/state · inkl. data_origin</p>
@@ -193,7 +195,7 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <label><input name="cloudEnabled" type="checkbox"/> aktiv (wenn HIT &amp; MQTT-in tot)</label>
 <label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
 <label>Cloud User / E-Mail</label><input name="cloudUser"/>
-<label>Passwort</label><input name="cloudPass" type="password"/>
+<label>Passwort</label><input name="cloudPass" type="password" placeholder="leer = unverändert"/>
 <label>Station / Plant ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567"/>
 <label>Poll (ms)</label><input name="cloudPollMs" type="number"/>
 <label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
@@ -215,8 +217,21 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <label>Intervall (ms)</label><input name="knxPublishMs" type="number"/>
 <label><input name="knxOnlyOnChange" type="checkbox"/> nur bei Änderung</label>
 <label>Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
-<p class="hint">Pro Zeile: aktivieren → <strong>Gruppenadresse manuell</strong> als Text <code>H/M/L</code> (z.B. <code>1/2/10</code>) → DPT ggf. anpassen.</p>
-<div id="knxRows" style="margin-top:10px;display:grid;gap:8px"></div>
+<p class="hint">Pro Zeile: Haken setzen, Gruppenadresse dreistufig <code>H/M/U</code> (z.B. <code>1/2/10</code>), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</p>
+<div id="knxRows">
+<div class="knx-tools">
+<button type="button" class="sec" onclick="knxExport('xml')" title="Gruppenadressen-Export im ETS-Format, in ETS 5/6 importierbar">Export ETS (XML)</button>
+<button type="button" class="sec" onclick="knxExport('csv')" title="ETS-CSV (1/1, Semikolon)">Export CSV</button>
+<button type="button" class="sec" onclick="document.getElementById('knxFile').click()" title="ETS-Gruppenadressen-Export (XML oder CSV)">Import XML/CSV</button>
+<input type="file" id="knxFile" accept=".xml,.csv,.txt" hidden onchange="knxImport(this)"/>
+<span class="meta" id="knxMsg"></span>
+</div>
+<div class="knx-wrap"><table class="knx-tbl"><thead><tr><th title="senden">An</th><th>Messwert</th><th>Gruppenadresse</th><th>Datenpunkttyp</th></tr></thead>
+<tbody id="knxBody"></tbody></table></div>
+<p class="hint">Export: aktive Zeilen mit gültiger Adresse. Import: ETS → Gruppenadressen → Export (XML oder CSV).
+Zugeordnet wird über die Beschreibung <code>hit-sunspec-proxy:&lt;id&gt;</code> (steht in jedem Export), sonst über den Namen.
+Danach Speichern.</p>
+</div>
 </div>
 </form>
 <div class="row">
@@ -254,29 +269,192 @@ async function saveUiPrefs(){
 }
 </script>
 <script>
+const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
+let KNX_META=[];
 function dptOpts(kind,cur){
-  const m={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14033,'14.033 A'],[9001,'9.001']],Hz:[[14035,'14.035 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.019 kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
-  return (m[kind]||m.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
+  return (KNX_DPT[kind]||KNX_DPT.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
 }
+function knxGrp(id){
+  if(/^pv/.test(id))return 'PV';
+  if(/^(bat|soc|soh)/.test(id))return 'Batterie';
+  if(/^(grid|v\d|i\d|freq)/.test(id))return 'Netz';
+  if(/^e/.test(id))return 'Energie HIT';
+  if(/^tas/.test(id))return 'Tasmota-Zähler';
+  return 'Consolinno';
+}
+const knxEsc=s=>String(s??'').replace(/[&<>"']/g,x=>'&#'+x.charCodeAt(0)+';');
+function gaParse(s){const m=/^\s*(\d{1,2})\/(\d)\/(\d{1,3})\s*$/.exec(String(s||''));if(!m)return -1;
+  const a=+m[1],b=+m[2],c=+m[3];return(a>31||b>7||c>255)?-1:(a<<11)|(b<<8)|c;}
+const gaStr=n=>`${n>>11}/${(n>>8)&7}/${n&255}`;
+function knxEl(k,i){return document.querySelector(`#knxBody [data-knx=${k}][data-i="${i}"]`);}
 function renderKnx(meta,ch){
-  const box=document.getElementById('knxRows'); if(!box)return;
-  box.innerHTML=meta.map((m,i)=>{
-    const c=(ch&&ch[i])||{}; const dpt=c.dpt||m.dpt;
-    return `<div style="display:grid;grid-template-columns:28px minmax(120px,1.2fr) minmax(100px,.9fr) minmax(120px,.9fr);gap:6px;align-items:center">
-      <input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} title="aktivieren"/>
-      <span style="font-size:.82rem">${m.label}<br><span class="hint">${m.id}</span></span>
-      <input data-knx="g" data-i="${i}" type="text" inputmode="text" autocomplete="off" placeholder="GA z.B. 1/2/${10+i}" value="${c.ga||''}" title="Gruppenadresse manuell H/M/L"/>
-      <select data-knx="d" data-i="${i}" title="DPT">${dptOpts(m.kind,dpt)}</select></div>`;
-  }).join('');
+  KNX_META=meta;
+  const body=document.getElementById('knxBody'); if(!body)return;
+  let html='',last='',alt=false;
+  meta.forEach((m,i)=>{
+    const g=knxGrp(m.id);
+    if(g!==last){html+=`<tr class="grp"><td colspan="4">${knxEsc(g)}<span></span></td></tr>`;last=g;alt=false;}
+    const c=(ch&&ch[i])||{};
+    html+=`<tr data-row="${i}" class="${c.ena?'on':''}${alt?' alt':''}">
+      <td><input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} aria-label="${knxEsc(m.label)} senden"/></td>
+      <td class="knx-l">${knxEsc(m.label)}<small>${knxEsc(m.id)}</small></td>
+      <td><input data-knx="g" data-i="${i}" type="text" autocomplete="off" spellcheck="false" placeholder="z.B. 1/2/${10+i}" value="${knxEsc(c.ga)}" aria-label="Gruppenadresse ${knxEsc(m.label)}"/></td>
+      <td><select data-knx="d" data-i="${i}" aria-label="Datenpunkttyp ${knxEsc(m.label)}">${dptOpts(m.kind,c.dpt||m.dpt)}</select></td></tr>`;
+    alt=!alt;
+  });
+  body.innerHTML=html;
+  knxCheck();
 }
+// Markiert ungültige, fehlende und doppelte Adressen und zählt aktive Zeilen je Gruppe.
+function knxCheck(){
+  const rows=[...document.querySelectorAll('#knxBody tr[data-row]')];
+  const seen={};
+  rows.forEach(r=>{const n=gaParse(r.querySelector('[data-knx=g]').value);
+    if(n>=0&&r.querySelector('[data-knx=e]').checked)seen[n]=(seen[n]||0)+1;});
+  rows.forEach(r=>{
+    const e=r.querySelector('[data-knx=e]'),g=r.querySelector('[data-knx=g]');const v=g.value.trim(),n=gaParse(v);
+    r.classList.toggle('on',e.checked);
+    let msg='';
+    if(v&&n<0)msg='Ungültig, Format H/M/U (0-31/0-7/0-255)';
+    else if(e.checked&&!v)msg='Aktiv, aber ohne Gruppenadresse';
+    else if(e.checked&&seen[n]>1)msg='Adresse mehrfach vergeben';
+    g.classList.toggle('bad-ga',!!msg);g.title=msg||'Gruppenadresse H/M/U';
+  });
+  document.querySelectorAll('#knxBody tr.grp').forEach(gr=>{
+    let on=0,all=0;
+    for(let r=gr.nextElementSibling;r&&!r.classList.contains('grp');r=r.nextElementSibling){all++;if(r.classList.contains('on'))on++;}
+    gr.querySelector('span').textContent=`${on} von ${all} aktiv`;
+  });
+}
+{const kb=document.getElementById('knxBody');
+ if(kb)['input','change'].forEach(ev=>kb.addEventListener(ev,e=>{const t=e.target;
+   // erste gültige Adresse in einer leeren Zeile setzt den Haken einmalig mit
+   if(t.dataset.knx==='g'&&!t.defaultValue&&!t.dataset.auto&&gaParse(t.value)>=0){const cb=knxEl('e',t.dataset.i);if(cb&&!cb.checked)cb.checked=true;t.dataset.auto=1;}
+   knxCheck();}));}
 function collectKnx(){
-  const n=document.querySelectorAll('#knxRows [data-knx=e]').length; const out=[];
-  for(let i=0;i<n;i++){
-    const e=document.querySelector(`#knxRows [data-knx=e][data-i="${i}"]`);
-    const g=document.querySelector(`#knxRows [data-knx=g][data-i="${i}"]`);
-    const d=document.querySelector(`#knxRows [data-knx=d][data-i="${i}"]`);
-    out.push({ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0});
-  } return out;
+  return KNX_META.map((m,i)=>{const e=knxEl('e',i),g=knxEl('g',i),d=knxEl('d',i);
+    return {ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0};});
+}
+function knxMsg(t,ok){const m=document.getElementById('knxMsg');m.textContent=t;m.style.color=ok?'var(--acc)':'var(--fault)';}
+function dptEts(kind,dpt){return (kind==='EnergyKwh'&&dpt===14019)?'DPT-14':`DPST-${Math.floor(dpt/1000)}-${dpt%1000}`;}
+function knxDownload(name,text,type){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);
+}
+const KNX_TAG='hit-sunspec-proxy:';
+// Export im Format von ETS "Gruppenadressen exportieren" (XML ga-export/01 bzw. CSV 1/1)
+function knxExport(fmt){
+  const rows=collectKnx().map((c,i)=>({m:KNX_META[i],ena:c.ena,n:gaParse(c.ga),dpt:c.dpt}))
+    .filter(r=>r.ena&&r.n>=0).sort((a,b)=>a.n-b.n);
+  if(!rows.length){knxMsg('Keine aktive Zeile mit gültiger Gruppenadresse',false);return;}
+  const tree=new Map();
+  rows.forEach(r=>{const h=r.n>>11,mi=(r.n>>8)&7;if(!tree.has(h))tree.set(h,new Map());
+    const t=tree.get(h);if(!t.has(mi))t.set(mi,[]);t.get(mi).push(r);});
+  const midName=list=>{const g=new Set(list.map(r=>knxGrp(r.m.id)));return g.size===1?[...g][0]:'Messwerte';};
+  let out;
+  if(fmt==='xml'){
+    const x=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+    out='<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<GroupAddress-Export xmlns="http://knx.org/xml/ga-export/01">\n';
+    tree.forEach((mids,h)=>{
+      out+=`  <GroupRange Name="HIT-Proxy" RangeStart="${h<<11}" RangeEnd="${(h<<11)+2047}">\n`;
+      mids.forEach((list,mi)=>{const s=(h<<11)|(mi<<8);
+        out+=`    <GroupRange Name="${x(midName(list))}" RangeStart="${s}" RangeEnd="${s+255}">\n`;
+        list.forEach(r=>{out+=`      <GroupAddress Name="${x(r.m.label)}" Address="${gaStr(r.n)}" Description="${x(KNX_TAG+r.m.id)}" DPTs="${dptEts(r.m.kind,r.dpt)}" />\n`;});
+        out+='    </GroupRange>\n';});
+      out+='  </GroupRange>\n';});
+    out+='</GroupAddress-Export>\n';
+    knxDownload('hit-proxy-knx.xml',out,'application/xml');
+  }else{
+    const line=a=>a.map(s=>'"'+String(s).replace(/"/g,'""')+'"').join(';')+'\r\n';
+    out='\ufeff'+line(['Group name','Address','Central','Unfiltered','Description','DatapointType','Security']);
+    tree.forEach((mids,h)=>{out+=line(['HIT-Proxy',`${h}/-/-`,'','','','','Auto']);
+      mids.forEach((list,mi)=>{out+=line([midName(list),`${h}/${mi}/-`,'','','','','Auto']);
+        list.forEach(r=>{out+=line([r.m.label,gaStr(r.n),'','',KNX_TAG+r.m.id,dptEts(r.m.kind,r.dpt),'Auto']);});});});
+    knxDownload('hit-proxy-knx.csv',out,'text/csv');
+  }
+  knxMsg(rows.length+' Adressen exportiert',true);
+}
+function knxDecode(buf){
+  const u=new Uint8Array(buf);
+  if(u[0]===0xFF&&u[1]===0xFE)return new TextDecoder('utf-16le').decode(buf);
+  if(u[0]===0xFE&&u[1]===0xFF)return new TextDecoder('utf-16be').decode(buf);
+  try{return new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){return new TextDecoder('windows-1252').decode(buf);}
+}
+function knxParseXml(t){
+  const d=new DOMParser().parseFromString(t,'application/xml');
+  if(d.getElementsByTagName('parsererror').length)throw new Error('kein gültiges XML');
+  return [...d.getElementsByTagName('GroupAddress')].map(g=>{
+    let a=g.getAttribute('Address')||'';
+    if(/^\d+$/.test(a))a=gaStr(+a&0xFFFF); // .knxproj speichert die Adresse als Zahl
+    return {name:g.getAttribute('Name')||'',addr:a,desc:g.getAttribute('Description')||'',
+      dpt:g.getAttribute('DPTs')||g.getAttribute('DatapointType')||''};
+  });
+}
+function knxCsvRows(t){
+  const first=t.split(/\r?\n/,1)[0];
+  const sep=[';','\t',','].map(s=>[s,first.split(s).length]).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else if(c==='"')q=true;
+    else if(c===sep){row.push(f);f='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f='';}
+    else f+=c;}
+  if(f||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+function knxParseCsv(t){
+  const rows=knxCsvRows(t).filter(r=>r.some(c=>c.trim()));
+  if(!rows.length)return [];
+  const isGa=s=>gaParse(s)>=0;
+  const hdr=rows[0].some(isGa)?null:rows.shift().map(h=>h.trim().toLowerCase());
+  const col=re=>hdr?hdr.findIndex(h=>re.test(h)):-1;
+  const ai=col(/^(address|adresse)$/),ni=col(/^(group name|name|sub|gruppenname|untergruppe)$/),
+        di=col(/descr|beschreib/),pi=col(/datapoint|dpt|datenpunkt/);
+  return rows.map(r=>{
+    const a=ai>=0?r[ai]:r.find(isGa);if(!a||!isGa(a))return null;
+    const idx=ai>=0?ai:r.indexOf(a);
+    let name=ni>=0?(r[ni]||''):'';
+    if(!name.trim())name=r.slice(0,idx).reverse().find(c=>c.trim())||'';
+    return {name:name.trim(),addr:a.trim(),desc:di>=0?(r[di]||''):'',dpt:pi>=0?(r[pi]||''):''};
+  }).filter(Boolean);
+}
+// "DPST-14-56", "DPT-14", "14.056" -> passende Option für die Messgröße, sonst 0 (unverändert)
+function knxPickDpt(kind,s){
+  s=String(s||'').trim().split(/[,\s]+/)[0];
+  let main=-1,dpt=0,m;
+  if((m=/^DPST-(\d+)-(\d+)$/i.exec(s)||/^(\d+)\.(\d+)$/.exec(s))){main=+m[1];dpt=main*1000+(+m[2]);}
+  else if((m=/^DPT-(\d+)$/i.exec(s))){main=+m[1];}
+  else return 0;
+  const opts=(KNX_DPT[kind]||[]).map(o=>o[0]);
+  if(dpt&&opts.includes(dpt))return dpt;
+  const same=opts.filter(v=>Math.floor(v/1000)===main);
+  return same.length===1?same[0]:0;
+}
+async function knxImport(inp){
+  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
+  let list;
+  try{const t=knxDecode(await f.arrayBuffer());list=/^\s*</.test(t)?knxParseXml(t):knxParseCsv(t);}
+  catch(e){knxMsg('Datei nicht lesbar: '+e.message,false);return;}
+  if(!list.length){knxMsg('Keine Gruppenadressen in der Datei gefunden',false);return;}
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9äöüß%]+/g,'');
+  const byId=new Map(KNX_META.map((m,i)=>[m.id,i])),byName=new Map(KNX_META.map((m,i)=>[norm(m.label),i]));
+  const done=new Set();let miss=0;
+  list.forEach(g=>{
+    const tm=/hit-sunspec-proxy:([a-z0-9_]+)/i.exec(g.desc);
+    let i=tm?byId.get(tm[1].toLowerCase()):undefined;
+    if(i===undefined)i=byName.get(norm(g.name));
+    if(i===undefined)i=byId.get(g.name.trim().toLowerCase());
+    const n=gaParse(g.addr);
+    if(i===undefined||n<0){miss++;return;}
+    knxEl('g',i).value=gaStr(n);knxEl('e',i).checked=true;
+    const d=knxPickDpt(KNX_META[i].kind,g.dpt);if(d)knxEl('d',i).value=String(d);
+    done.add(i);
+  });
+  done.forEach(i=>{const r=knxEl('e',i).closest('tr');r.classList.remove('imp');void r.offsetWidth;r.classList.add('imp');});
+  knxCheck();
+  if(!done.size){knxMsg(`Keine der ${list.length} Adressen passt zu einem Messwert`,false);return;}
+  knxMsg(`${done.size} Messwerte zugeordnet`+(miss?`, ${miss} Adressen ohne Zuordnung`:'')+'. Zum Übernehmen Speichern.',true);
 }
 function route(){
   const cards=[...document.querySelectorAll('#f > .card')];
@@ -356,18 +534,25 @@ async function newCode(){
   if(r&&r.ok)location.reload();
 }
 async function applyCtrl(){
-  const f=document.getElementById('f');
   await save();
-  const r=await(await fetch('/api/control/apply',{method:'POST'})).json();
-  alert(r.ok?'An HIT geschrieben':('Fehler: '+(r.error||'?')));
+  const start=await(await fetch('/api/control/apply',{method:'POST'})).json();
+  let r=start;
+  for(let i=0;i<40&&(r.pending||!r.done);i++){await new Promise(x=>setTimeout(x,250));r=await(await fetch('/api/control/result')).json();}
+  alert(r.ok?'An HIT geschrieben':('Fehler: '+(r.error||'timeout')));
 }
 async function probeTas(){
   const f=document.getElementById('f');
   const body={tasmotaHost:f.tasmotaHost.value,tasmotaPort:Number(f.tasmotaPort.value),
     tasmotaUser:f.tasmotaUser.value,tasmotaPass:f.tasmotaPass.value};
-  const r=await(await fetch('/api/tasmota/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
   document.getElementById('probeBox').style.display='block';
-  document.getElementById('probeSum').textContent=r.summary|| (r.ok?'OK':'Fehler');
+  document.getElementById('probeSum').textContent='lese…';
+  document.getElementById('probeSum').style.color='var(--dim)';
+  document.getElementById('probeRaw').textContent='';
+  const start=await(await fetch('/api/tasmota/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
+  if(!start.pending&&!start.ok){document.getElementById('probeSum').textContent=start.summary||'Fehler';document.getElementById('probeSum').style.color='var(--fault)';return;}
+  let r=start;
+  for(let i=0;i<40&&r.pending;i++){await new Promise(x=>setTimeout(x,250));r=await(await fetch('/api/tasmota/probe/result')).json();}
+  document.getElementById('probeSum').textContent=r.summary||(r.ok?'OK':'Fehler');
   document.getElementById('probeSum').style.color=r.ok?'var(--acc)':'var(--fault)';
   document.getElementById('probeRaw').textContent=r.raw||'';
   if(r.ok){f.tasmotaEnabled.checked=true;refresh();}
