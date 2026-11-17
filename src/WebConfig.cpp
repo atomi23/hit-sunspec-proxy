@@ -25,6 +25,21 @@
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
 
+// Board für Status und Funktionsauswahl (Display gibt es nur auf dem T-Connect-Pro)
+#if defined(BOARD_T_CONNECT_PRO)
+#define BOARD_NAME "T-Connect-Pro"
+#define BOARD_HAS_DISPLAY true
+#elif defined(BOARD_WT32_ETH01)
+#define BOARD_NAME "WT32-ETH01"
+#define BOARD_HAS_DISPLAY false
+#elif defined(BOARD_T_POE_PRO)
+#define BOARD_NAME "T-POE-Pro"
+#define BOARD_HAS_DISPLAY false
+#else
+#define BOARD_NAME "ESP32"
+#define BOARD_HAS_DISPLAY false
+#endif
+
 namespace {
 AsyncWebServer server(80);
 
@@ -78,6 +93,7 @@ a{color:var(--acc)}
 .side nav a:hover{color:var(--ink);background:rgba(255,255,255,.04)}
 .side nav a.on{color:var(--ink);background:var(--plate2)}
 .side nav a svg{width:18px;height:18px;flex-shrink:0}
+.side nav a.hide{display:none}
 .side nav a.on svg{color:var(--acc)}
 .side .foot{margin-top:auto;padding:14px 10px 0}
 .side .foot .online{display:flex;align-items:center;gap:8px;font-size:13px}
@@ -201,6 +217,7 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 .cfg .card label{break-after:avoid}
 .cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
 .cfg #knxRows,.cfg #probeBox,.cfg #tlsBox{column-span:all}
+.cfg #features.show{columns:auto}
 textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--well);color:var(--ink);
   font:400 12px/1.4 ui-monospace,Consolas,monospace;resize:vertical}
 textarea:focus{border-color:var(--acc);outline:none}
@@ -269,6 +286,7 @@ const char DASH_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
     <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
@@ -312,10 +330,12 @@ const char DASH_HTML[] PROGMEM = R"HTML(
   <path id="fBat" class="run c-bt" d="M344 310C400 310 400 228 436 228"/>
   <path id="fGrid" class="run c-gr" d="M524 192C560 192 560 110 616 110"/>
   <path id="fHouse" class="run c-ho" d="M524 228C560 228 560 310 616 310"/>
+  <g id="hemsG">
   <path id="wData" class="data" d="M480 64V166"/>
 
   <rect id="hemsBox" class="chipbox" x="370" y="24" width="220" height="40" rx="20"/>
   <text x="480" y="49" text-anchor="middle" class="lbl"><tspan style="fill:var(--ink)">Consolinno</tspan><tspan dx="8" id="hemsTxt">wartet</tspan></text>
+  </g>
 
   <rect class="hub" x="436" y="166" width="88" height="88" rx="26"/>
   <path class="hub-i" d="M462 194h36M462 201h36" style="stroke-dasharray:6 4"/>
@@ -395,6 +415,13 @@ const I18N={
  en:{live:'Live',settings:'Settings',proto:'Log'}
 };
 let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
@@ -403,6 +430,7 @@ function applyThemeLang(s){
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
   const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -484,12 +512,16 @@ async function refresh(){
   $('hemsTxt').textContent=s.sunspecClient?T('hemsOk'):T('hemsWait');
   $('wData').classList.toggle('live',!!s.sunspecClient);
   $('hemsBox').classList.toggle('live',!!s.sunspecClient);
+  const F=s.features||{};
+  $('hemsG').style.display=F.sunspec===false?'none':'';
 
   const src={NATIVE:T('srcN'),MQTT:T('srcM'),CLOUD:T('srcC'),DEMO:T('srcD')}[s.dataOrigin]||T('srcX');
   const opt=ok=>ok?'on':'idle';
-  $('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+chip(opt(s.sunspecClient),T('hems'))+
-    chip((s.ethOk||s.wifiOk)?'on':'off',T('net'))+chip(opt(s.mqttOk),'MQTT')+chip(opt(s.mqttIngestOk),T('mqin'))+
-    chip(opt(s.cloudOk),'Cloud')+chip(opt(s.knxOk),'KNX')+
+  // nur Dienste zeigen, die gewählt sind
+  const fc=(on,html)=>on===false?'':html;
+  $('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+fc(F.sunspec,chip(opt(s.sunspecClient),T('hems')))+
+    chip((s.ethOk||s.wifiOk)?'on':'off',T('net'))+fc(F.mqtt,chip(opt(s.mqttOk),'MQTT')+chip(opt(s.mqttIngestOk),T('mqin')))+
+    fc(F.cloud,chip(opt(s.cloudOk),'Cloud'))+fc(F.knx,chip(opt(s.knxOk),'KNX'))+
     (s.gatewayEnabled?chip(opt(s.gatewayClients>0),'Gateway'+(s.gatewayClients?' ('+s.gatewayClients+')':'')):'')+
     `<span class="chip">${T('src')}: <b style="color:var(--ink);font-weight:600">${src}</b></span>`;
 
@@ -568,6 +600,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
     <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
@@ -623,6 +656,13 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
 <script>
 const I18N={de:{},en:{}};
 let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
@@ -631,6 +671,7 @@ function applyThemeLang(s){
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
   const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -813,6 +854,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
     <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
@@ -846,6 +888,9 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 </div>
 <form id="f" class="cfg">
 <div class="card" id="hit" data-sub="Pflicht. Von hier kommen alle Messwerte."><strong>HIT-Wechselrichter</strong>
+<label>Wechselrichter</label>
+<select name="inverterType"><option value="0">Hoymiles HIT</option></select>
+<p class="hint">Weitere Hersteller sind vorbereitet und folgen.</p>
 <label>Verbindung</label>
 <select name="hitMode"><option value="0">TCP (Modbus TCP)</option><option value="1">Kabel RS485 (RTU)</option></select>
 <label>HIT IP / Host</label><input name="hitHost" placeholder="192.0.2.50"/>
@@ -860,10 +905,21 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <button class="sec" type="button" onclick="poll()" style="margin-top:16px">HIT jetzt abfragen</button>
 </div>
 <div class="card" id="sunspec" data-sub="Consolinno liest den Proxy als SunSpec-Wechselrichter über Modbus TCP."><strong>Consolinno</strong>
+<label><input name="sunspecEnabled" type="checkbox"/> aktiv (SunSpec-Server für das HEMS)</label>
 <label>Modbus-Port</label><input name="sunspecPort" type="number"/>
 <label>Unit-ID</label><input name="sunspecUnitId" type="number"/>
 <label><input name="invertPowerSign" type="checkbox"/> Vorzeichen der Leistung umkehren</label>
 <p class="hint">In Consolinno als SunSpec-Gerät eintragen: IP vom Display, Port 1502, Unit-ID 1. Die Registerkarte liegt ab Adresse 0, 40000 und 50000.</p>
+</div>
+<div class="card" id="features" data-sub="Welche Dienste das Gerät anbietet. Abgewählte bleiben aus und verschwinden aus dem Menü."><strong>Funktionen</strong>
+<p class="hint" id="featBoard" style="margin-top:0"></p>
+<label><input type="checkbox" data-feat="sunspecEnabled"/> <span><b>Consolinno / SunSpec</b>: HIT als SunSpec-Wechselrichter fürs HEMS</span></label>
+<label><input type="checkbox" data-feat="gatewayEnabled"/> <span><b>Modbus-Gateway</b>: andere Programme lesen den HIT über den ESP</span></label>
+<label><input type="checkbox" data-feat="mqttEnabled"/> <span><b>Home Assistant</b>: Messwerte per MQTT mit Discovery</span></label>
+<label><input type="checkbox" data-feat="knxEnabled"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
+<label><input type="checkbox" data-feat="tasmotaEnabled"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
+<label><input type="checkbox" data-feat="cloudEnabled"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
+<p class="hint">Die Einstellungen eines Dienstes stehen in seinem Menüpunkt. Speichern übernimmt die Auswahl ohne Neustart.</p>
 </div>
 <div class="card" id="netz" data-sub="Verbindung ins Heimnetz und Anmeldung an dieser Oberfläche."><strong>Netzwerk und Zugang</strong>
 <label>Gerätename</label><input name="deviceName"/>
@@ -1024,6 +1080,13 @@ const I18N={
      online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
 };
 let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
@@ -1032,6 +1095,7 @@ function applyThemeLang(s){
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
   const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -1227,6 +1291,27 @@ async function knxImport(inp){
   if(!done.size){knxMsg(`Keine der ${list.length} Adressen passt zu einem Messwert`,false);return;}
   knxMsg(`${done.size} Messwerte zugeordnet`+(miss?`, ${miss} Adressen ohne Zuordnung`:'')+'. Zum Übernehmen Speichern.',true);
 }
+// Funktionen: Spiegel der "aktiv"-Schalter der einzelnen Dienste; das Menü folgt dem Formular
+window.NAV_FROM_FORM=true;
+let CFG_LOADED=false,HAS_DISPLAY=true;
+const FEAT_KEY={sunspecEnabled:'sunspec',gatewayEnabled:'gateway',mqttEnabled:'mqtt',knxEnabled:'knx',tasmotaEnabled:'tasmota',cloudEnabled:'cloud'};
+function formFeat(){
+  const f=document.getElementById('f');const g=n=>{const e=f.elements.namedItem(n);return !!(e&&e.checked);};
+  return {sunspec:g('sunspecEnabled'),gateway:g('gatewayEnabled'),mqtt:g('mqttEnabled')||g('mqttIngestEnabled'),
+    knx:g('knxEnabled'),tasmota:g('tasmotaEnabled'),cloud:g('cloudEnabled')};
+}
+function syncFeat(){
+  const F=formFeat();
+  document.querySelectorAll('[data-feat]').forEach(cb=>{cb.checked=F[FEAT_KEY[cb.dataset.feat]];});
+  navFeat(F,HAS_DISPLAY);
+}
+document.querySelectorAll('[data-feat]').forEach(cb=>cb.addEventListener('change',()=>{
+  const f=document.getElementById('f'),k=cb.dataset.feat;
+  f.elements.namedItem(k).checked=cb.checked;
+  if(k==='mqttEnabled'&&!cb.checked){const i=f.elements.namedItem('mqttIngestEnabled');if(i)i.checked=false;}
+  syncFeat();
+}));
+document.getElementById('f').addEventListener('change',e=>{if(e.target.name&&CFG_LOADED)syncFeat();});
 function route(){
   const cards=[...document.querySelectorAll('#f > .card')];
   const id=location.hash.slice(1);
@@ -1262,7 +1347,7 @@ async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); refresh(); route(); loadTls();
+  renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls();
 }
 async function loadTls(){
   const t=await fetch('/api/tls').then(r=>r.json()).catch(()=>null);const tb=document.getElementById('tlsInfo');if(!tb)return;
@@ -1330,8 +1415,11 @@ async function probeTas(){
 }
 async function refresh(){const s=await(await fetch('/api/status')).json();
 applyThemeLang(s);
+HAS_DISPLAY=s.hasDisplay!==false;
+const fb=document.getElementById('featBoard');if(fb)fb.textContent='Board: '+(s.board||'-')+', Wechselrichter: Hoymiles HIT';
+if(CFG_LOADED)syncFeat();
 const chip=(st,l)=>`<span class="chip ${st}"><span class="dot"></span>${l}</span>`;
-document.getElementById('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+chip(s.sunspecClient?'on':'idle','Consolinno')+
+document.getElementById('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+((s.features||{}).sunspec===false?'':chip(s.sunspecClient?'on':'idle','Consolinno'))+
   chip((s.ethOk||s.wifiOk)?'on':'off',s.ipShown||'-')+(s.demoMode?'<span class="tag" style="margin:0;vertical-align:0">Demo</span>':'');}
 async function boot(){const s=await(await fetch('/api/status')).json();if(s.setupComplete===false)location.href='/setup';else load();}
 boot();setInterval(()=>{if(document.hidden)return;refresh();},5000);
@@ -1350,51 +1438,68 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
   <div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy · Einrichtung</span></div>
 </div>
 <h1>Einrichtung</h1>
-<p class="sub">Hoymiles HIT → dieser Proxy → Consolinno</p>
-<div class="stepper" id="stepLabels">
-  <span>Willkommen</span><span>Zugang</span><span>HIT</span><span>Consolinno</span><span>Fertig</span>
-</div>
-<div class="steps" id="bar"><i></i><i></i><i></i><i></i><i></i></div>
+<p class="sub">Hoymiles HIT → dieser Proxy → Consolinno, Home Assistant, KNX …</p>
+<div class="stepper" id="stepLabels"></div>
+<div class="steps" id="bar"></div>
 
-<div class="card" id="s0">
-<span class="pill">Schritt 1 / 5</span>
+<div class="card" id="s0" data-label="Willkommen">
+<span class="pill"></span>
 <strong style="margin-top:10px">Willkommen</strong>
-<p class="hint">Nach der Einrichtung pollt der Proxy den HIT und stellt SunSpec auf Port <code>1502</code> bereit. Consolinno spricht nur noch diesen Proxy an.</p>
+<p class="hint">Der Proxy hält die einzige Verbindung zum Wechselrichter und verteilt die Werte: als SunSpec-Wechselrichter
+an Consolinno, an Home Assistant, KNX oder andere Modbus-Programme. Welche Dienste laufen, wählst du gleich aus.</p>
 <ul>
-<li>Display zeigt die Proxy-IP (Ethernet bevorzugt)</li>
-<li>HA/MQTT optional — nicht nötig für Consolinno</li>
+<li>Display zeigt die Proxy-IP (Ethernet bevorzugt), falls das Board eines hat</li>
+<li>Alles lässt sich später unter Einstellungen ändern</li>
 </ul>
-<div class="row"><button type="button" onclick="go(1)">Weiter</button></div>
+<div class="row"><button type="button" onclick="next()">Weiter</button></div>
 </div>
 
-<div class="card hide" id="s1">
-<span class="pill">Schritt 2 / 5</span>
+<div class="card hide" id="s1" data-label="Zugang">
+<span class="pill"></span>
 <strong style="margin-top:10px">Zugang</strong>
 <p class="hint">Display-Code (Login-Fallback, auf dem Display):</p>
 <div class="ip" id="dcode">…</div>
 <label>Web-User</label><input id="webUser" value="admin"/>
 <label>Eigenes Web-Passwort (gemerkt)</label><input id="webPass" type="password" placeholder="empfohlen"/>
 <p class="hint">Login danach: User + Passwort <b>oder</b> Display-Code.</p>
-<div class="row"><button class="sec" type="button" onclick="go(0)">Zurück</button><button type="button" onclick="go(2)">Weiter</button></div>
+<div class="row"><button class="sec" type="button" onclick="back()">Zurück</button><button type="button" onclick="next()">Weiter</button></div>
 </div>
 
-<div class="card hide" id="s2">
-<span class="pill">Schritt 3 / 5</span>
-<strong style="margin-top:10px">Hoymiles HIT</strong>
-<label><input id="demoMode" type="checkbox"/> Erst nur Demo (Fake-Daten, kein HIT)</label>
-<label>HIT IP</label><input id="hitHost" placeholder="z.B. 192.168.x.x"/>
+<div class="card hide" id="s2" data-label="Funktionen">
+<span class="pill"></span>
+<strong style="margin-top:10px">Was soll das Gerät tun?</strong>
+<p class="hint" id="boardInfo"></p>
+<label><input id="w_sunspec" type="checkbox"/> <span><b>Consolinno / SunSpec</b>: HIT als SunSpec-Wechselrichter fürs HEMS (Port 1502)</span></label>
+<label><input id="w_gateway" type="checkbox"/> <span><b>Modbus-Gateway</b>: andere Programme lesen den HIT über den ESP</span></label>
+<label><input id="w_mqtt" type="checkbox"/> <span><b>Home Assistant</b>: Messwerte per MQTT mit Discovery</span></label>
+<label><input id="w_knx" type="checkbox"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
+<label><input id="w_tasmota" type="checkbox"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
+<label><input id="w_cloud" type="checkbox"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
+<p class="hint">Abgewählte Dienste starten nicht und erscheinen nicht im Menü. Unter Einstellungen, Funktionen lassen sie sich jederzeit einschalten.</p>
+<div class="row"><button class="sec" type="button" onclick="back()">Zurück</button><button type="button" onclick="next()">Weiter</button></div>
+<p class="hint" id="featMsg"></p>
+</div>
+
+<div class="card hide" id="s3" data-label="Wechselrichter">
+<span class="pill"></span>
+<strong style="margin-top:10px">Wechselrichter</strong>
+<label>Hersteller / Modell</label>
+<select id="inverterType"><option value="0">Hoymiles HIT</option></select>
+<p class="hint">Weitere Hersteller sind vorbereitet und folgen.</p>
+<label><input id="demoMode" type="checkbox"/> Erst nur Demo (Fake-Daten, kein Wechselrichter)</label>
+<label>IP-Adresse</label><input id="hitHost" placeholder="z.B. 192.168.x.x"/>
 <label>Port</label><input id="hitPort" type="number" value="502"/>
 <label>Unit-ID</label><input id="hitUnitId" type="number" value="1"/>
 <div class="row">
-<button class="sec" type="button" onclick="go(1)">Zurück</button>
-<button class="sec" type="button" onclick="testHit()">HIT testen</button>
-<button type="button" onclick="go(3)">Weiter</button>
+<button class="sec" type="button" onclick="back()">Zurück</button>
+<button class="sec" type="button" onclick="testHit()">Verbindung testen</button>
+<button type="button" onclick="next()">Weiter</button>
 </div>
 <p class="hint" id="hitMsg"></p>
 </div>
 
-<div class="card hide" id="s3">
-<span class="pill">Schritt 4 / 5</span>
+<div class="card hide" id="s4" data-label="Consolinno">
+<span class="pill"></span>
 <strong style="margin-top:10px">Consolinno anbinden</strong>
 <p class="hint">In der Consolinno-App „Fronius Hybrid (SunSpec)“ oder „SunSpec Generic“ wählen.
 IP = diese Proxy-Adresse, Port = <b>1502</b> (SunSpec). Automatischer Scan auf 502 findet den Proxy nur, wenn SunSpec dort lauscht — Standard hier ist 1502.</p>
@@ -1404,54 +1509,78 @@ IP = diese Proxy-Adresse, Port = <b>1502</b> (SunSpec). Automatischer Scan auf 5
 <li>Unit / Slave = <code>1</code></li>
 </ul>
 <p class="hint">Den HIT nicht zusätzlich direkt in Consolinno eintragen. Modbus-Gateway (:502) dann auslassen oder auf einen anderen Port legen.</p>
-<div class="row"><button class="sec" type="button" onclick="go(2)">Zurück</button><button type="button" onclick="go(4)">Weiter</button></div>
+<div class="row"><button class="sec" type="button" onclick="back()">Zurück</button><button type="button" onclick="next()">Weiter</button></div>
 </div>
 
-<div class="card hide" id="s4">
-<span class="pill">Schritt 5 / 5</span>
+<div class="card hide" id="s5" data-label="Fertig">
+<span class="pill"></span>
 <strong style="margin-top:10px">Fertig — autark</strong>
-<p class="hint">Speichern schaltet den Setup-Screen am Display aus. Der Proxy läuft dann dauerhaft HIT ↔ Consolinno.</p>
-<ul>
-<li>Optional später: MQTT, Tasmota, OTA unter der normalen Config</li>
-<li>Assistent erneut: Config → „Setup abgeschlossen“ aus</li>
-</ul>
+<p class="hint">Speichern schaltet den Setup-Screen am Display aus. Danach laufen diese Dienste:</p>
+<ul id="sumList"></ul>
+<p class="hint" id="sumTodo"></p>
 <div class="row">
-<button class="sec" type="button" onclick="go(3)">Zurück</button>
+<button class="sec" type="button" onclick="back()">Zurück</button>
 <button type="button" onclick="finish()">Einrichtung abschließen</button>
 </div>
 <p class="hint" id="finMsg"></p>
 </div>
 </div>
 <script>
+const FEATS=[['sunspec','sunspecEnabled','Consolinno / SunSpec','Consolinno'],['gateway','gatewayEnabled','Modbus-Gateway','Modbus-Gateway'],
+  ['mqtt','mqttEnabled','Home Assistant (MQTT)','Home Assistant'],['knx','knxEnabled','KNX','KNX'],
+  ['tasmota','tasmotaEnabled','Tasmota-Zähler','Tasmota-Zähler'],['cloud','cloudEnabled','Hoymiles-Cloud','Hoymiles-Cloud']];
+const $w=id=>document.getElementById(id);
+const feat=k=>$w('w_'+k).checked;
+// Consolinno-Schritt nur, wenn SunSpec gewählt ist
+const visible=()=>[0,1,2,3,4,5].filter(i=>i!==4||feat('sunspec'));
 let step=0;
 function paint(){
-  for(let i=0;i<5;i++){
-    document.getElementById('s'+i).classList.toggle('hide',i!==step);
-    document.querySelectorAll('#bar i')[i].classList.toggle('on',i<=step);
-    const lab=document.querySelectorAll('#stepLabels span')[i];
-    lab.classList.toggle('on',i===step); lab.classList.toggle('done',i<step);
+  const vis=visible();
+  if(!vis.includes(step))step=vis[vis.length-1];
+  const pos=vis.indexOf(step);
+  $w('stepLabels').innerHTML=vis.map((i,n)=>`<span class="${n===pos?'on':(n<pos?'done':'')}">${$w('s'+i).dataset.label}</span>`).join('');
+  $w('bar').innerHTML=vis.map((i,n)=>`<i class="${n<=pos?'on':''}"></i>`).join('');
+  for(let i=0;i<6;i++){
+    const c=$w('s'+i);c.classList.toggle('hide',i!==step);
+    c.querySelector('.pill').textContent='Schritt '+(vis.indexOf(i)+1)+' / '+vis.length;
   }
+  if(step===5)summary();
 }
-function go(n){step=n;paint();}
+function next(){
+  if(step===2&&!FEATS.some(([k])=>feat(k))){$w('featMsg').innerHTML='<span class="bad">Mindestens eine Funktion wählen</span>';return;}
+  $w('featMsg').textContent='';
+  const vis=visible();step=vis[Math.min(vis.indexOf(step)+1,vis.length-1)];paint();
+}
+function back(){const vis=visible();step=vis[Math.max(vis.indexOf(step)-1,0)];paint();}
+function summary(){
+  const on=FEATS.filter(([k])=>feat(k));
+  $w('sumList').innerHTML=on.map(([,,l])=>`<li>${l}</li>`).join('');
+  const todo=on.filter(([k])=>k!=='sunspec').map(([,,,m])=>m);
+  $w('sumTodo').textContent=todo.length?('Danach unter Einstellungen einrichten: '+todo.join(', ')+'.'):'';
+}
 async function boot(){
   const [c,s]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/status').then(r=>r.json())]);
   if(c.setupComplete){location.href='/';return;}
-  document.getElementById('dcode').textContent=c.displayCode||c.wifiPass||'—';
-  document.getElementById('webUser').value=c.webUser||'admin';
-  document.getElementById('hitHost').value=(c.hitHost&&!c.hitHost.startsWith('192.0.2'))?c.hitHost:'';
-  document.getElementById('hitPort').value=c.hitPort||502;
-  document.getElementById('hitUnitId').value=c.hitUnitId||1;
-  document.getElementById('demoMode').checked=!!c.demoMode;
-  document.getElementById('proxyIp').textContent=s.ipShown||'—';
-  document.getElementById('ssPort').textContent=c.sunspecPort||1502;
+  $w('dcode').textContent=c.displayCode||c.wifiPass||'—';
+  $w('webUser').value=c.webUser||'admin';
+  $w('hitHost').value=(c.hitHost&&!c.hitHost.startsWith('192.0.2'))?c.hitHost:'';
+  $w('hitPort').value=c.hitPort||502;
+  $w('hitUnitId').value=c.hitUnitId||1;
+  $w('inverterType').value=String(c.inverterType||0);
+  $w('demoMode').checked=!!c.demoMode;
+  $w('proxyIp').textContent=s.ipShown||'—';
+  $w('ssPort').textContent=c.sunspecPort||1502;
+  $w('boardInfo').textContent='Board: '+(s.board||'-')+(s.hasDisplay?', mit Display':', ohne Display');
+  for(const [k,key] of FEATS)$w('w_'+k).checked=key==='mqttEnabled'?!!(c.mqttEnabled||c.mqttIngestEnabled):!!c[key];
+  FEATS.forEach(([k])=>$w('w_'+k).addEventListener('change',paint));
   paint();
 }
 async function testHit(){
-  const msg=document.getElementById('hitMsg');
-  if(document.getElementById('demoMode').checked){msg.innerHTML='<span class="ok">Demo gewählt — HIT-Test übersprungen.</span>';return;}
-  const body={hitHost:document.getElementById('hitHost').value.trim(),hitPort:Number(document.getElementById('hitPort').value),
-    hitUnitId:Number(document.getElementById('hitUnitId').value),demoMode:false,hitMode:0,setupComplete:false};
-  if(!body.hitHost){msg.innerHTML='<span class="bad">HIT-IP fehlt</span>';return;}
+  const msg=$w('hitMsg');
+  if($w('demoMode').checked){msg.innerHTML='<span class="ok">Demo gewählt — Test übersprungen.</span>';return;}
+  const body={hitHost:$w('hitHost').value.trim(),hitPort:Number($w('hitPort').value),
+    hitUnitId:Number($w('hitUnitId').value),inverterType:Number($w('inverterType').value),demoMode:false,hitMode:0,setupComplete:false};
+  if(!body.hitHost){msg.innerHTML='<span class="bad">IP-Adresse fehlt</span>';return;}
   msg.textContent='Speichern & pollen…';
   const s0=await(await fetch('/api/status')).json();
   await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -1459,31 +1588,34 @@ async function testHit(){
   // die Abfrage läuft im Hintergrund; auf ihr Ergebnis warten (max. ~15 s)
   let s=s0;
   for(let i=0;i<30;i++){await new Promise(x=>setTimeout(x,500));s=await(await fetch('/api/status')).json();if(s.hitPollsDone>s0.hitPollsDone)break;}
-  msg.innerHTML=s.hitOk?('<span class="ok">HIT ok — '+s.pvW+' W PV, SoC '+s.soc+' %</span>'):('<span class="bad">Kein HIT — IP/Netz prüfen ('+(s.status||'')+')</span>');
+  msg.innerHTML=s.hitOk?('<span class="ok">Wechselrichter ok — '+s.pvW+' W PV, SoC '+s.soc+' %</span>'):('<span class="bad">Keine Antwort — IP/Netz prüfen ('+(s.status||'')+')</span>');
 }
 async function finish(){
-  const fin=document.getElementById('finMsg'); fin.textContent='Speichere…';
+  const fin=$w('finMsg'); fin.textContent='Speichere…';
   const body={
-    webUser:document.getElementById('webUser').value.trim()||'admin',
-    webPass:document.getElementById('webPass').value,
-    hitHost:document.getElementById('hitHost').value.trim(),
-    hitPort:Number(document.getElementById('hitPort').value)||502,
-    hitUnitId:Number(document.getElementById('hitUnitId').value)||1,
+    webUser:$w('webUser').value.trim()||'admin',
+    webPass:$w('webPass').value,
+    inverterType:Number($w('inverterType').value)||0,
+    hitHost:$w('hitHost').value.trim(),
+    hitPort:Number($w('hitPort').value)||502,
+    hitUnitId:Number($w('hitUnitId').value)||1,
     hitMode:0,
-    demoMode:document.getElementById('demoMode').checked,
+    demoMode:$w('demoMode').checked,
     sunspecPort:1502,sunspecUnitId:1,
     setupComplete:true,wifiApMode:false
   };
-  if(!body.demoMode && !body.hitHost){fin.innerHTML='<span class="bad">HIT-IP oder Demo nötig</span>';go(2);return;}
+  for(const [k,key] of FEATS)body[key]=feat(k);
+  if(!feat('mqtt'))body.mqttIngestEnabled=false;
+  if(!body.demoMode && !body.hitHost){fin.innerHTML='<span class="bad">IP-Adresse oder Demo nötig</span>';step=3;paint();return;}
   const r=await(await fetch('/api/setup/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
   if(!r.ok){fin.innerHTML='<span class="bad">'+(r.error||'Fehler')+'</span>';return;}
   const host=(location.hostname==='192.168.4.1'&&r.ip&&r.ip!=='-')?r.ip:location.hostname;
-  const next=r.https?`https://${host}/`:(host===location.hostname?'/':`http://${host}/`);
+  const dest=r.https?`https://${host}/`:(host===location.hostname?'/':`http://${host}/`);
   fin.innerHTML=r.https
-    ?`<span class="ok">Fertig.</span> Weiter über HTTPS: <a href="${next}">${next}</a><br>`+
+    ?`<span class="ok">Fertig.</span> Weiter über HTTPS: <a href="${dest}">${dest}</a><br>`+
      `<span class="muted">Der Browser warnt einmal wegen des eigenen Zertifikats; bestätigen und mit demselben Zugang anmelden.</span>`
     :'<span class="ok">Fertig — weiter zum Live-Dashboard…</span>';
-  setTimeout(()=>location.href=next,r.https?2500:1200);
+  setTimeout(()=>location.href=dest,r.https?2500:1200);
 }
 boot();
 </script></body></html>
@@ -1512,6 +1644,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
     <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
@@ -1592,6 +1725,13 @@ const I18N={
      online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
 };
 let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
@@ -1600,6 +1740,7 @@ function applyThemeLang(s){
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
   const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -1848,6 +1989,10 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["batMinSoc"].isNull()) c.batMinSoc = o["batMinSoc"];
   if (!o["apcEnabled"].isNull()) c.apcEnabled = o["apcEnabled"];
   if (!o["apcPwrLmtPct10"].isNull()) c.apcPwrLmtPct10 = o["apcPwrLmtPct10"];
+  if (!o["inverterType"].isNull()) {
+    const int t = o["inverterType"].as<int>();
+    if (t >= 0 && t < INVERTER_TYPE_COUNT) c.inverterType = static_cast<InverterType>(t);
+  }
   if (!o["hitMode"].isNull())
     c.hitMode = o["hitMode"].as<int>() == 1 ? HitLinkMode::RtuRs485 : HitLinkMode::Tcp;
   if (o["hitHost"].is<const char *>()) strlcpy(c.hitHost, o["hitHost"], sizeof(c.hitHost));
@@ -1856,6 +2001,7 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["hitPollMs"].isNull()) c.hitPollMs = o["hitPollMs"];
   if (!o["hitRtuBaud"].isNull()) c.hitRtuBaud = o["hitRtuBaud"];
   if (!o["demoMode"].isNull()) c.demoMode = o["demoMode"];
+  if (!o["sunspecEnabled"].isNull()) c.sunspecEnabled = o["sunspecEnabled"];
   if (!o["sunspecPort"].isNull()) c.sunspecPort = port(o["sunspecPort"], c.sunspecPort);
   if (!o["sunspecUnitId"].isNull()) c.sunspecUnitId = unitId(o["sunspecUnitId"], c.sunspecUnitId);
   if (!o["invertPowerSign"].isNull()) c.invertPowerSign = o["invertPowerSign"];
@@ -2160,6 +2306,18 @@ void begin() {
     doc["uiTheme"] = uiThemeCode(c.uiTheme);
     doc["otaBusy"] = OtaUpdate::inProgress();
     doc["demoMode"] = c.demoMode;
+    {
+      // gewählte Funktionen: die Oberfläche blendet Menüpunkte nicht genutzter Dienste aus
+      JsonObject f = doc["features"].to<JsonObject>();
+      f["sunspec"] = c.sunspecEnabled;
+      f["mqtt"] = c.mqttEnabled || c.mqttIngestEnabled;
+      f["gateway"] = c.gatewayEnabled;
+      f["knx"] = c.knxEnabled;
+      f["tasmota"] = c.tasmotaEnabled;
+      f["cloud"] = c.cloudEnabled;
+    }
+    doc["board"] = BOARD_NAME;
+    doc["hasDisplay"] = BOARD_HAS_DISPLAY;
     String out; serializeJson(doc, out);
     req->send(200, "application/json", out);
   });
@@ -2192,12 +2350,14 @@ void begin() {
     doc["apcEnabled"] = c.apcEnabled;
     doc["apcPwrLmtPct10"] = c.apcPwrLmtPct10;
     doc["hitMode"] = int(c.hitMode);
+    doc["inverterType"] = int(c.inverterType);
     doc["hitHost"] = c.hitHost;
     doc["hitPort"] = c.hitPort;
     doc["hitUnitId"] = c.hitUnitId;
     doc["hitPollMs"] = c.hitPollMs;
     doc["hitRtuBaud"] = c.hitRtuBaud;
     doc["demoMode"] = c.demoMode;
+    doc["sunspecEnabled"] = c.sunspecEnabled;
     doc["sunspecPort"] = c.sunspecPort;
     doc["sunspecUnitId"] = c.sunspecUnitId;
     doc["invertPowerSign"] = c.invertPowerSign;

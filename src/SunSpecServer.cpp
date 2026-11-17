@@ -11,6 +11,7 @@ constexpr uint16_t REGS = 800; // wie holdingBufferSize in Node-RED
 uint16_t holding[REGS];
 uint32_t nextRebuild = 0;
 bool started = false;
+bool listening = false;
 constexpr int MAX_CLIENTS = 2;
 WiFiClient clients[MAX_CLIENTS];
 
@@ -168,31 +169,48 @@ void rebuildMap() {
   gLive.lastMapMs = millis();
 }
 
+void startListen() {
+  server = WiFiServer(local.sunspecPort);
+  server.begin();
+  listening = true;
+}
+
+void stopListen() {
+  for (int i = 0; i < MAX_CLIENTS; i++) {
+    if (clients[i]) clients[i].stop();
+  }
+  server.end();
+  listening = false;
+  gLive.sunspecClient = false;
+}
+
 void begin(const AppConfig &cfg) {
   local = cfg;
-  server = WiFiServer(cfg.sunspecPort);
-  server.begin();
+  if (local.sunspecEnabled) startListen();
   rebuildMap();
   started = true;
   nextRebuild = 0;
 }
 
+// aus runPendingApply() in der Hauptschleife
 void applyConfig(const AppConfig &cfg) {
   const bool portChanged = cfg.sunspecPort != local.sunspecPort;
   local = cfg;
-  if (portChanged && started) {
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-      if (clients[i]) clients[i].stop();
+  if (started) {
+    if (!local.sunspecEnabled) {
+      if (listening) stopListen();
+    } else if (!listening) {
+      startListen();
+    } else if (portChanged) {
+      stopListen();
+      startListen();
     }
-    server.end();
-    server = WiFiServer(local.sunspecPort);
-    server.begin();
   }
   rebuildMap();
 }
 
 void loop() {
-  if (!started) return;
+  if (!started || !listening) return;
   if (int32_t(millis() - nextRebuild) >= 0) {
     nextRebuild = millis() + 2000;
     rebuildMap();

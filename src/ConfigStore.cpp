@@ -88,6 +88,10 @@ bool load() {
   cfg.httpsRedirect = prefs.getBool("httpsred", cfg.httpsRedirect);
   strlcpy(cfg.displayCode, prefs.getString("dcode", cfg.displayCode).c_str(), sizeof(cfg.displayCode));
 
+  {
+    const uint8_t inv = prefs.getUChar("invtype", 0);
+    cfg.inverterType = static_cast<InverterType>(inv < INVERTER_TYPE_COUNT ? inv : 0);
+  }
   cfg.hitMode = static_cast<HitLinkMode>(prefs.getUChar("hitmode", static_cast<uint8_t>(cfg.hitMode)));
   strlcpy(cfg.hitHost, prefs.getString("hithost", cfg.hitHost).c_str(), sizeof(cfg.hitHost));
   cfg.hitPort = prefs.getUShort("hitport", cfg.hitPort);
@@ -96,6 +100,7 @@ bool load() {
   cfg.hitRtuBaud = prefs.getUInt("hitbaud", cfg.hitRtuBaud);
   cfg.demoMode = prefs.getBool("demo", cfg.demoMode);
 
+  cfg.sunspecEnabled = prefs.getBool("ssena", cfg.sunspecEnabled);
   cfg.sunspecPort = prefs.getUShort("ssport", cfg.sunspecPort);
   cfg.sunspecUnitId = prefs.getUChar("ssuid", cfg.sunspecUnitId);
   cfg.invertPowerSign = prefs.getBool("invpwr", cfg.invertPowerSign);
@@ -197,6 +202,7 @@ bool save() {
   prefs.putBool("httpsred", cfg.httpsRedirect);
   prefs.putString("dcode", cfg.displayCode);
 
+  prefs.putUChar("invtype", static_cast<uint8_t>(cfg.inverterType));
   prefs.putUChar("hitmode", static_cast<uint8_t>(cfg.hitMode));
   prefs.putString("hithost", cfg.hitHost);
   prefs.putUShort("hitport", cfg.hitPort);
@@ -205,6 +211,7 @@ bool save() {
   prefs.putUInt("hitbaud", cfg.hitRtuBaud);
   prefs.putBool("demo", cfg.demoMode);
 
+  prefs.putBool("ssena", cfg.sunspecEnabled);
   prefs.putUShort("ssport", cfg.sunspecPort);
   prefs.putUChar("ssuid", cfg.sunspecUnitId);
   prefs.putBool("invpwr", cfg.invertPowerSign);

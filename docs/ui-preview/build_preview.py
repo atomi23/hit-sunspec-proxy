@@ -76,6 +76,11 @@ mock_status = {
     "lastHitAgeMs": 1200,
     "status": "ok",
 }
+mock_status.update({
+    "board": "T-Connect-Pro",
+    "hasDisplay": True,
+    "features": {"sunspec": True, "mqtt": False, "gateway": True, "knx": True, "tasmota": False, "cloud": False},
+})
 
 dash_js = f"""
 <script>
@@ -179,6 +184,8 @@ cfg = {
     "apcPwrLmtPct10": 1000,
     "apcEnabled": False,
     "sunspecWriteToHit": False,
+    "sunspecEnabled": True,
+    "inverterType": 0,
 }
 
 cfg_js = f"""
@@ -205,6 +212,24 @@ window.alert=()=>{{}};
 </script>
 """
 (OUT / "config.html").write_text(idx.replace("<body>", "<body>" + cfg_js, 1), encoding="utf-8")
+
+# Einrichtungsassistent: Erststart, noch nichts eingerichtet
+setup = extract("SETUP_HTML")
+setup_cfg = dict(cfg, setupComplete=False, hitHost="", displayCode="K7Q2-M9XD", knxEnabled=False, gatewayEnabled=False)
+setup_js = f"""
+<script>
+const CFG={json.dumps(setup_cfg)};
+const STATUS={json.dumps(mock_status)};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{{
+  u=String(u);
+  if(u.includes('/api/config') && (!o || !o.method || o.method==='GET')) return {{ok:true,json:async()=>CFG}};
+  if(u.includes('/api/status')) return {{ok:true,json:async()=>STATUS}};
+  return {{ok:true,json:async()=>({{ok:true}})}};
+}};
+</script>
+"""
+(OUT / "setup.html").write_text(setup.replace("<body>", "<body>" + setup_js, 1), encoding="utf-8")
 
 # Verlauf: synthetischer Tag (Sonne, Hausgrundlast, Akku lädt mittags und entlädt abends)
 import math

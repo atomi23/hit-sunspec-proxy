@@ -7,7 +7,7 @@
 <style>.card{margin-bottom:12px}</style>
 </head><body>
 <script>
-const STATUS={"version": "0.5.7", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const STATUS={"version": "0.5.7", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok", "board": "T-Connect-Pro", "hasDisplay": true, "features": {"sunspec": true, "mqtt": false, "gateway": true, "knx": true, "tasmota": false, "cloud": false}};
 STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const EV={uptimeMs:34920000,hitPolls:1394,hitFails:27,hitErr:"Verbindungsaufbau fehlgeschlagen",events:[{"t": 0, "ts": 0, "lv": "I", "src": "System", "msg": "Start v0.5.0, Grund: Neustart per Software"}, {"t": 7000, "ts": 0, "lv": "I", "src": "HTTPS", "msg": "Port 443 aktiv, selbst signiertes Zertifikat"}, {"t": 4200, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}, {"t": 7200000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 1804: keine Antwort (Timeout)"}, {"t": 7226000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 1 Fehlversuch (25 s)"}, {"t": 18000000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 27: vom HIT getrennt"}, {"t": 18500000, "ts": 0, "lv": "E", "src": "HIT", "msg": "seit 500 s keine Daten (20 Versuche): Verbindungsaufbau fehlgeschlagen"}, {"t": 18640000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 26 Fehlversuchen (640 s)"}, {"t": 28800000, "ts": 0, "lv": "W", "src": "Cloud", "msg": "Datenabruf fehlgeschlagen (HTTP 502)"}, {"t": 28861000, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}]};
 const WR={uptimeMs:34920000,wMaxLimPct:6000,wMaxLimEna:true,sunspecClient:true,hitWriteEnabled:false,sunspecWriteToHit:false,
@@ -37,6 +37,7 @@ window.fetch=async(u,o)=>{
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
     <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
@@ -117,6 +118,13 @@ const I18N={
      online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
 };
 let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
@@ -125,6 +133,7 @@ function applyThemeLang(s){
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
   const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};

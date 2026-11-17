@@ -47,6 +47,7 @@ a{color:var(--acc)}
 .side nav a:hover{color:var(--ink);background:rgba(255,255,255,.04)}
 .side nav a.on{color:var(--ink);background:var(--plate2)}
 .side nav a svg{width:18px;height:18px;flex-shrink:0}
+.side nav a.hide{display:none}
 .side nav a.on svg{color:var(--acc)}
 .side .foot{margin-top:auto;padding:14px 10px 0}
 .side .foot .online{display:flex;align-items:center;gap:8px;font-size:13px}
@@ -170,6 +171,7 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 .cfg .card label{break-after:avoid}
 .cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
 .cfg #knxRows,.cfg #probeBox,.cfg #tlsBox{column-span:all}
+.cfg #features.show{columns:auto}
 textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--well);color:var(--ink);
   font:400 12px/1.4 ui-monospace,Consolas,monospace;resize:vertical}
 textarea:focus{border-color:var(--acc);outline:none}

@@ -65,7 +65,8 @@ void setup() {
   Serial.printf("Display: Seitenwechsel %lus, aus nach %us\n", (unsigned long)(cfg.displayPageMs / 1000),
                 cfg.displayTimeoutS);
   if (cfg.hitWriteEnabled) Serial.println("HIT Write: AN");
-  Serial.printf("SunSpec: %s:%u\n", gLive.ipShown, cfg.sunspecPort);
+  if (cfg.sunspecEnabled) Serial.printf("SunSpec: %s:%u\n", gLive.ipShown, cfg.sunspecPort);
+  else Serial.println("SunSpec: aus");
   if (cfg.hitMode == HitLinkMode::RtuRs485)
     Serial.printf("HIT: RS485 %lu Baud, Unit %u\n", (unsigned long)cfg.hitRtuBaud, cfg.hitUnitId);
   else

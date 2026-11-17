@@ -8,6 +8,12 @@ enum class HitLinkMode : uint8_t {
   RtuRs485 = 1,
 };
 
+// Wechselrichter-Treiber; bisher nur der HIT, weitere kommen als eigene Werte dazu
+enum class InverterType : uint8_t {
+  HoymilesHit = 0,
+};
+constexpr uint8_t INVERTER_TYPE_COUNT = 1;
+
 struct AppConfig {
   // Network
   bool useEthernet = true;
@@ -28,6 +34,7 @@ struct AppConfig {
   bool httpsRedirect = true;   // HTTP-Aufrufe von außen auf HTTPS umleiten
 
   // HIT source
+  InverterType inverterType = InverterType::HoymilesHit;
   HitLinkMode hitMode = HitLinkMode::Tcp;
   char hitHost[64] = "192.0.2.50"; // Beispiel-IP (RFC 5737), keine echte Anlage
   uint16_t hitPort = 502;
@@ -38,6 +45,7 @@ struct AppConfig {
   bool demoMode = false;
 
   // SunSpec / Consolinno
+  bool sunspecEnabled = true;  // Hauptfunktion; abschaltbar, wenn nur Gateway/HA/KNX gebraucht wird
   uint16_t sunspecPort = 1502; // wie früher Node-RED; 502 bleibt fürs HIT-Gateway
   uint8_t sunspecUnitId = 1;
   bool invertPowerSign = false;

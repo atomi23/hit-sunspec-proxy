@@ -7,8 +7,8 @@
 </head><body>
 <script>
 const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14019, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14019, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14019, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14019, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14033, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}]};
-const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/38", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false};
-const STATUS={"version": "0.5.7", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok"};
+const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/38", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false, "sunspecEnabled": true, "inverterType": 0};
+const STATUS={"version": "0.5.7", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok", "board": "T-Connect-Pro", "hasDisplay": true, "features": {"sunspec": true, "mqtt": false, "gateway": true, "knx": true, "tasmota": false, "cloud": false}};
 const TLS={subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
   sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
   chain:1,source:"self",running:true,enabled:true};
@@ -42,6 +42,7 @@ window.alert=()=>{};
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
     <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
@@ -75,6 +76,9 @@ window.alert=()=>{};
 </div>
 <form id="f" class="cfg">
 <div class="card" id="hit" data-sub="Pflicht. Von hier kommen alle Messwerte."><strong>HIT-Wechselrichter</strong>
+<label>Wechselrichter</label>
+<select name="inverterType"><option value="0">Hoymiles HIT</option></select>
+<p class="hint">Weitere Hersteller sind vorbereitet und folgen.</p>
 <label>Verbindung</label>
 <select name="hitMode"><option value="0">TCP (Modbus TCP)</option><option value="1">Kabel RS485 (RTU)</option></select>
 <label>HIT IP / Host</label><input name="hitHost" placeholder="192.0.2.50"/>
@@ -89,10 +93,21 @@ window.alert=()=>{};
 <button class="sec" type="button" onclick="poll()" style="margin-top:16px">HIT jetzt abfragen</button>
 </div>
 <div class="card" id="sunspec" data-sub="Consolinno liest den Proxy als SunSpec-Wechselrichter über Modbus TCP."><strong>Consolinno</strong>
+<label><input name="sunspecEnabled" type="checkbox"/> aktiv (SunSpec-Server für das HEMS)</label>
 <label>Modbus-Port</label><input name="sunspecPort" type="number"/>
 <label>Unit-ID</label><input name="sunspecUnitId" type="number"/>
 <label><input name="invertPowerSign" type="checkbox"/> Vorzeichen der Leistung umkehren</label>
 <p class="hint">In Consolinno als SunSpec-Gerät eintragen: IP vom Display, Port 1502, Unit-ID 1. Die Registerkarte liegt ab Adresse 0, 40000 und 50000.</p>
+</div>
+<div class="card" id="features" data-sub="Welche Dienste das Gerät anbietet. Abgewählte bleiben aus und verschwinden aus dem Menü."><strong>Funktionen</strong>
+<p class="hint" id="featBoard" style="margin-top:0"></p>
+<label><input type="checkbox" data-feat="sunspecEnabled"/> <span><b>Consolinno / SunSpec</b>: HIT als SunSpec-Wechselrichter fürs HEMS</span></label>
+<label><input type="checkbox" data-feat="gatewayEnabled"/> <span><b>Modbus-Gateway</b>: andere Programme lesen den HIT über den ESP</span></label>
+<label><input type="checkbox" data-feat="mqttEnabled"/> <span><b>Home Assistant</b>: Messwerte per MQTT mit Discovery</span></label>
+<label><input type="checkbox" data-feat="knxEnabled"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
+<label><input type="checkbox" data-feat="tasmotaEnabled"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
+<label><input type="checkbox" data-feat="cloudEnabled"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
+<p class="hint">Die Einstellungen eines Dienstes stehen in seinem Menüpunkt. Speichern übernimmt die Auswahl ohne Neustart.</p>
 </div>
 <div class="card" id="netz" data-sub="Verbindung ins Heimnetz und Anmeldung an dieser Oberfläche."><strong>Netzwerk und Zugang</strong>
 <label>Gerätename</label><input name="deviceName"/>
@@ -253,6 +268,13 @@ const I18N={
      online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
 };
 let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
 function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
@@ -261,6 +283,7 @@ function applyThemeLang(s){
   const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
   const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
   const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
 }
 async function saveUiPrefs(){
   const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
@@ -456,6 +479,27 @@ async function knxImport(inp){
   if(!done.size){knxMsg(`Keine der ${list.length} Adressen passt zu einem Messwert`,false);return;}
   knxMsg(`${done.size} Messwerte zugeordnet`+(miss?`, ${miss} Adressen ohne Zuordnung`:'')+'. Zum Übernehmen Speichern.',true);
 }
+// Funktionen: Spiegel der "aktiv"-Schalter der einzelnen Dienste; das Menü folgt dem Formular
+window.NAV_FROM_FORM=true;
+let CFG_LOADED=false,HAS_DISPLAY=true;
+const FEAT_KEY={sunspecEnabled:'sunspec',gatewayEnabled:'gateway',mqttEnabled:'mqtt',knxEnabled:'knx',tasmotaEnabled:'tasmota',cloudEnabled:'cloud'};
+function formFeat(){
+  const f=document.getElementById('f');const g=n=>{const e=f.elements.namedItem(n);return !!(e&&e.checked);};
+  return {sunspec:g('sunspecEnabled'),gateway:g('gatewayEnabled'),mqtt:g('mqttEnabled')||g('mqttIngestEnabled'),
+    knx:g('knxEnabled'),tasmota:g('tasmotaEnabled'),cloud:g('cloudEnabled')};
+}
+function syncFeat(){
+  const F=formFeat();
+  document.querySelectorAll('[data-feat]').forEach(cb=>{cb.checked=F[FEAT_KEY[cb.dataset.feat]];});
+  navFeat(F,HAS_DISPLAY);
+}
+document.querySelectorAll('[data-feat]').forEach(cb=>cb.addEventListener('change',()=>{
+  const f=document.getElementById('f'),k=cb.dataset.feat;
+  f.elements.namedItem(k).checked=cb.checked;
+  if(k==='mqttEnabled'&&!cb.checked){const i=f.elements.namedItem('mqttIngestEnabled');if(i)i.checked=false;}
+  syncFeat();
+}));
+document.getElementById('f').addEventListener('change',e=>{if(e.target.name&&CFG_LOADED)syncFeat();});
 function route(){
   const cards=[...document.querySelectorAll('#f > .card')];
   const id=location.hash.slice(1);
@@ -491,7 +535,7 @@ async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); refresh(); route(); loadTls();
+  renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls();
 }
 async function loadTls(){
   const t=await fetch('/api/tls').then(r=>r.json()).catch(()=>null);const tb=document.getElementById('tlsInfo');if(!tb)return;
@@ -559,8 +603,11 @@ async function probeTas(){
 }
 async function refresh(){const s=await(await fetch('/api/status')).json();
 applyThemeLang(s);
+HAS_DISPLAY=s.hasDisplay!==false;
+const fb=document.getElementById('featBoard');if(fb)fb.textContent='Board: '+(s.board||'-')+', Wechselrichter: Hoymiles HIT';
+if(CFG_LOADED)syncFeat();
 const chip=(st,l)=>`<span class="chip ${st}"><span class="dot"></span>${l}</span>`;
-document.getElementById('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+chip(s.sunspecClient?'on':'idle','Consolinno')+
+document.getElementById('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+((s.features||{}).sunspec===false?'':chip(s.sunspecClient?'on':'idle','Consolinno'))+
   chip((s.ethOk||s.wifiOk)?'on':'off',s.ipShown||'-')+(s.demoMode?'<span class="tag" style="margin:0;vertical-align:0">Demo</span>':'');}
 async function boot(){const s=await(await fetch('/api/status')).json();if(s.setupComplete===false)location.href='/setup';else load();}
 boot();setInterval(()=>{if(document.hidden)return;refresh();},5000);
