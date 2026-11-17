@@ -20,3 +20,6 @@ secrets*
 
 # Schrift-Quellen, per tools/embed_fonts.py ladbar
 tools/fonts/
+
+# SolidCraft-Sicherungen
+*.sc.bak
