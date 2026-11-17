@@ -7,6 +7,7 @@ andere Modbus-Clients.
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
+Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE, 12–24 V) zum Drucken](hardware/wt32-din/).
 
 Aktuelle Firmware: **v0.5.7** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.7)
 
