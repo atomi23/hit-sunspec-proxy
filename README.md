@@ -18,6 +18,12 @@ Aktuelle Firmware: **v0.5.8** — [Release mit `firmware.bin`](https://github.co
 - Druckbare Hutschienengehäuse ohne Schrauben (Clip angedruckt, Deckel rastet ein):
   [WT32-ETH01, 2 TE](hardware/wt32-din/) als Variante nur PoE oder mit RS485/Step-down,
   [ESP32-P4-POE-ETH, 3,5 TE](hardware/p4-poe-din/)
+- **Akkudaten** unter *Datenquellen, Akku*: Zelltemperaturen, Zellspannungen, Lade- und Entladegrenzen und
+  Pack-Infos vom HIT, dazu optional SoC, SoH, Zyklen und Restenergie aus der **Dyness-Cloud**. Die Live-Seite
+  zeigt die zusammengeführten Werte, Home Assistant und KNX bekommen sie als eigene Datenpunkte.
+  Dyness: App-ID und Secret im Portal [ems.dyness.com](https://ems.dyness.com) unter *Entwicklerzentrum,
+  API-Verwaltung* anlegen (das Secret steht dort nur einmal) und unter *Akku* eintragen; nutzt die
+  Home-Assistant-Integration dieselbe App-ID, teilen sich beide die Abrufgrenze
 
 ### Neu in v0.5.8
 - **Funktionsauswahl** im Einrichtungsassistenten und unter *Einstellungen, Funktionen*: Consolinno/SunSpec,
@@ -121,6 +127,8 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **Funktionsauswahl** im Einrichtungsassistenten und unter *Einstellungen, Funktionen*: SunSpec für Consolinno,
   Modbus-Gateway, Home Assistant, KNX, Tasmota und Cloud einzeln wählbar; nicht gewählte Dienste starten nicht
   und verschwinden aus dem Menü
+- **Akkudaten** vom HIT (Zellen, Temperaturen, Grenzen, Packs) und optional aus der Dyness-Cloud,
+  zusammengeführt auf Live-Seite, Home Assistant und KNX
 - **Live-Seite** mit Energiefluss (PV, Akku, HIT, Netz, Haus), Ladestand-Ring, Strings, Phasen, Zählern
 - **Verlauf** im ESP gespeichert (LittleFS): 24 h in 5-Minuten-Schritten, Tage, Monate, Jahre
 - **Zwei Protokolle:** System (HIT, Cloud, OTA, Neustarts) und §14a-Writes von Consolinno;
@@ -173,6 +181,7 @@ Pins: [`PINS.md`](PINS.md)
 | `tools/esp_soak.py` | Lasttest der Weboberfläche über HTTP oder HTTPS, auch mit offen gehaltener Verbindung |
 | `tools/modbus_watch.py` | SunSpec-Kennung laufend lesen, langsame Antworten und Ausfälle melden |
 | `tools/serial_log.py` | Seriellen Log mitschreiben |
+| `tools/battery_check.py` | Akkudaten über `/api/battery` prüfen und als Tabelle zeigen; `--sign-selftest` prüft die Dyness-Signatur |
 
 Zugangsdaten für die Werkzeuge kommen aus `ESP_USER` / `ESP_PASS`, nie aus dem Repo.
 

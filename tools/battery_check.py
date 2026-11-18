@@ -2,6 +2,7 @@
 """Akkudaten prüfen.
 
     python tools/battery_check.py 192.168.1.50 --user admin --pass CODE
+    python tools/battery_check.py 192.168.1.50 --json
     python tools/battery_check.py --sign-selftest
 
 Ohne --sign-selftest: holt /api/battery und prüft den Aufbau (hit, packs, cloudData, merged).
@@ -70,19 +71,64 @@ def check(d):
     return errs
 
 
+ROWS = [
+    # Anzeige, merged, hit, cloudData, Einheit
+    ("Zelltemp. max", "cellTempMax", "cellTempMax", "tempMax", "°C"),
+    ("Zelltemp. min", "cellTempMin", "cellTempMin", "tempMin", "°C"),
+    ("Zellspannung max", "cellVMax", "cellVMax", "cellVMax", "V"),
+    ("Zellspannung min", "cellVMin", "cellVMin", "cellVMin", "V"),
+    ("Zelldrift", "cellDiffMv", None, "cellDiffMv", "mV"),
+    ("Ladegrenze", "chargeLimA", "maxChargeA", "chargeLimA", "A"),
+    ("Entladegrenze", "dischargeLimA", "maxDischargeA", "dischargeLimA", "A"),
+    ("Zyklen", "cycles", None, "cycles", ""),
+    ("Restenergie", "remainKwh", None, "remainKwh", "kWh"),
+    ("SoC", None, None, "soc", "%"),
+    ("SoH", None, None, "soh", "%"),
+    ("Leistung", None, None, "powerW", "W"),
+]
+
+
+def fmt(v):
+    return "-" if v is None else str(v)
+
+
+def table(d):
+    m, h, c = d.get("merged", {}), d.get("hit", {}), d.get("cloudData", {})
+    print(f"{'Wert':<18}{'Ergebnis':>10}{'HIT':>10}{'Cloud':>10}  Einheit")
+    for name, mk, hk, ck, unit in ROWS:
+        vals = [m.get(mk) if mk else None, h.get(hk) if hk else None, c.get(ck) if ck else None]
+        if all(v is None for v in vals):
+            continue
+        print(f"{name:<18}" + "".join(f"{fmt(v):>10}" for v in vals) + f"  {unit}")
+    print(f"Quelle Zellspannung {m.get('srcCellV', '-')}, Temperatur {m.get('srcTemp', '-')}, "
+          f"Grenzen {m.get('srcLim', '-')}")
+    print(f"HIT {'gültig' if h.get('valid') else 'keine Werte'}"
+          + (f", Alter {h['ageS']} s" if 'ageS' in h else "")
+          + (" (Block leer)" if h.get("missing") else ""))
+    print(f"Cloud {'gültig' if c.get('valid') else 'keine Werte'}"
+          + (f", Alter {c['ageS']} s" if 'ageS' in c else "")
+          + (f", Fehler: {c['error']}" if c.get('error') else ""))
+    for p in d.get("packs", []):
+        print(f"Pack {p.get('sn', '?')}: BMS {p.get('bmsFw', '?')}, Kapazität {p.get('ratedCap', '?')}, "
+              f"DCDC {p.get('dcdcSw', '?')}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("host", nargs="?")
     ap.add_argument("--user", default="admin")
     ap.add_argument("--pass", dest="pw", default="")
     ap.add_argument("--sign-selftest", action="store_true")
+    ap.add_argument("--json", action="store_true", help="Antwort zusätzlich als JSON ausgeben")
     a = ap.parse_args()
     if a.sign_selftest:
         sys.exit(0 if selftest() else 1)
     if not a.host:
         ap.error("host fehlt")
     d = fetch(a.host, a.user, a.pw)
-    print(json.dumps(d, indent=2, ensure_ascii=False))
+    if a.json:
+        print(json.dumps(d, indent=2, ensure_ascii=False))
+    table(d)
     errs = check(d)
     for e in errs:
         print("FEHLER:", e)
