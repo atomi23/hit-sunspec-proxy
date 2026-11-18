@@ -147,6 +147,50 @@ void dynessParsePoints(JsonArrayConst points, BatteryCloudData &io, bool keepCel
   }
 }
 
+BatteryMerged mergeBattery(const BatteryInfo &b, uint32_t nowMs, uint32_t cloudIntervalMs) {
+  BatteryMerged m;
+  const bool cloud = b.cloud.valid && b.cloud.atMs && (nowMs - b.cloud.atMs) <= 2 * cloudIntervalMs;
+  const bool hit = b.hit.valid;
+  // Zellspannungen: Cloud ist mV-genau, der HIT nur auf 0,1 V; aus HIT-Werten keine Spreizung
+  if (cloud && !isnan(b.cloud.cellVMax)) {
+    m.cellVMax = b.cloud.cellVMax;
+    m.cellVMin = b.cloud.cellVMin;
+    m.cellDiffMv = b.cloud.cellDiffMv;
+    m.srcCellV = "cloud";
+  } else if (hit && !isnan(b.hit.cellVMax)) {
+    m.cellVMax = b.hit.cellVMax;
+    m.cellVMin = b.hit.cellVMin;
+    m.srcCellV = "hit";
+  }
+  // Temperaturen: HIT liest öfter
+  if (hit && !isnan(b.hit.cellTempMax)) {
+    m.cellTempMax = b.hit.cellTempMax;
+    m.cellTempMin = b.hit.cellTempMin;
+    m.modTempMax = b.hit.modTempMax;
+    m.modTempMin = b.hit.modTempMin;
+    m.srcTemp = "hit";
+  } else if (cloud && !isnan(b.cloud.tempMax)) {
+    m.cellTempMax = b.cloud.tempMax;
+    m.cellTempMin = b.cloud.tempMin;
+    m.srcTemp = "cloud";
+  }
+  if (hit && !isnan(b.hit.maxChargeA)) {
+    m.chargeLimA = b.hit.maxChargeA;
+    m.dischargeLimA = b.hit.maxDischargeA;
+    m.srcLim = "hit";
+  } else if (cloud && !isnan(b.cloud.chargeLimA)) {
+    m.chargeLimA = b.cloud.chargeLimA;
+    m.dischargeLimA = b.cloud.dischargeLimA;
+    m.srcLim = "cloud";
+  }
+  if (cloud) {
+    m.cycles = b.cloud.cycles;
+    m.remainKwh = b.cloud.remainKwh;
+    m.alarm = b.cloud.alarm;
+  }
+  return m;
+}
+
 void decodeHitPack(const uint16_t regs[28], BatteryPack &out) {
   out = BatteryPack{};
   size_t n = 0;

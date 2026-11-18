@@ -451,7 +451,7 @@ const TX={
    charge:'lädt',discharge:'entlädt',idle:'ruht',imp:'Bezug',exp:'Einspeisung',soc:'Ladestand',
    hitOk:'antwortet',hitBad:'keine Antwort',hemsOk:'fragt ab',hemsWait:'wartet',
    string:'String',total:'Summe',phase:'Phase',freq:'Netzfrequenz',yield:'PV-Ertrag gesamt',eimp:'Netzbezug gesamt',
-   eexp:'Einspeisung gesamt',batv:'Akkuspannung',bata:'Akkustrom',soh:'Akkuzustand (SoH)',
+   eexp:'Einspeisung gesamt',batv:'Akkuspannung',bata:'Akkustrom',soh:'Akkuzustand (SoH)',ctmax:'Zelltemperatur max',cspread:'Zellspreizung',
    lim:'Begrenzung',limOn:'aktiv',limOff:'keine',limVal:'Grenzwert',noWrite:'Consolinno hat noch nichts geschrieben.',
    tasOff:'Kein Tasmota-Zähler verbunden. Einrichten unter Datenquellen, Tasmota-Zähler.',power:'Leistung',
    src:'Quelle',srcN:'HIT direkt',srcM:'MQTT',srcC:'Hoymiles-Cloud',srcD:'Demo',srcX:'keine',
@@ -463,7 +463,7 @@ const TX={
    charge:'charging',discharge:'discharging',idle:'idle',imp:'import',exp:'export',soc:'Charge',
    hitOk:'responding',hitBad:'no response',hemsOk:'polling',hemsWait:'waiting',
    string:'String',total:'Total',phase:'Phase',freq:'Grid frequency',yield:'PV yield total',eimp:'Grid import total',
-   eexp:'Export total',batv:'Battery voltage',bata:'Battery current',soh:'Battery health (SoH)',
+   eexp:'Export total',batv:'Battery voltage',bata:'Battery current',soh:'Battery health (SoH)',ctmax:'Cell temperature max',cspread:'Cell spread',
    lim:'Limit',limOn:'active',limOff:'none',limVal:'Setpoint',noWrite:'Consolinno has not written anything yet.',
    tasOff:'No Tasmota meter connected. Set it up under Data sources, Tasmota meter.',power:'Power',
    src:'Source',srcN:'HIT direct',srcM:'MQTT',srcC:'Hoymiles cloud',srcD:'Demo',srcX:'none',
@@ -471,6 +471,11 @@ const TX={
    today:'Total yield',flow:'Energy flow between solar, battery, HIT, grid and home'}
 };
 const T=k=>(TX[LANG]||TX.de)[k];
+// Akkudetails (eigener Abruf alle 30 s); nur Zeilen mit Werten
+let BAT=null,BAT_AT=0;
+function batRows(F){const m=(BAT&&BAT.merged)||{},r=[];if(F.akku===false)return r;
+  if(m.cellTempMax!==undefined)r.push([T('ctmax'),m.cellTempMax+' °C']);
+  if(m.cellDiffMv!==undefined)r.push([T('cspread'),m.cellDiffMv+' mV']);return r;}
 const $=id=>document.getElementById(id);
 const num=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
@@ -518,6 +523,7 @@ async function refresh(){
   $('wData').classList.toggle('live',!!s.sunspecClient);
   $('hemsBox').classList.toggle('live',!!s.sunspecClient);
   const F=s.features||{};
+  if(F.akku!==false&&Date.now()-BAT_AT>30000){BAT_AT=Date.now();fetch('/api/battery').then(r=>r.json()).then(d=>{BAT=d;}).catch(()=>{});}
   $('hemsG').style.display=F.sunspec===false?'none':'';
 
   const src={NATIVE:T('srcN'),MQTT:T('srcM'),CLOUD:T('srcC'),DEMO:T('srcD')}[s.dataOrigin]||T('srcX');
@@ -541,7 +547,7 @@ async function refresh(){
     [T('yield'),num(s.energyPvKwh,1)+' kWh'],[T('eimp'),num(s.energyImpKwh,1)+' kWh'],[T('eexp'),num(s.energyExpKwh,1)+' kWh'],
     [T('soc'),num(soc)+' %'],[T('batv'),num(s.batV,1)+' V'],
     [T('bata'),(()=>{const a=-(Number(s.batA)||0);return (a>0?'+':'')+num(a,1)+' A';})()],
-    [T('soh'),num(s.soh)+' %']]);
+    [T('soh'),num(s.soh)+' %']].concat(batRows(F)));
   $('tLim').innerHTML=rows([[T('lim'),s.wMaxLimEna?T('limOn'):T('limOff')],[T('limVal'),num((Number(s.wMaxLimPct)||0)/100,1)+' %']]);
   $('nLim').textContent=s.lastWriteNote||T('noWrite');
   if(s.tasmotaOk){
@@ -707,6 +713,11 @@ const TX={
    mBal:'Balance',mPos:'All positive'}
 };
 const T=k=>(TX[LANG]||TX.de)[k];
+// Akkudetails (eigener Abruf alle 30 s); nur Zeilen mit Werten
+let BAT=null,BAT_AT=0;
+function batRows(F){const m=(BAT&&BAT.merged)||{},r=[];if(F.akku===false)return r;
+  if(m.cellTempMax!==undefined)r.push([T('ctmax'),m.cellTempMax+' °C']);
+  if(m.cellDiffMv!==undefined)r.push([T('cspread'),m.cellDiffMv+' mV']);return r;}
 const $=id=>document.getElementById(id);
 const nf=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const SER=[['pv','var(--c-pv)'],['use','var(--c-house)'],['imp','var(--c-imp)'],['exp','var(--c-exp)'],['chg','var(--c-chg)'],['dis','var(--c-dis)']];
@@ -1369,8 +1380,44 @@ async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls();
+  renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls(); batBox();
 }
+async function batBox(){
+  const box=document.getElementById('batBox');if(!box||!document.getElementById('akku').classList.contains('show'))return;
+  const d=await fetch('/api/battery').then(r=>r.json()).catch(()=>null);if(!d)return;
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+  const v=(x,u)=>x===undefined?'-':esc(x)+(u?' '+u:'');
+  const age=s=>s===undefined?'':(s<90?s+' s':Math.round(s/60)+' min')+' alt';
+  const row=(k,x)=>`<tr><td>${k}</td><td>${x}</td></tr>`;
+  const h=d.hit||{},c=d.cloudData||{};
+  let hit;
+  if(!d.hitEnabled)hit=row('Status','aus');
+  else if(h.valid)hit=row('Stand',age(h.ageS))+row('Zelltemperatur max / min',v(h.cellTempMax,'°C')+' / '+v(h.cellTempMin,'°C'))+
+    row('Modultemperatur max / min',v(h.modTempMax,'°C')+' / '+v(h.modTempMin,'°C'))+
+    row('Zellspannung max / min',v(h.cellVMax,'V')+' / '+v(h.cellVMin,'V'))+row('Modulspannung max / min',v(h.modVMax,'V')+' / '+v(h.modVMin,'V'))+
+    row('Max. Lade- / Entladestrom',v(h.maxChargeA,'A')+' / '+v(h.maxDischargeA,'A'))+row('Lade- / Entladeschluss',v(h.chargeCutV,'V')+' / '+v(h.dischargeCutV,'V'));
+  else hit=row('Status',h.missing?'<span class="bad">vom HIT nicht geliefert</span>':'noch keine Abfrage');
+  let cl;
+  if(!d.cloud)cl=row('Status','keine Akku-Cloud gewählt');
+  else{cl=(c.error?row('Fehler','<span class="bad">'+esc(c.error)+'</span>'):'')+(c.sn?row('Gerät',esc(c.sn)+(c.model?' ('+esc(c.model)+')':'')):'');
+    if(c.valid)cl+=row('Stand',age(c.ageS))+row('SoC / SoH',v(c.soc,'%')+' / '+v(c.soh,'%'))+row('Leistung',v(c.powerW,'W'))+
+      row('Spannung / Strom',v(c.voltV,'V')+' / '+v(c.currA,'A'))+row('Temperatur max / min',v(c.tempMax,'°C')+' / '+v(c.tempMin,'°C'))+
+      row('Zellspannung max / min',v(c.cellVMax,'V')+' / '+v(c.cellVMin,'V'))+row('Spreizung',v(c.cellDiffMv,'mV'))+
+      row('Ladezyklen',v(c.cycles))+row('Kapazität / Restenergie',v(c.capKwh,'kWh')+' / '+v(c.remainKwh,'kWh'))+
+      row('Alarm',c.alarm===undefined?'-':(c.alarm?'<span class="bad">ja</span>':'nein'));
+    else if(!c.error)cl+=row('Status','noch keine Daten');}
+  let packs='';
+  if((d.packs||[]).length)packs='<h3 style="margin:18px 0 6px">Packs (vom HIT)</h3><table class="tbl"><tr><th>Seriennummer</th><th>BMS-Firmware</th><th>Nennkapazität (roh)</th></tr>'+
+    d.packs.map(p=>`<tr><td>${esc(p.sn)||'-'}</td><td>${esc(p.bmsFw)}</td><td>${esc(p.ratedCap)}</td></tr>`).join('')+'</table>';
+  let cells='';
+  if((c.cells||[]).length){const xs=c.cells.map(Number),lo=Math.min(...xs),hi=Math.max(...xs),span=Math.max(hi-lo,0.005);
+    cells='<h3 style="margin:18px 0 6px">Zellspannungen (Cloud)</h3><div style="display:flex;gap:4px;align-items:flex-end;height:90px">'+
+      xs.map((x,i)=>`<div title="Zelle ${i+1}: ${x.toFixed(3)} V" style="flex:1;background:var(--acc);border-radius:3px;height:${20+70*(x-lo)/span}px"></div>`).join('')+
+      `</div><p class="hint">${lo.toFixed(3)} bis ${hi.toFixed(3)} V, Spreizung ${Math.round((hi-lo)*1000)} mV</p>`;}
+  box.innerHTML='<div class="cards two" style="margin-top:18px"><div class="panel"><h2>Vom HIT</h2><table class="tbl">'+hit+'</table></div>'+
+    '<div class="panel"><h2>Akku-Cloud</h2><table class="tbl">'+cl+'</table></div></div>'+packs+cells;
+}
+setInterval(()=>{if(!document.hidden)batBox();},10000);window.addEventListener('hashchange',batBox);
 async function loadTls(){
   const t=await fetch('/api/tls').then(r=>r.json()).catch(()=>null);const tb=document.getElementById('tlsInfo');if(!tb)return;
   if(!t){tb.innerHTML='<tr><td>Nicht abrufbar</td></tr>';return;}

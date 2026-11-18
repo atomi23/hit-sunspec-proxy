@@ -95,6 +95,25 @@ void toJson(JsonDocument &doc, const AppConfig &cfg) {
     p["dcdcSw"] = b.pack[i].dcdcSw;
   }
 
+  {
+    const uint32_t iv = uint32_t(max<uint16_t>(cfg.batCloudPollS, BAT_CLOUD_MIN_S)) * 1000UL;
+    const BatteryMerged m = mergeBattery(b, millis(), iv);
+    JsonObject o = doc["merged"].to<JsonObject>();
+    put(o, "cellTempMax", m.cellTempMax, 0);
+    put(o, "cellTempMin", m.cellTempMin, 0);
+    put(o, "cellVMax", m.cellVMax, 3);
+    put(o, "cellVMin", m.cellVMin, 3);
+    put(o, "cellDiffMv", m.cellDiffMv, 0);
+    put(o, "chargeLimA", m.chargeLimA);
+    put(o, "dischargeLimA", m.dischargeLimA);
+    put(o, "cycles", m.cycles, 0);
+    put(o, "remainKwh", m.remainKwh, 2);
+    if (m.alarm >= 0) o["alarm"] = m.alarm;
+    if (m.srcCellV) o["srcCellV"] = m.srcCellV;
+    if (m.srcTemp) o["srcTemp"] = m.srcTemp;
+    if (m.srcLim) o["srcLim"] = m.srcLim;
+  }
+
   JsonObject c = doc["cloudData"].to<JsonObject>();
   c["valid"] = b.cloud.valid;
   if (b.cloud.atMs) c["ageS"] = ageS(b.cloud.atMs);
