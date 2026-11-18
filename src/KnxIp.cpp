@@ -1,6 +1,8 @@
 #include "KnxIp.h"
 #include "LiveData.h"
 #include "KnxPoints.h"
+#include "BatteryData.h"
+#include "BatteryLogic.h"
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <math.h>
@@ -13,6 +15,8 @@ bool sockOk = false;
 uint32_t nextPub = 0;
 float lastVal[KNX_CH_COUNT];
 bool lastInit[KNX_CH_COUNT];
+BatteryMerged bat;   // einmal je publish() berechnet
+bool batOn = false;
 
 bool parseGa(const char *s, uint16_t &out) {
   if (!s || !s[0]) return false;
@@ -78,7 +82,7 @@ void encodeDpt9(uint8_t *out, float value) {
 }
 
 bool sendGroupWrite(uint16_t ga, const uint8_t *data, uint8_t dataLen) {
-  if (!sockOk || dataLen == 0 || dataLen > 14) return false;
+  if (!sockOk || dataLen > 14) return false;
   uint16_t srcPa = 0xFFFE;
   parsePa(local.knxPa, srcPa);
 
@@ -94,7 +98,7 @@ bool sendGroupWrite(uint16_t ga, const uint8_t *data, uint8_t dataLen) {
   n += 2;
   cemi[n++] = uint8_t(1 + dataLen);
   cemi[n++] = 0x00;
-  cemi[n++] = 0x80;
+  cemi[n++] = dataLen ? 0x80 : uint8_t(0x80 | (data[0] & 0x3F));
   memcpy(cemi + n, data, dataLen);
   n = uint8_t(n + dataLen);
 
@@ -131,6 +135,21 @@ bool encodeByDpt(uint16_t dpt, KnxValKind kind, float value, uint8_t *buf, uint8
   if (dpt == 9007 || (dpt >= 9000 && dpt < 10000)) {
     encodeDpt9(buf, value);
     len = 2;
+    return true;
+  }
+  if (dpt == 1005 || dpt / 1000 == 1) {
+    buf[0] = value != 0 ? 1 : 0;
+    len = 0; // 1 Bit im APCI-Byte
+    return true;
+  }
+  if (dpt == 12001) {
+    encodeU32be(buf, value <= 0 ? 0u : uint32_t(lroundf(value)));
+    len = 4;
+    return true;
+  }
+  if (dpt == 13013) {
+    encodeU32be(buf, uint32_t(int32_t(lroundf(value)))); // kWh, I32
+    len = 4;
     return true;
   }
   if (dpt == 13010 || dpt == 13001) {
@@ -187,6 +206,14 @@ float readPoint(uint8_t id) {
     case KNX_TAS_IN: return float(gLive.tasmotaTotalKwh);
     case KNX_TAS_OUT: return float(gLive.tasmotaExportKwh);
     case KNX_LPP: return gLive.wMaxLimPct / 100.0f;
+    case KNX_AKKU_TMAX: return bat.cellTempMax;
+    case KNX_AKKU_TMIN: return bat.cellTempMin;
+    case KNX_AKKU_VMAX: return bat.cellVMax * 1000.0f;
+    case KNX_AKKU_VMIN: return bat.cellVMin * 1000.0f;
+    case KNX_AKKU_VDIFF: return bat.cellDiffMv;
+    case KNX_AKKU_CYCLES: return bat.cycles;
+    case KNX_AKKU_REMAIN: return bat.remainKwh;
+    case KNX_AKKU_ALARM: return bat.alarm < 0 ? NAN : float(bat.alarm);
     default: return 0;
   }
 }
@@ -201,6 +228,10 @@ bool significantChange(uint8_t id, float now) {
   else if (m.kind == KnxValKind::Amp) thr = 0.05f;
   else if (m.kind == KnxValKind::Hz) thr = 0.02f;
   else if (m.kind == KnxValKind::EnergyKwh) thr = 0.1f;
+  else if (m.kind == KnxValKind::Temp) thr = 0.5f;
+  else if (m.kind == KnxValKind::MilliVolt) thr = 5.0f;
+  else if (m.kind == KnxValKind::Count) thr = 1.0f;
+  else if (m.kind == KnxValKind::Flag) thr = 0.5f;
   return fabsf(now - lastVal[id]) >= thr;
 }
 
@@ -223,6 +254,11 @@ void publish() {
     return;
   }
 
+  batOn = local.batEnabled;
+  if (batOn) {
+    const uint32_t iv = uint32_t(max<uint16_t>(local.batCloudPollS, BAT_CLOUD_MIN_S)) * 1000UL;
+    bat = mergeBattery(BatteryData::snapshot(), millis(), iv);
+  }
   bool any = false;
   for (uint8_t i = 0; i < KNX_CH_COUNT; i++) {
     const KnxCh &ch = local.knxCh[i];
@@ -231,7 +267,9 @@ void publish() {
 
     uint16_t ga;
     if (!parseGa(ch.ga, ga)) continue;
+    if (i >= KNX_AKKU_TMAX && !batOn) continue;
     float v = readPoint(i);
+    if (isnan(v)) continue; // Wert gerade nicht vorhanden
     if (!significantChange(i, v)) continue;
 
     const auto &m = knxMeta(i);

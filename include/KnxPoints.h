@@ -13,6 +13,9 @@ enum KnxChId : uint8_t {
   KNX_EPV, KNX_EIMP, KNX_EEXP,
   KNX_TAS_W, KNX_TAS_IN, KNX_TAS_OUT,
   KNX_LPP,
+  // Akkudetails; nur hinten anhängen, die gespeicherte Zuordnung hängt an der Position
+  KNX_AKKU_TMAX, KNX_AKKU_TMIN, KNX_AKKU_VMAX, KNX_AKKU_VMIN, KNX_AKKU_VDIFF,
+  KNX_AKKU_CYCLES, KNX_AKKU_REMAIN, KNX_AKKU_ALARM,
   KNX_CH_COUNT
 };
 
@@ -22,7 +25,7 @@ struct KnxCh {
   uint16_t dpt = 0; // 0 = Default aus Katalog
 };
 
-enum class KnxValKind : uint8_t { PowerW, Percent, Volt, Amp, Hz, EnergyKwh, RatioPct };
+enum class KnxValKind : uint8_t { PowerW, Percent, Volt, Amp, Hz, EnergyKwh, RatioPct, Temp, MilliVolt, Count, Flag };
 
 struct KnxPointMeta {
   const char *id;
@@ -69,6 +72,14 @@ inline const KnxPointMeta &knxMeta(uint8_t i) {
       {"tas_in", "Zähler E_in Tasmota", 13010, KnxValKind::EnergyKwh},
       {"tas_out", "Zähler E_out Tasmota", 13010, KnxValKind::EnergyKwh},
       {"lpp", "Consolinno LPP %", 5001, KnxValKind::RatioPct},
+      {"akku_tmax", "Zelltemperatur max", 9001, KnxValKind::Temp},
+      {"akku_tmin", "Zelltemperatur min", 9001, KnxValKind::Temp},
+      {"akku_vmax", "Zellspannung max", 9020, KnxValKind::MilliVolt},
+      {"akku_vmin", "Zellspannung min", 9020, KnxValKind::MilliVolt},
+      {"akku_vdiff", "Zellspannung Spreizung", 9020, KnxValKind::MilliVolt},
+      {"akku_cycles", "Ladezyklen", 12001, KnxValKind::Count},
+      {"akku_remain", "Restenergie", 13013, KnxValKind::EnergyKwh},
+      {"akku_alarm", "Akku-Alarm", 1005, KnxValKind::Flag},
   };
   return k[i < KNX_CH_COUNT ? i : 0];
 }

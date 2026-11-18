@@ -1137,13 +1137,14 @@ async function saveUiPrefs(){
 }
 </script>
 <script>
-const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
+const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[13013,'13.013 kWh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']],Temp:[[9001,'9.001 °C'],[14068,'14.068 °C']],MilliVolt:[[9020,'9.020 mV']],Count:[[12001,'12.001']],Flag:[[1005,'1.005 Alarm']]};
 let KNX_META=[];
 function dptOpts(kind,cur){
   return (KNX_DPT[kind]||KNX_DPT.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
 }
 function knxGrp(id){
   if(/^pv/.test(id))return 'PV';
+  if(/^akku/.test(id))return 'Akku-Details';
   if(/^(bat|soc|soh)/.test(id))return 'Batterie';
   if(/^(grid|v\d|i\d|freq)/.test(id))return 'Netz';
   if(/^e/.test(id))return 'Energie HIT';
@@ -2519,14 +2520,15 @@ void begin() {
     if (!requireAuth(req)) return;
     JsonDocument doc;
     JsonArray pts = doc["points"].to<JsonArray>();
-    static const char *kinds[] = {"PowerW", "Percent", "Volt", "Amp", "Hz", "EnergyKwh", "RatioPct"};
+    static const char *kinds[] = {"PowerW", "Percent", "Volt", "Amp", "Hz", "EnergyKwh", "RatioPct",
+                                   "Temp", "MilliVolt", "Count", "Flag"};
     for (size_t i = 0; i < KNX_CH_COUNT; i++) {
       const auto &m = knxMeta(i);
       JsonObject o = pts.add<JsonObject>();
       o["id"] = m.id;
       o["label"] = m.label;
       o["dpt"] = m.defaultDpt;
-      o["kind"] = kinds[uint8_t(m.kind) < 7 ? uint8_t(m.kind) : 0];
+      o["kind"] = kinds[uint8_t(m.kind) < 11 ? uint8_t(m.kind) : 0];
     }
     String out; serializeJson(doc, out);
     req->send(200, "application/json", out);
