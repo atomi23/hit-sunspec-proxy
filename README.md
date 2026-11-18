@@ -8,9 +8,16 @@ lässt sich auch ganz ohne Consolinno nutzen, z. B. nur als Modbus-Gateway mit K
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
-Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE, 12–24 V) zum Drucken](hardware/wt32-din/).
+Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
 Aktuelle Firmware: **v0.5.8** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.8)
+
+### Seit v0.5.8 (noch kein Release)
+- Neue Build-Variante **`p4-poe-eth`** für das [Waveshare ESP32-P4-WIFI6-POE-ETH](https://www.waveshare.com/esp32-p4-wifi6-poe-eth.htm):
+  Ethernet mit PoE, WLAN über den ESP32-C6; noch nicht auf Hardware getestet
+- Druckbare Hutschienengehäuse ohne Schrauben (Clip angedruckt, Deckel rastet ein):
+  [WT32-ETH01, 2 TE](hardware/wt32-din/) als Variante nur PoE oder mit RS485/Step-down,
+  [ESP32-P4-POE-ETH, 3,5 TE](hardware/p4-poe-din/)
 
 ### Neu in v0.5.8
 - **Funktionsauswahl** im Einrichtungsassistenten und unter *Einstellungen, Funktionen*: Consolinno/SunSpec,
@@ -186,6 +193,7 @@ OTA zwischen App-Slots bleibt danach möglich.
 | `t-connect-pro` (Standard) | LILYGO T-Connect-Pro, ESP32-S3, 16 MB | Display, Touch, W5500, RS485 TX 17 / RX 18 |
 | `wt32-eth01` | WT32-ETH01, ESP32, 4 MB | ohne Display; LAN8720 (PHY 1, Takt GPIO0, Enable GPIO16); RS485 über externen Wandler mit Auto-Richtung an IO17 (TX) / IO5 (RX) |
 | `t-poe-pro` | [LILYGO T-POE-Pro](https://lilygo.cc/products/t-poe-pro), ESP32-WROVER-E, 16 MB, 8 MB PSRAM | ohne Display; LAN8720 mit PoE; RS485 auf der Platine (TX 32 / RX 33) |
+| `p4-poe-eth` | [Waveshare ESP32-P4-WIFI6-POE-ETH](https://www.waveshare.com/esp32-p4-wifi6-poe-eth.htm), ESP32-P4, 32 MB, 32 MB PSRAM | ohne Display; IP101 mit PoE (MDC 31, MDIO 52, Reset 51); WLAN über den ESP32-C6; RS485 über externen Wandler an GPIO4 (TX) / GPIO5 (RX). Noch nicht auf Hardware getestet |
 
 Der WT32-ETH01 nutzt `min_spiffs.csv` (2× 1,9 MB OTA), der T-POE-Pro wie der T-Connect-Pro `partitions_16MB.csv`.
 Der WT32-ETH01 wird über einen USB-Seriell-Adapter an TX0/RX0 geflasht (IO0 beim Einschalten auf GND):

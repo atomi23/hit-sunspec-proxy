@@ -32,6 +32,9 @@
 #elif defined(BOARD_WT32_ETH01)
 #define BOARD_NAME "WT32-ETH01"
 #define BOARD_HAS_DISPLAY false
+#elif defined(BOARD_P4_POE_ETH)
+#define BOARD_NAME "ESP32-P4-POE-ETH"
+#define BOARD_HAS_DISPLAY false
 #elif defined(BOARD_T_POE_PRO)
 #define BOARD_NAME "T-POE-Pro"
 #define BOARD_HAS_DISPLAY false

@@ -1,0 +1,1256 @@
+{
+ "commands": [
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 47.0,
+    "width": 90.0,
+    "height": 59.5,
+    "corner": [
+     0,
+     0,
+     0
+    ],
+    "body_name": "Unterteil"
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 14.0,
+    "width": 45.0,
+    "height": 59.5,
+    "corner": [
+     47.0,
+     22.5,
+     0
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 43.0,
+    "width": 86.0,
+    "height": 58.5,
+    "corner": [
+     2.0,
+     2.0,
+     2.0
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 15.0,
+    "width": 41.0,
+    "height": 58.5,
+    "corner": [
+     44.0,
+     24.5,
+     2.0
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 26,
+    "height": 1.6,
+    "corner": [
+     58.0,
+     32,
+     8.0
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 26,
+    "height": 1.6,
+    "corner": [
+     58.0,
+     32,
+     18.0
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 26,
+    "height": 1.6,
+    "corner": [
+     58.0,
+     32,
+     28.0
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 26,
+    "height": 1.6,
+    "corner": [
+     58.0,
+     32,
+     38.0
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 26,
+    "height": 1.6,
+    "corner": [
+     58.0,
+     32,
+     48.0
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 17.9,
+    "width": 4.0,
+    "height": 17.2,
+    "corner": [
+     10.9,
+     87.0,
+     6.1
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 14.9,
+    "width": 4.0,
+    "height": 18.0,
+    "corner": [
+     10.9,
+     87.0,
+     23.1
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 1.51,
+    "corner": [
+     8.5,
+     28.700000000000003,
+     1.99
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 1.51,
+    "corner": [
+     11.75,
+     28.700000000000003,
+     1.99
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 1.51,
+    "corner": [
+     8.5,
+     56.7,
+     1.99
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 1.51,
+    "corner": [
+     11.75,
+     56.7,
+     1.99
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.6,
+    "width": 1.3,
+    "height": 6.31,
+    "corner": [
+     10.0,
+     15.200000000000003,
+     1.99
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.6,
+    "width": 3.11,
+    "height": 3.81,
+    "corner": [
+     10.0,
+     84.9,
+     1.99
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.31,
+    "width": 3.4,
+    "height": 57.5,
+    "corner": [
+     -1.3,
+     62.6,
+     1.0
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "XY",
+    "offset": 1.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      -1.3,
+      66.0
+     ],
+     [
+      -3.0,
+      66.0
+     ],
+     [
+      -3.0,
+      60.5
+     ],
+     [
+      -1.3,
+      59.5
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 57.5,
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 3.0,
+    "width": 8.0,
+    "height": 61.5,
+    "corner": [
+     -1,
+     19.4,
+     -1
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 5.0,
+    "width": 20.4,
+    "height": 61.5,
+    "corner": [
+     2.0,
+     7.0,
+     -1
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 30.0,
+    "width": 5.6,
+    "height": 61.5,
+    "corner": [
+     2.0,
+     6.0,
+     -1
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 10.0,
+    "height": 56.91,
+    "corner": [
+     32.0,
+     5.0,
+     1.99
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 9.0,
+    "width": 4.2,
+    "height": 58.9,
+    "corner": [
+     -3.0,
+     22.8,
+     0.0
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 3.0,
+    "width": 13.41,
+    "height": 58.9,
+    "corner": [
+     3.0,
+     9.4,
+     0.0
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 29.5,
+    "width": 1.6,
+    "height": 58.9,
+    "corner": [
+     3.0,
+     9.4,
+     0.0
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "XY",
+    "offset": 0.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      -1.3,
+      26.99
+     ],
+     [
+      -1.3,
+      30.5
+     ],
+     [
+      -3.0,
+      27.0
+     ],
+     [
+      -3.0,
+      26.99
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 58.9,
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 2.4,
+    "width": 23.81,
+    "height": 58.9,
+    "corner": [
+     -3.0,
+     -1.0,
+     0.0
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 11.0,
+    "width": 6.0,
+    "height": 58.9,
+    "corner": [
+     -3.0,
+     -7.0,
+     0.0
+    ],
+    "operation": "join",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.cylinder",
+   "params": {
+    "diameter": 3.2,
+    "height": 13,
+    "base": [
+     -4.0,
+     -4.0,
+     29.45
+    ],
+    "axis": "X",
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 8.6,
+    "width": 4.0,
+    "height": 2.8,
+    "corner": [
+     32.7,
+     87.0,
+     49.2
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 6.6,
+    "width": 4.0,
+    "height": 2.8,
+    "corner": [
+     2.7,
+     87.0,
+     49.2
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 8.6,
+    "width": 4.0,
+    "height": 2.8,
+    "corner": [
+     11.7,
+     -1,
+     49.2
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 8.6,
+    "width": 4.0,
+    "height": 2.8,
+    "corner": [
+     34.7,
+     -1,
+     49.2
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 8.6,
+    "height": 2.8,
+    "corner": [
+     44.0,
+     5.7,
+     49.2
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 4.0,
+    "width": 8.6,
+    "height": 2.8,
+    "corner": [
+     44.0,
+     75.7,
+     49.2
+    ],
+    "operation": "cut",
+    "targets": [
+     "Unterteil"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 47.0,
+    "width": 90.0,
+    "height": 2.5,
+    "corner": [
+     0,
+     0,
+     59.5
+    ],
+    "body_name": "Deckel"
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 14.0,
+    "width": 45.0,
+    "height": 2.5,
+    "corner": [
+     47.0,
+     22.5,
+     59.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 8.0,
+    "width": 1.5,
+    "height": 10.01,
+    "corner": [
+     33.0,
+     86.3,
+     49.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "YZ",
+    "offset": 33.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      87.78999999999999,
+      49.5
+     ],
+     [
+      88.7,
+      50.9
+     ],
+     [
+      88.7,
+      51.9
+     ],
+     [
+      87.78999999999999,
+      51.9
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 8.0,
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 6.0,
+    "width": 1.5,
+    "height": 10.01,
+    "corner": [
+     3.0,
+     86.3,
+     49.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "YZ",
+    "offset": 3.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      87.78999999999999,
+      49.5
+     ],
+     [
+      88.7,
+      50.9
+     ],
+     [
+      88.7,
+      51.9
+     ],
+     [
+      87.78999999999999,
+      51.9
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 6.0,
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 8.0,
+    "width": 1.5,
+    "height": 10.01,
+    "corner": [
+     12.0,
+     2.2,
+     49.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "YZ",
+    "offset": 12.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      2.21,
+      49.5
+     ],
+     [
+      1.3000000000000003,
+      50.9
+     ],
+     [
+      1.3000000000000003,
+      51.9
+     ],
+     [
+      2.21,
+      51.9
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 8.0,
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 8.0,
+    "width": 1.5,
+    "height": 10.01,
+    "corner": [
+     35.0,
+     2.2,
+     49.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "YZ",
+    "offset": 35.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      2.21,
+      49.5
+     ],
+     [
+      1.3000000000000003,
+      50.9
+     ],
+     [
+      1.3000000000000003,
+      51.9
+     ],
+     [
+      2.21,
+      51.9
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 8.0,
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.5,
+    "width": 8.0,
+    "height": 10.01,
+    "corner": [
+     43.3,
+     6.0,
+     49.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "XZ",
+    "offset": 6.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      44.79,
+      -49.5
+     ],
+     [
+      45.699999999999996,
+      -50.9
+     ],
+     [
+      45.699999999999996,
+      -51.9
+     ],
+     [
+      44.79,
+      -51.9
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 8.0,
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.5,
+    "width": 8.0,
+    "height": 10.01,
+    "corner": [
+     43.3,
+     76.0,
+     49.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "sketch.create",
+   "params": {
+    "plane": "XZ",
+    "offset": 76.0
+   }
+  },
+  {
+   "command": "sketch.line",
+   "params": {
+    "points": [
+     [
+      44.79,
+      -49.5
+     ],
+     [
+      45.699999999999996,
+      -50.9
+     ],
+     [
+      45.699999999999996,
+      -51.9
+     ],
+     [
+      44.79,
+      -51.9
+     ]
+    ],
+    "closed": true
+   }
+  },
+  {
+   "command": "sketch.finish",
+   "params": {}
+  },
+  {
+   "command": "solid.extrude",
+   "params": {
+    "distance": 8.0,
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 3.41,
+    "corner": [
+     8.5,
+     28.700000000000003,
+     56.099999999999994
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 3.41,
+    "corner": [
+     11.75,
+     28.700000000000003,
+     56.099999999999994
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.6,
+    "width": 14.0,
+    "height": 2.01,
+    "corner": [
+     10.0,
+     28.700000000000003,
+     57.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 3.41,
+    "corner": [
+     8.5,
+     56.7,
+     56.099999999999994
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.35,
+    "width": 14.0,
+    "height": 3.41,
+    "corner": [
+     11.75,
+     56.7,
+     56.099999999999994
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.6,
+    "width": 14.0,
+    "height": 2.01,
+    "corner": [
+     10.0,
+     56.7,
+     57.5
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.6,
+    "width": 1.3,
+    "height": 8.21,
+    "corner": [
+     10.0,
+     15.200000000000003,
+     51.3
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "solid.box",
+   "params": {
+    "length": 1.6,
+    "width": 2.9,
+    "height": 5.21,
+    "corner": [
+     10.0,
+     84.9,
+     54.3
+    ],
+    "operation": "join",
+    "targets": [
+     "Deckel"
+    ]
+   }
+  },
+  {
+   "command": "file.save_mesh",
+   "params": {
+    "path": "stl/unterteil.stl",
+    "bodies": [
+     "Unterteil"
+    ],
+    "quality": "fine"
+   }
+  },
+  {
+   "command": "solid.move",
+   "params": {
+    "bodies": [
+     "Deckel"
+    ],
+    "axis": [
+     1,
+     0,
+     0
+    ],
+    "angle": "180 deg"
+   }
+  },
+  {
+   "command": "file.save_mesh",
+   "params": {
+    "path": "stl/deckel.stl",
+    "bodies": [
+     "Deckel"
+    ],
+    "quality": "fine"
+   }
+  },
+  {
+   "command": "solid.move",
+   "params": {
+    "bodies": [
+     "Deckel"
+    ],
+    "axis": [
+     1,
+     0,
+     0
+    ],
+    "angle": "-180 deg"
+   }
+  }
+ ]
+}

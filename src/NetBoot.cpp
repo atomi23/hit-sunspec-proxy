@@ -11,7 +11,7 @@
 #endif
 #endif
 
-#if defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01)
+#if defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01) || defined(BOARD_P4_POE_ETH)
 // LAN8720 über RMII; PHY-Adresse und Pins kommen aus den build_flags (ETH_PHY_*)
 #include <ETH.h>
 #endif
@@ -31,7 +31,7 @@ static void refreshIps(const AppConfig &cfg) {
   strlcpy(gLive.ipWifi, "-", sizeof(gLive.ipWifi));
   strlcpy(gLive.ipShown, "-", sizeof(gLive.ipShown));
 
-#if defined(ETH_PHY_TYPE) || defined(BOARD_T_CONNECT_PRO) || defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01)
+#if defined(ETH_PHY_TYPE) || defined(BOARD_T_CONNECT_PRO) || defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01) || defined(BOARD_P4_POE_ETH)
   if (cfg.useEthernet && ETH.linkUp()) {
     gLive.ethOk = true;
     strlcpy(gLive.ipEth, ETH.localIP().toString().c_str(), sizeof(gLive.ipEth));
@@ -98,7 +98,7 @@ void begin(const AppConfig &cfg) {
     // über die UART-Ausgabe die Hauptschleife aus (Task-Watchdog); Pakete gehen dann ohnehin verloren
     esp_log_level_set("w5500.mac", ESP_LOG_NONE);
   }
-#elif defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01)
+#elif defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01) || defined(BOARD_P4_POE_ETH)
   if (cfg.useEthernet) {
     ETH.begin();
   }
