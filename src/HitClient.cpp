@@ -2,6 +2,8 @@
 #include "HitBus.h"
 #include "DataSource.h"
 #include "EventLog.h"
+#include "BatteryData.h"
+#include "BatteryLogic.h"
 #include <math.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -17,6 +19,8 @@ SemaphoreHandle_t cfgLock = nullptr;
 AppConfig pendingCfg;
 bool cfgPending = false;
 volatile bool forcePoll = false;
+uint32_t batNext = 0, packNext = 0;
+bool batFailLogged = false;
 
 int16_t asI16(uint16_t u) {
   return (u >= 0x8000) ? int16_t(int32_t(u) - 0x10000) : int16_t(u);
@@ -33,6 +37,8 @@ uint32_t asU32(uint16_t hi, uint16_t lo) {
 bool rd(uint16_t addr, uint16_t qty, uint16_t *out) {
   return HitBus::readInput(addr, qty, out);
 }
+
+void pollBattery();
 
 bool doPoll() {
   // PV1..4 ab Reg 27, je String V×0.1 / I×0.01 / W (V2.8)
@@ -136,6 +142,7 @@ bool doPoll() {
   gLive.lastHitMs = millis();
   gLive.dataOrigin = DataOrigin::Native;
   strlcpy(gLive.status, "HIT ok", sizeof(gLive.status));
+  pollBattery();
   return true;
 }
 
@@ -152,6 +159,41 @@ void takeConfig() {
 
 bool doDemo();
 bool pollOnce();
+
+// Zusatzwerte des Akkus in eigenem Takt, nur nach erfolgreichem Haupt-Poll: ein Lesebefehl über 12 Register,
+// die Packinfo stündlich. Fehler hier ändern nichts an hitOk.
+void pollBattery() {
+  if (!local.batEnabled || !local.batHitEnabled) return;
+  const uint32_t now = millis();
+  if (batNext && int32_t(now - batNext) < 0) return;
+  batNext = (now + uint32_t(constrain(local.batHitPollS, 30, 3600)) * 1000UL) | 1;
+  uint16_t regs[12] = {};
+  BatteryHit h;
+  if (!rd(1916, 12, regs)) {
+    if (!batFailLogged) EventLog::add('W', "Akku", "HIT liefert keine Akkudetails: %s", HitBus::lastError());
+    batFailLogged = true;
+    BatteryData::updateHit(h);
+    return;
+  }
+  batFailLogged = false;
+  decodeHitBattery(regs, h);
+  BatteryData::updateHit(h);
+  vTaskDelay(pdMS_TO_TICKS(40));
+  if (packNext && int32_t(now - packNext) < 0) return;
+  packNext = (now + 3600000UL) | 1;
+  uint16_t sys[5] = {};
+  if (!HitBus::readHolding(8000, 5, sys)) return;
+  const uint8_t n = uint8_t(min<uint16_t>(sys[2], BAT_MAX_PACKS));
+  BatteryPack packs[BAT_MAX_PACKS];
+  uint8_t got = 0;
+  for (uint8_t i = 0; i < n; i++) {
+    vTaskDelay(pdMS_TO_TICKS(40));
+    uint16_t pr[28] = {};
+    if (!HitBus::readHolding(uint16_t(8100 + 50 * i), 28, pr)) break;
+    decodeHitPack(pr, packs[got++]);
+  }
+  BatteryData::updatePacks(packs, got);
+}
 
 // HIT-Poll dauert mit Timeouts leicht mehrere Sekunden — eigene Task, sonst
 // verhungern SunSpec (Consolinno) und die Weboberfläche.
@@ -212,6 +254,20 @@ bool doDemo() {
   gLive.lastHitMs = millis();
   gLive.lastTasmotaMs = millis();
   gLive.dataOrigin = DataOrigin::Demo;
+  if (local.batEnabled) {
+    BatteryHit h;
+    h.valid = true;
+    h.atMs = millis();
+    h.maxChargeA = 50; h.maxDischargeA = 50; h.chargeCutV = 56.8f; h.dischargeCutV = 44.8f;
+    h.cellTempMax = 21 + 3 * sinf(t / 300.0f); h.cellTempMin = h.cellTempMax - 3;
+    h.modTempMax = h.cellTempMax + 1; h.modTempMin = h.cellTempMin;
+    h.cellVMax = 3.3f; h.cellVMin = 3.3f; h.modVMax = 52.9f; h.modVMin = 52.7f;
+    BatteryData::updateHit(h);
+    BatteryPack p;
+    strlcpy(p.sn, "DEMO-PACK-0001", sizeof(p.sn));
+    p.bmsFw = 10203; p.ratedCap = 5120;
+    BatteryData::updatePacks(&p, 1);
+  }
   strlcpy(gLive.status, "DEMO — kein HIT", sizeof(gLive.status));
   return true;
 }

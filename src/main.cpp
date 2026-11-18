@@ -18,6 +18,7 @@
 #include "History.h"
 #include "EventLog.h"
 #include "HttpsServer.h"
+#include "BatteryData.h"
 
 void setup() {
   Serial.begin(115200);
@@ -35,6 +36,7 @@ void setup() {
 
   NetBoot::begin(cfg);
   StatusDisplay::begin(cfg);
+  BatteryData::begin();
   HitBus::begin(cfg);
   HitClient::begin(cfg);
   ModbusGateway::begin(cfg);

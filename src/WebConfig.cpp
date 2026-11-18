@@ -10,6 +10,7 @@
 #include "DebugLog.h"
 #include "EventLog.h"
 #include "HttpsServer.h"
+#include "BatteryData.h"
 #include "OtaUpdate.h"
 #include "HoyCloud.h"
 #include "KnxIp.h"
@@ -2522,6 +2523,15 @@ void begin() {
     out["error"] = ctrlErr;
     String s; serializeJson(out, s);
     req->send(200, "application/json", s);
+  });
+
+  server.on("/api/battery", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    JsonDocument doc;
+    BatteryData::toJson(doc, ConfigStore::get());
+    String out;
+    serializeJson(doc, out);
+    req->send(200, "application/json", out);
   });
 
   server.on("/history", HTTP_GET, [](AsyncWebServerRequest *req) {
