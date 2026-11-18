@@ -152,6 +152,18 @@ bool load() {
           sizeof(cfg.cloudStationId));
   cfg.cloudPollMs = prefs.getUInt("cldpoll", cfg.cloudPollMs);
   cfg.cloudMaxAgeMs = prefs.getUInt("clage", cfg.cloudMaxAgeMs);
+  cfg.batEnabled = prefs.getBool("batena", cfg.batEnabled);
+  cfg.batHitEnabled = prefs.getBool("bathit", cfg.batHitEnabled);
+  cfg.batHitPollS = constrain(prefs.getUShort("bathitp", cfg.batHitPollS), 30, 3600);
+  {
+    const uint8_t bc = prefs.getUChar("batcld", 0);
+    cfg.batCloud = static_cast<BatteryCloudType>(bc < BATTERY_CLOUD_COUNT ? bc : 0);
+  }
+  strlcpy(cfg.batCloudHost, prefs.getString("batchost", cfg.batCloudHost).c_str(), sizeof(cfg.batCloudHost));
+  strlcpy(cfg.batCloudAppId, prefs.getString("batcid", cfg.batCloudAppId).c_str(), sizeof(cfg.batCloudAppId));
+  strlcpy(cfg.batCloudSecret, prefs.getString("batcsec", cfg.batCloudSecret).c_str(), sizeof(cfg.batCloudSecret));
+  strlcpy(cfg.batCloudSn, prefs.getString("batcsn", cfg.batCloudSn).c_str(), sizeof(cfg.batCloudSn));
+  cfg.batCloudPollS = constrain(prefs.getUShort("batcp", cfg.batCloudPollS), BAT_CLOUD_MIN_S, 3600);
 
   cfg.knxEnabled = prefs.getBool("knxena", cfg.knxEnabled);
   strlcpy(cfg.knxPa, prefs.getString("knxpa", cfg.knxPa).c_str(), sizeof(cfg.knxPa));
@@ -261,6 +273,15 @@ bool save() {
   prefs.putString("cldsid", cfg.cloudStationId);
   prefs.putUInt("cldpoll", cfg.cloudPollMs);
   prefs.putUInt("clage", cfg.cloudMaxAgeMs);
+  prefs.putBool("batena", cfg.batEnabled);
+  prefs.putBool("bathit", cfg.batHitEnabled);
+  prefs.putUShort("bathitp", cfg.batHitPollS);
+  prefs.putUChar("batcld", static_cast<uint8_t>(cfg.batCloud));
+  prefs.putString("batchost", cfg.batCloudHost);
+  prefs.putString("batcid", cfg.batCloudAppId);
+  prefs.putString("batcsec", cfg.batCloudSecret);
+  prefs.putString("batcsn", cfg.batCloudSn);
+  prefs.putUShort("batcp", cfg.batCloudPollS);
 
   prefs.putBool("knxena", cfg.knxEnabled);
   prefs.putString("knxpa", cfg.knxPa);

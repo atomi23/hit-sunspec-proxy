@@ -219,7 +219,7 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 .cfg .card.show{columns:2 380px;column-gap:48px}
 .cfg .card label{break-after:avoid}
 .cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
-.cfg #knxRows,.cfg #probeBox,.cfg #tlsBox{column-span:all}
+.cfg #knxRows,.cfg #probeBox,.cfg #tlsBox,.cfg #batBox{column-span:all}
 .cfg #features.show{columns:auto}
 textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--well);color:var(--ink);
   font:400 12px/1.4 ui-monospace,Consolas,monospace;resize:vertical}
@@ -283,6 +283,7 @@ const char DASH_HTML[] PROGMEM = R"HTML(
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
     <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
     <div class="nav-grp">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
@@ -421,7 +422,7 @@ let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
   F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
-    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
@@ -597,6 +598,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
     <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
     <div class="nav-grp">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
@@ -662,7 +664,7 @@ let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
   F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
-    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
@@ -851,6 +853,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
     <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
     <div class="nav-grp">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
@@ -922,6 +925,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <label><input type="checkbox" data-feat="knxEnabled"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
 <label><input type="checkbox" data-feat="tasmotaEnabled"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
 <label><input type="checkbox" data-feat="cloudEnabled"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
+<label><input type="checkbox" data-feat="batEnabled"/> <span><b>Akkudaten</b>: Temperaturen, Zellspannungen und Grenzwerte vom HIT, optional aus der Akku-Cloud</span></label>
 <p class="hint">Die Einstellungen eines Dienstes stehen in seinem Menüpunkt. Speichern übernimmt die Auswahl ohne Neustart.</p>
 </div>
 <div class="card" id="netz" data-sub="Verbindung ins Heimnetz und Anmeldung an dieser Oberfläche."><strong>Netzwerk und Zugang</strong>
@@ -1031,6 +1035,20 @@ Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spann
 <label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
 <p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
+<div class="card" id="akku" data-sub="Zusätzliche Akkuwerte vom HIT und aus der Cloud des Akku-Herstellers. Nur lesen."><strong>Akku</strong>
+<label><input name="batEnabled" type="checkbox"/> aktiv</label>
+<label><input name="batHitEnabled" type="checkbox"/> Werte vom HIT lesen (jeder Hersteller, soweit das BMS sie liefert)</label>
+<label>HIT-Abfrage alle (s)</label><input name="batHitPollS" type="number" min="30" max="3600"/>
+<label>Akku-Cloud</label>
+<select name="batCloud"><option value="0">keine</option><option value="1">Dyness</option></select>
+<label>API Host</label><input name="batCloudHost" placeholder="open-api.dyness.com"/>
+<label>App-ID</label><input name="batCloudAppId" autocomplete="off"/>
+<label>App-Secret</label><input name="batCloudSecret" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert"/>
+<label>Seriennummer</label><input name="batCloudSn" autocomplete="off" placeholder="leer = automatisch das erste Gerät"/>
+<label>Cloud-Abfrage alle (s)</label><input name="batCloudPollS" type="number" min="300" max="3600"/>
+<p class="hint">App-ID und Secret legt man im Dyness-Portal ems.dyness.com unter Entwicklerzentrum, API-Verwaltung an. Das Secret wird dort nur einmal angezeigt. Nutzt ein anderes Programm (z. B. die Home-Assistant-Integration) dieselbe App-ID, teilen sich beide die Abrufgrenze von Dyness.</p>
+<div id="batBox"></div>
+</div>
 <div class="card" id="gateway" data-sub="Andere Programme lesen den HIT über den ESP, statt selbst eine Verbindung aufzubauen."><strong>Modbus-Gateway</strong>
 <label><input name="gatewayEnabled" type="checkbox"/> Gateway einschalten</label>
 <label>Port</label><input name="gatewayPort" type="number" min="1" max="65535"/>
@@ -1086,7 +1104,7 @@ let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
   F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
-    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
@@ -1297,11 +1315,11 @@ async function knxImport(inp){
 // Funktionen: Spiegel der "aktiv"-Schalter der einzelnen Dienste; das Menü folgt dem Formular
 window.NAV_FROM_FORM=true;
 let CFG_LOADED=false,HAS_DISPLAY=true;
-const FEAT_KEY={sunspecEnabled:'sunspec',gatewayEnabled:'gateway',mqttEnabled:'mqtt',knxEnabled:'knx',tasmotaEnabled:'tasmota',cloudEnabled:'cloud'};
+const FEAT_KEY={sunspecEnabled:'sunspec',gatewayEnabled:'gateway',mqttEnabled:'mqtt',knxEnabled:'knx',tasmotaEnabled:'tasmota',cloudEnabled:'cloud',batEnabled:'akku'};
 function formFeat(){
   const f=document.getElementById('f');const g=n=>{const e=f.elements.namedItem(n);return !!(e&&e.checked);};
   return {sunspec:g('sunspecEnabled'),gateway:g('gatewayEnabled'),mqtt:g('mqttEnabled')||g('mqttIngestEnabled'),
-    knx:g('knxEnabled'),tasmota:g('tasmotaEnabled'),cloud:g('cloudEnabled')};
+    knx:g('knxEnabled'),tasmota:g('tasmotaEnabled'),cloud:g('cloudEnabled'),akku:g('batEnabled')};
 }
 function syncFeat(){
   const F=formFeat();
@@ -1478,6 +1496,7 @@ an Consolinno, an Home Assistant, KNX oder andere Modbus-Programme. Welche Diens
 <label><input id="w_knx" type="checkbox"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
 <label><input id="w_tasmota" type="checkbox"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
 <label><input id="w_cloud" type="checkbox"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
+<label><input id="w_akku" type="checkbox"/> <span><b>Akkudaten</b>: Temperaturen, Zellspannungen und Grenzwerte vom HIT</span></label>
 <p class="hint">Abgewählte Dienste starten nicht und erscheinen nicht im Menü. Unter Einstellungen, Funktionen lassen sie sich jederzeit einschalten.</p>
 <div class="row"><button class="sec" type="button" onclick="back()">Zurück</button><button type="button" onclick="next()">Weiter</button></div>
 <p class="hint" id="featMsg"></p>
@@ -1531,7 +1550,8 @@ IP = diese Proxy-Adresse, Port = <b>1502</b> (SunSpec). Automatischer Scan auf 5
 <script>
 const FEATS=[['sunspec','sunspecEnabled','Consolinno / SunSpec','Consolinno'],['gateway','gatewayEnabled','Modbus-Gateway','Modbus-Gateway'],
   ['mqtt','mqttEnabled','Home Assistant (MQTT)','Home Assistant'],['knx','knxEnabled','KNX','KNX'],
-  ['tasmota','tasmotaEnabled','Tasmota-Zähler','Tasmota-Zähler'],['cloud','cloudEnabled','Hoymiles-Cloud','Hoymiles-Cloud']];
+  ['tasmota','tasmotaEnabled','Tasmota-Zähler','Tasmota-Zähler'],['cloud','cloudEnabled','Hoymiles-Cloud','Hoymiles-Cloud'],
+  ['akku','batEnabled','Akkudaten','Akkudaten']];
 const $w=id=>document.getElementById(id);
 const feat=k=>$w('w_'+k).checked;
 // Consolinno-Schritt nur, wenn SunSpec gewählt ist
@@ -1641,6 +1661,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
     <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
     <div class="nav-grp">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
@@ -1731,7 +1752,7 @@ let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
   F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
-    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
@@ -2044,6 +2065,21 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (o["cloudStationId"].is<const char *>()) strlcpy(c.cloudStationId, o["cloudStationId"], sizeof(c.cloudStationId));
   if (!o["cloudPollMs"].isNull()) c.cloudPollMs = o["cloudPollMs"];
   if (!o["cloudMaxAgeMs"].isNull()) c.cloudMaxAgeMs = o["cloudMaxAgeMs"];
+  if (!o["batEnabled"].isNull()) c.batEnabled = o["batEnabled"];
+  if (!o["batHitEnabled"].isNull()) c.batHitEnabled = o["batHitEnabled"];
+  if (!o["batHitPollS"].isNull()) c.batHitPollS = constrain(o["batHitPollS"].as<long>(), 30L, 3600L);
+  if (!o["batCloud"].isNull()) {
+    const int t = o["batCloud"].as<int>();
+    if (t >= 0 && t < BATTERY_CLOUD_COUNT) c.batCloud = static_cast<BatteryCloudType>(t);
+  }
+  if (o["batCloudHost"].is<const char *>() && o["batCloudHost"].as<const char *>()[0])
+    strlcpy(c.batCloudHost, o["batCloudHost"], sizeof(c.batCloudHost));
+  if (o["batCloudAppId"].is<const char *>()) strlcpy(c.batCloudAppId, o["batCloudAppId"], sizeof(c.batCloudAppId));
+  if (o["batCloudSecret"].is<const char *>() && o["batCloudSecret"].as<const char *>()[0])
+    strlcpy(c.batCloudSecret, o["batCloudSecret"], sizeof(c.batCloudSecret));
+  if (o["batCloudSn"].is<const char *>()) strlcpy(c.batCloudSn, o["batCloudSn"], sizeof(c.batCloudSn));
+  if (!o["batCloudPollS"].isNull())
+    c.batCloudPollS = constrain(o["batCloudPollS"].as<long>(), long(BAT_CLOUD_MIN_S), 3600L);
   if (!o["knxEnabled"].isNull()) c.knxEnabled = o["knxEnabled"];
   if (o["knxPa"].is<const char *>()) strlcpy(c.knxPa, o["knxPa"], sizeof(c.knxPa));
   if (!o["knxPublishMs"].isNull()) c.knxPublishMs = o["knxPublishMs"];
@@ -2318,6 +2354,7 @@ void begin() {
       f["knx"] = c.knxEnabled;
       f["tasmota"] = c.tasmotaEnabled;
       f["cloud"] = c.cloudEnabled;
+      f["akku"] = c.batEnabled;
     }
     doc["board"] = BOARD_NAME;
     doc["hasDisplay"] = BOARD_HAS_DISPLAY;
@@ -2400,6 +2437,17 @@ void begin() {
     doc["cloudStationId"] = c.cloudStationId;
     doc["cloudPollMs"] = c.cloudPollMs;
     doc["cloudMaxAgeMs"] = c.cloudMaxAgeMs;
+    doc["batEnabled"] = c.batEnabled;
+    doc["batHitEnabled"] = c.batHitEnabled;
+    doc["batHitPollS"] = c.batHitPollS;
+    doc["batCloud"] = int(c.batCloud);
+    doc["batCloudHost"] = c.batCloudHost;
+    doc["batCloudAppId"] = c.batCloudAppId;
+    doc["batCloudSecret"] = "";
+    doc["batCloudSecretSet"] = c.batCloudSecret[0] != 0;
+    doc["batCloudSn"] = c.batCloudSn;
+    doc["batCloudPollS"] = c.batCloudPollS;
+    doc["batCloudMinS"] = BAT_CLOUD_MIN_S;
     doc["knxEnabled"] = c.knxEnabled;
     doc["knxPa"] = c.knxPa;
     doc["knxPublishMs"] = c.knxPublishMs;

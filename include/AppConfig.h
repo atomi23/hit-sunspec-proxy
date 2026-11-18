@@ -14,6 +14,19 @@ enum class InverterType : uint8_t {
 };
 constexpr uint8_t INVERTER_TYPE_COUNT = 1;
 
+// Akku-Cloud-Anbieter; weitere kommen als eigene Werte dazu
+enum class BatteryCloudType : uint8_t {
+  None = 0,
+  Dyness = 1,
+};
+constexpr uint8_t BATTERY_CLOUD_COUNT = 2;
+// Dyness erlaubt rund einen Abruf je 5 min; ohne PSRAM seltener, die TLS-Sitzung braucht viel internen RAM
+#ifdef BOARD_HAS_PSRAM
+constexpr uint16_t BAT_CLOUD_MIN_S = 300;
+#else
+constexpr uint16_t BAT_CLOUD_MIN_S = 600;
+#endif
+
 struct AppConfig {
   // Network
   bool useEthernet = true;
@@ -102,6 +115,17 @@ struct AppConfig {
   char cloudStationId[24] = ""; // sid / station_id
   uint32_t cloudPollMs = 60000;
   uint32_t cloudMaxAgeMs = 180000;
+
+  // Akkudaten: zusätzliche Werte vom HIT und optional aus der Cloud des Akku-Herstellers
+  bool batEnabled = true;
+  bool batHitEnabled = true;
+  uint16_t batHitPollS = 60;     // 30..3600
+  BatteryCloudType batCloud = BatteryCloudType::None;
+  char batCloudHost[64] = "open-api.dyness.com";
+  char batCloudAppId[64] = "";
+  char batCloudSecret[80] = ""; // wird nie ausgeliefert
+  char batCloudSn[40] = "";     // leer = erstes Gerät des Kontos
+  uint16_t batCloudPollS = BAT_CLOUD_MIN_S;
 
   // KNX IP Routing — alle Live-Werte wählbar (siehe KnxPoints.h)
   bool knxEnabled = false;
