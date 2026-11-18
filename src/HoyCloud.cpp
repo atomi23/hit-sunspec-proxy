@@ -2,6 +2,7 @@
 #include "LiveData.h"
 #include "Watchdog.h"
 #include "EventLog.h"
+#include "BatteryCloud.h"
 #include <HTTPClient.h>
 #include <esp_heap_caps.h>
 #include <WiFi.h>
@@ -18,7 +19,10 @@ uint32_t tokenAt = 0;
 uint32_t loginBlockedUntil = 0; // nach Fehlversuch nicht dauernd anmelden, sonst sperrt S-Miles das Konto
 
 // neapi.hoymiles.com: GeoTrust G2 → DigiCert Global Root G2 (Cross-Sign über Global Root CA)
-const char HOY_CA[] PROGMEM = R"PEM(
+} // namespace
+
+// auch für die Akku-Cloud: *.dyness.com hängt ebenfalls an DigiCert Global Root G2
+const char CLOUD_CA_DIGICERT[] PROGMEM = R"PEM(
 -----BEGIN CERTIFICATE-----
 MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
 MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
@@ -64,6 +68,9 @@ YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
 CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 -----END CERTIFICATE-----
 )PEM";
+
+namespace {
+const char *const HOY_CA = CLOUD_CA_DIGICERT;
 
 String md5Hex(const char *s) {
   MD5Builder b;
@@ -283,6 +290,7 @@ void takeConfig() {
   token[0] = 0;
   loginBlockedUntil = 0;
   gLive.cloudOk = false;
+  BatteryCloud::reset();
 }
 
 void step();
@@ -293,6 +301,7 @@ void taskMain(void *) {
   for (;;) {
     takeConfig();
     step();
+    BatteryCloud::step(local); // Akku-Cloud nach der Hoymiles-Cloud, nie gleichzeitig
     vTaskDelay(pdMS_TO_TICKS(250));
   }
 }
