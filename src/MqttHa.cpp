@@ -3,6 +3,9 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include "BatteryData.h"
+#include "BatteryLogic.h"
+#include <math.h>
 
 namespace {
 AppConfig local;
@@ -113,6 +116,106 @@ void onMessage(char *topic, byte *payload, unsigned int len) {
   gLive.lastMqttIngestMs = ingest.atMs;
 }
 
+// Akku: eigenes HA-Gerät, über den Proxy angebunden
+String topicBattery() { return String(local.mqttBase) + "/battery"; }
+bool batDiscSent = false;
+uint32_t batLastHit = 0, batLastCloud = 0;
+
+void publishBatDisc(const char *component, const char *objId, const char *name, const char *unit,
+                    const char *devClass, const char *stateClass, bool enabled = true) {
+  JsonDocument doc;
+  doc["name"] = name;
+  doc["uniq_id"] = String(local.mqttBase) + "_akku_" + objId;
+  doc["stat_t"] = topicBattery();
+  doc["avty_t"] = topicAvail();
+  doc["pl_avail"] = "online";
+  doc["pl_not_avail"] = "offline";
+  doc["val_tpl"] = String("{{ value_json.") + objId + " | default(None) }}";
+  if (!strcmp(component, "binary_sensor")) {
+    doc["pl_on"] = 1;
+    doc["pl_off"] = 0;
+  }
+  if (unit && unit[0]) doc["unit_of_meas"] = unit;
+  if (devClass && devClass[0]) doc["dev_cla"] = devClass;
+  if (stateClass && stateClass[0]) doc["stat_cla"] = stateClass;
+  if (!enabled) doc["en"] = false;
+  JsonObject dev = doc["dev"].to<JsonObject>();
+  dev["ids"][0] = String(local.mqttBase) + "_akku";
+  dev["name"] = String(local.deviceName) + " Akku";
+  dev["mf"] = "HIT-Proxy";
+  dev["mdl"] = "Akkudaten";
+  dev["via_device"] = local.mqttBase;
+  String payload;
+  serializeJson(doc, payload);
+  mqtt.publish((String("homeassistant/") + component + "/" + local.mqttBase + "_akku_" + objId + "/config").c_str(),
+               payload.c_str(), true);
+}
+
+void sendBatDiscovery() {
+  publishBatDisc("sensor", "cell_temp_max", "Zelltemperatur max", "°C", "temperature", "measurement");
+  publishBatDisc("sensor", "cell_temp_min", "Zelltemperatur min", "°C", "temperature", "measurement");
+  publishBatDisc("sensor", "cell_v_max", "Zellspannung max", "V", "voltage", "measurement");
+  publishBatDisc("sensor", "cell_v_min", "Zellspannung min", "V", "voltage", "measurement");
+  publishBatDisc("sensor", "cell_spread_mv", "Zellspreizung", "mV", "voltage", "measurement");
+  publishBatDisc("sensor", "charge_lim_a", "Max. Ladestrom", "A", "current", "measurement");
+  publishBatDisc("sensor", "discharge_lim_a", "Max. Entladestrom", "A", "current", "measurement");
+  publishBatDisc("sensor", "cycles", "Ladezyklen", "", "", "total_increasing");
+  publishBatDisc("sensor", "remain_kwh", "Restenergie", "kWh", "energy_storage", "measurement");
+  publishBatDisc("sensor", "cloud_soc", "SoC (Cloud)", "%", "battery", "measurement");
+  publishBatDisc("sensor", "cloud_soh", "SoH (Cloud)", "%", "", "measurement");
+  publishBatDisc("binary_sensor", "alarm", "Akku-Alarm", "", "problem", "");
+#ifdef BOARD_HAS_PSRAM
+  for (int i = 1; i <= BAT_MAX_CELLS; i++) {
+    char id[10], nm[16];
+    snprintf(id, sizeof(id), "cell_%02d", i);
+    snprintf(nm, sizeof(nm), "Zelle %02d", i);
+    publishBatDisc("sensor", id, nm, "V", "voltage", "measurement", false);
+  }
+#endif
+  batDiscSent = true;
+}
+
+void putF(JsonDocument &d, const char *k, float v, int dec) {
+  if (!isnan(v)) d[k] = serialized(String(v, dec));
+}
+
+void publishBattery() {
+  if (!local.mqttEnabled || !local.batEnabled || !mqtt.connected()) return;
+  if (local.mqttDiscovery && !batDiscSent) sendBatDiscovery();
+  const BatteryInfo b = BatteryData::snapshot();
+  if (b.hit.atMs == batLastHit && b.cloud.atMs == batLastCloud) return; // nichts Neues
+  batLastHit = b.hit.atMs;
+  batLastCloud = b.cloud.atMs;
+  const uint32_t iv = uint32_t(max<uint16_t>(local.batCloudPollS, BAT_CLOUD_MIN_S)) * 1000UL;
+  const BatteryMerged m = mergeBattery(b, millis(), iv);
+  JsonDocument d;
+  putF(d, "cell_temp_max", m.cellTempMax, 0);
+  putF(d, "cell_temp_min", m.cellTempMin, 0);
+  putF(d, "cell_v_max", m.cellVMax, 3);
+  putF(d, "cell_v_min", m.cellVMin, 3);
+  putF(d, "cell_spread_mv", m.cellDiffMv, 0);
+  putF(d, "charge_lim_a", m.chargeLimA, 1);
+  putF(d, "discharge_lim_a", m.dischargeLimA, 1);
+  putF(d, "cycles", m.cycles, 0);
+  putF(d, "remain_kwh", m.remainKwh, 2);
+  if (m.alarm >= 0) d["alarm"] = m.alarm;
+  if (b.cloud.valid) {
+    putF(d, "cloud_soc", b.cloud.soc, 0);
+    putF(d, "cloud_soh", b.cloud.soh, 0);
+    for (uint8_t i = 0; i < b.cloud.cells; i++) {
+      char id[10];
+      snprintf(id, sizeof(id), "cell_%02u", unsigned(i + 1));
+      putF(d, id, b.cloud.cellV[i], 3);
+    }
+  }
+  if (m.srcCellV) d["source_cellv"] = m.srcCellV;
+  if (m.srcTemp) d["source_temp"] = m.srcTemp;
+  if (d.size() == 0) return;
+  String payload;
+  serializeJson(d, payload);
+  mqtt.publish(topicBattery().c_str(), payload.c_str(), false);
+}
+
 bool ensureConnected() {
   if (!local.mqttEnabled && !local.mqttIngestEnabled) {
     gLive.mqttOk = false;
@@ -141,6 +244,7 @@ bool ensureConnected() {
     if (local.mqttEnabled) {
       mqtt.publish(topicAvail().c_str(), "online", true);
       discoverySent = false;
+      batDiscSent = false;
       sendDiscovery();
     }
     if (local.mqttIngestEnabled && local.mqttIngestTopic[0]) {
@@ -170,6 +274,8 @@ void applyConfig(const AppConfig &cfg) {
   }
   local = cfg;
   discoverySent = false;
+  batDiscSent = false;
+  batLastHit = batLastCloud = 0;
   nextPub = 0;
   nextReconnect = 0;
   gLive.mqttOk = false;
@@ -235,6 +341,7 @@ void loop() {
   if (local.mqttEnabled && int32_t(millis() - nextPub) >= 0) {
     nextPub = millis() + max<uint32_t>(2000, local.mqttPublishMs);
     publishNow();
+    publishBattery();
   }
   if (ingest.valid && ingest.atMs &&
       (millis() - ingest.atMs) > max<uint32_t>(local.mqttIngestMaxAgeMs, 1000)) {
