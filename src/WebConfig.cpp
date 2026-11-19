@@ -282,7 +282,132 @@ textarea:focus{border-color:var(--acc);outline:none}
   .main{padding:20px 16px 40px}.grid,.grid2,.cards,.cards.two{grid-template-columns:1fr}
   .flow{overflow-x:auto}.flow svg{min-width:640px}
 }
+:root[data-theme=blueprint]{
+  --bg:#17408f;--side:#17408f;--plate:#17408f;--plate2:#2552a6;--well:#123474;--rule:#5c84cf;--rule2:#8fb0ea;
+  --ink:#f3f7ff;--dim:#b3c7ee;--acc:#ffe27a;--on-acc:#102a60;
+  --sun:#ffb454;--grid:#9fd8ff;--warn:#ffb454;--fault:#ff9486;--home:#ffb8d6;
+  --r:0px;--r-s:0px;
+}
+:root[data-theme=blueprint] body{letter-spacing:.01em;
+  background-image:linear-gradient(#ffffff12 1px,transparent 1px),linear-gradient(90deg,#ffffff12 1px,transparent 1px),
+    linear-gradient(#ffffff20 1px,transparent 1px),linear-gradient(90deg,#ffffff20 1px,transparent 1px);
+  background-size:20px 20px,20px 20px,100px 100px,100px 100px}
+:root[data-theme=blueprint] :is(.panel,.card,.flow,.chip,.kpis div){background:none;border:1.5px solid var(--rule2)}
+:root[data-theme=blueprint] :is(.panel,.card,.flow,.chip,.kpis div,.tag,.pill,.stat-pill,.stepper span,.side nav a,input,select,textarea,button,.btn){border-radius:0}
+:root[data-theme=blueprint] .logo rect{rx:0}
+:root[data-theme=blueprint] .panel{position:relative}
+:root[data-theme=blueprint] .panel>h2{position:absolute;top:-12px;left:14px;margin:0;padding:0 8px;background:var(--bg);font-size:15px;letter-spacing:.06em}
+:root[data-theme=blueprint] h1{font-size:40px;font-weight:400;letter-spacing:.03em}
+:root[data-theme=blueprint] :is(th,td){border-bottom-style:dashed}
+:root[data-theme=blueprint] :is(button,.btn){background:var(--ink);color:var(--bg);border:1.5px solid var(--ink)}
+:root[data-theme=blueprint] :is(button.sec,.btn.sec),:root[data-theme=blueprint] .tabs button:not(.on){background:none;color:var(--ink)}
+:root[data-theme=blueprint] .danger{background:var(--fault);border-color:var(--fault)}
+
+/* Menü: Leiste oben, Einstellungen als aufklappendes Blatt */
+:root[data-theme=blueprint] .app{flex-direction:column}
+:root[data-theme=blueprint] .side{width:100%;height:56px;flex-direction:row;align-items:center;gap:8px;padding:0 clamp(12px,1.6vw,28px);
+  background:var(--bg);border-bottom:1.5px solid var(--rule2);z-index:9}
+:root[data-theme=blueprint] .logo{padding:0 18px 0 0}
+:root[data-theme=blueprint] .logo span{display:none}
+:root[data-theme=blueprint] .side nav{flex-direction:row;align-items:center;gap:4px;overflow:visible}
+:root[data-theme=blueprint] .side nav a{padding:8px 14px}
+:root[data-theme=blueprint] .side nav a.on,:root[data-theme=blueprint] .side nav a.on svg{background:var(--ink);color:var(--bg)}
+:root[data-theme=blueprint] .side .foot{margin:0;padding:0;display:flex;align-items:center;gap:14px}
+:root[data-theme=blueprint] .side .foot .meta{margin:0;white-space:normal}
+:root[data-theme=blueprint] .bp-menu{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border-bottom:1.5px solid var(--rule2);
+  padding:18px clamp(12px,1.6vw,28px) 22px;grid-template-columns:repeat(3,minmax(0,250px)) 1fr;gap:8px 40px;max-height:calc(100vh - 56px);overflow:auto}
+:root[data-theme=blueprint] .side.open .bp-menu{display:grid}
+:root[data-theme=blueprint] .bp-menu .nav-grp{margin:0 14px 8px;padding-bottom:6px;border-bottom:1px dashed var(--rule)}
+:root[data-theme=blueprint] .bp-menu .prefs{align-self:start;justify-self:end;width:230px;margin:0}
+@media(min-height:721px) and (min-width:861px){:root[data-theme=blueprint] .main:has(.hist){height:calc(100vh - 56px)}}
+
+/* Live: Energieband statt Knotenbild, Messfelder aneinander */
+:root[data-theme=blueprint] .flow>svg:not(#bpS){display:none}
+:root[data-theme=blueprint] #bpS{min-width:0;max-width:1000px;margin:0 auto}
+:root[data-theme=blueprint] #bpS .rib{fill-opacity:.55;stroke-width:1.5}
+:root[data-theme=blueprint] #bpS .zero{opacity:.4}
+:root[data-theme=blueprint] #bpS .soc{fill:none;stroke:var(--rule2)}
+:root[data-theme=blueprint] .flow .val{font-weight:400;font-size:34px}
+:root[data-theme=blueprint] #bpS.nar .val{font-size:28px}
+:root[data-theme=blueprint] .cards{gap:0;margin-top:22px}
+:root[data-theme=blueprint] .cards .panel{margin:0 -1.5px 0 0}
+@media(max-width:860px){
+  :root[data-theme=blueprint] .side{position:fixed;top:auto;bottom:0;left:0;height:60px;padding:0 6px;border-bottom:0;border-top:1.5px solid var(--rule2)}
+  :root[data-theme=blueprint] .logo,:root[data-theme=blueprint] .side .foot{display:none}
+  :root[data-theme=blueprint] .side nav{justify-content:space-around;flex-wrap:nowrap}
+  :root[data-theme=blueprint] .side nav>a{flex-direction:column;gap:2px;font-size:12px;padding:6px 8px}
+  :root[data-theme=blueprint] .bp-menu{top:auto;bottom:100%;grid-template-columns:1fr 1fr;gap:18px 8px;border-bottom:0;border-top:1.5px solid var(--rule2);max-height:calc(100vh - 60px)}
+  :root[data-theme=blueprint] .bp-menu .nav-grp{display:block}
+  :root[data-theme=blueprint] .bp-menu .prefs{grid-column:1/-1;justify-self:stretch;width:auto}
+  :root[data-theme=blueprint] .main{padding-bottom:84px}
+  :root[data-theme=blueprint] .cards .panel{margin:0 0 20px}
+}
 )CSS";
+
+// Design Blaupause: Menüleiste oben und Energieband auf der Live-Seite (alle Seiten laden /b.js)
+const char UI_JS[] PROGMEM = R"JS(
+(()=>{
+const base=window.applyThemeLang;let built=false;
+const en=()=>document.documentElement.lang==='en';
+function build(){
+  built=true;
+  const side=document.querySelector('.side'),nav=side&&side.querySelector('nav');if(!nav)return;
+  const menu=document.createElement('div');menu.className='bp-menu';
+  let col=null;
+  [...nav.children].forEach(el=>{
+    if(el.classList.contains('nav-grp')){col=document.createElement('div');menu.append(col);col.append(el);}
+    else if(col&&el.getAttribute('href')!=='/debug')col.append(el);
+  });
+  const btn=document.createElement('a');btn.href='#';btn.className='bp-btn';
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg> <span></span>';
+  if(menu.querySelector('a.on'))btn.classList.add('on');
+  btn.onclick=e=>{e.preventDefault();btn.setAttribute('aria-expanded',side.classList.toggle('open'));};
+  nav.append(btn);
+  const pf=side.querySelector('.prefs');if(pf)menu.append(pf);
+  nav.append(menu);
+  document.addEventListener('click',e=>{if(!side.contains(e.target)||(menu.contains(e.target)&&e.target.closest('a')))side.classList.remove('open');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')side.classList.remove('open');});
+}
+function live(s){
+  const flow=document.querySelector('.flow');if(!flow)return;
+  let g=document.getElementById('bpS');
+  if(!g){flow.insertAdjacentHTML('beforeend','<svg id="bpS"></svg>');g=document.getElementById('bpS');}
+  const nar=flow.clientWidth<600,VW=nar?480:960,XL=nar?160:300,XR=nar?306:646,XM=(XL+14+XR)/2;
+  g.setAttribute('viewBox','0 0 '+VW+' 400');g.classList.toggle('nar',nar);
+  const N=v=>Number(v)||0,E=en(),fmt=v=>Math.round(v).toLocaleString(E?'en-US':'de-DE');
+  const pv=Math.max(0,N(s.pvW)),bat=N(s.batW),grid=(s.tasmotaOk&&s.tasmotaLiveGrid)?N(s.tasmotaPowerW):N(s.gridW);
+  const dis=Math.max(0,bat),chg=Math.max(0,-bat),imp=Math.max(0,grid),exp=Math.max(0,-grid);
+  const nd=(v,c,l)=>({v,r:v,c,l,o:0});
+  const src=[nd(pv,'--sun',E?'Solar':'PV'),nd(dis,'--acc',E?'Battery discharging':'Akku entlädt'),nd(imp,'--grid',E?'Grid import':'Netzbezug')];
+  const dst=[nd(Math.max(0,pv+bat+grid),'--home',E?'Home':'Haus'),nd(chg,'--acc',E?'Battery charging':'Akku lädt'),nd(exp,'--grid',E?'Feed-in':'Einspeisung')];
+  const L=[];
+  [[0,0],[0,1],[0,2],[1,0],[1,2],[2,0],[2,1]].forEach(([a,b])=>{const x=Math.min(src[a].r,dst[b].r);if(x>0){src[a].r-=x;dst[b].r-=x;L.push([src[a],dst[b],x]);}});
+  const sc=Math.min(120/Math.max(pv+dis+imp,1),.03),GAP=66;
+  const place=c=>{let y=(340-c.reduce((t,n)=>t+Math.max(2,n.v*sc),0)-2*GAP)/2+12;c.forEach(n=>{n.h=Math.max(2,n.v*sc);n.y=y;y+=n.h+GAP;});};
+  place(src);place(dst);
+  let h='<defs>'+src.map((n,i)=>`<pattern id="bpH${i}" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)"><path d="M0 0V7" style="stroke:var(${n.c});stroke-width:3"/></pattern>`).join('')+'</defs>';
+  L.forEach(([a,b,x])=>{const t=x*sc,ya=a.y+a.o,yb=b.y+b.o;a.o+=t;b.o+=t;
+    h+=`<path class="rib" style="fill:url(#bpH${src.indexOf(a)});stroke:var(${a.c})" d="M${XL+14} ${ya}C${XM} ${ya} ${XM} ${yb} ${XR} ${yb}V${yb+t}C${XM} ${yb+t} ${XM} ${ya+t} ${XL+14} ${ya+t}Z"/>`;});
+  const col=(c,x,tx,anchor)=>c.forEach(n=>{const m=n.y+n.h/2,z=n.v<1?' class="zero"':'';
+    h+=`<g${z}><rect x="${x}" y="${n.y}" width="14" height="${n.h}" style="fill:var(${n.c})"/>`+
+      `<text x="${tx}" y="${m-10}" text-anchor="${anchor}" class="lbl">${n.l}</text>`+
+      `<text x="${tx}" y="${m+22}" text-anchor="${anchor}" class="val">${fmt(n.v)}<tspan dx="6">W</tspan></text></g>`;});
+  col(src,XL,XL-20,'end');col(dst,XR,XR+34,'start');
+  const soc=Math.max(0,Math.min(100,N(s.soc)));
+  h+=`<rect class="soc" x="${VW/2-70}" y="378" width="140" height="10"/><rect x="${VW/2-70}" y="378" width="${1.4*soc}" height="10" style="fill:var(${soc<15?'--fault':soc<30?'--warn':'--acc'})"/>`+
+    `<text x="${VW/2}" y="368" text-anchor="middle" class="dir">${E?'Battery':'Akku'} ${fmt(soc)} %</text>`;
+  g.innerHTML=h;
+}
+function menu(){
+  if(document.documentElement.dataset.theme!=='blueprint')return false;
+  if(!built)build();
+  const b=document.querySelector('.bp-btn span');if(b)b.textContent=en()?'Settings':'Einstellungen';
+  return true;
+}
+window.applyThemeLang=s=>{base(s);if(menu())live(s);};
+menu();
+})();
+)JS";
 
 const char DASH_HTML[] PROGMEM = R"HTML(
 <!doctype html>
@@ -329,6 +454,7 @@ const char DASH_HTML[] PROGMEM = R"HTML(
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
         <option value="steel">Stahl</option>
+        <option value="blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -461,6 +587,7 @@ async function saveUiPrefs(){
   location.reload();
 }
 </script>
+<script src="/b.js"></script>
 <script>
 const TX={
  de:{live:'Live',demo:'Demo-Daten',port:'Modbus-Port 1502',pv:'PV-Leistung',bat:'Akku',grid:'Netz',house:'Haus',
@@ -650,6 +777,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
         <option value="steel">Stahl</option>
+        <option value="blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -709,6 +837,7 @@ async function saveUiPrefs(){
   location.reload();
 }
 </script>
+<script src="/b.js"></script>
 <script>
 const TX={
  de:{title:'Verlauf',sub:'Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.',h24:'Letzte 24 Stunden',hE:'Energie',
@@ -911,6 +1040,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
         <option value="steel">Stahl</option>
+        <option value="blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -1155,6 +1285,7 @@ async function saveUiPrefs(){
   location.reload();
 }
 </script>
+<script src="/b.js"></script>
 <script>
 const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[13013,'13.013 kWh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']],Temp:[[9001,'9.001 °C'],[14068,'14.068 °C']],MilliVolt:[[9020,'9.020 mV']],Count:[[12001,'12.001']],Flag:[[1005,'1.005 Alarm']]};
 let KNX_META=[];
@@ -1757,6 +1888,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
         <option value="steel">Stahl</option>
+        <option value="blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -1841,6 +1973,7 @@ async function saveUiPrefs(){
   location.reload();
 }
 </script>
+<script src="/b.js"></script>
 <script>
 function age(ms){const s=Math.floor((Date.now()-window._boot-ms)/1000);if(s<0)return ms+'ms';if(s<60)return s+'s';return Math.floor(s/60)+'m';}
 let TAB=location.hash==='#writes'?'w':'sys';
@@ -2209,6 +2342,9 @@ void begin() {
   // Public stylesheet (no auth) — pages stay readable right after login
   server.on("/a.css", HTTP_GET, [](AsyncWebServerRequest *req) {
     req->send_P(200, "text/css", UI_CSS);
+  });
+  server.on("/b.js", HTTP_GET, [](AsyncWebServerRequest *req) {
+    req->send_P(200, "text/javascript", UI_JS);
   });
   server.on("/f/barlow-400.woff", HTTP_GET, [](AsyncWebServerRequest *req) {
     auto *r = req->beginResponse(200, "font/woff", FONT_BARLOW_400, FONT_BARLOW_400_LEN);

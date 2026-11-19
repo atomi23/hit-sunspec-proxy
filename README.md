@@ -10,9 +10,15 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.8** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.8)
+Aktuelle Firmware: **v0.5.9** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.9)
 
-### Seit v0.5.8 (noch kein Release)
+### Neu in v0.5.9
+- Neues Design **Blaupause** mit eigener Bedienung: Menüleiste oben (am Handy unten), Einstellungen als
+  aufklappendes Blatt, auf der Live-Seite ein Energieband statt des Knotenbilds. Die Bandbreite entspricht
+  der Leistung; PV deckt dabei zuerst das Haus, dann den Akku, dann die Einspeisung
+- Neues Design **Stahl**: hell mit dunkler Seitenleiste
+- **Einrichtung am Handy:** Im Geräte-WLAN öffnet sich die Einrichtungsseite von selbst (Captive Portal)
+- Netzleistung auf der Live-Seite ist auch in hellen Designs lesbar
 - Neue Build-Variante **`p4-poe-eth`** für das [Waveshare ESP32-P4-WIFI6-POE-ETH](https://www.waveshare.com/esp32-p4-wifi6-poe-eth.htm):
   Ethernet mit PoE, WLAN über den ESP32-C6; noch nicht auf Hardware getestet
 - Druckbare Hutschienengehäuse ohne Schrauben (Clip angedruckt, Deckel rastet ein):
@@ -25,7 +31,7 @@ Aktuelle Firmware: **v0.5.8** — [Release mit `firmware.bin`](https://github.co
   API-Verwaltung* anlegen (das Secret steht dort nur einmal) und unter *Akku* eintragen; nutzt die
   Home-Assistant-Integration dieselbe App-ID, teilen sich beide die Abrufgrenze
 
-### Neu in v0.5.8
+### v0.5.8
 - **Funktionsauswahl** im Einrichtungsassistenten und unter *Einstellungen, Funktionen*: Consolinno/SunSpec,
   Modbus-Gateway, Home Assistant, KNX, Tasmota-Zähler und Hoymiles-Cloud einzeln wählbar
 - Nicht gewählte Dienste starten nicht und verschwinden aus Menü und Live-Seite; SunSpec (Port 1502) abschaltbar
@@ -90,6 +96,14 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 
 ![Live](docs/screenshots/live-dashboard.jpg)
 
+### Design Blaupause
+
+Wählbar wie die anderen Designs, aber mit eigener Menüführung und einem Energieband auf der Live-Seite.
+
+![Live, Design Blaupause](docs/screenshots/live-blueprint.jpg)
+
+![Einstellungsmenü, Design Blaupause](docs/screenshots/blueprint-menu.jpg)
+
 ### Verlauf
 
 Leistungsbilanz der letzten 24 Stunden: Quellen (PV, Netzbezug, Akku entladen) über der Null-Linie,
@@ -149,7 +163,8 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **Zugangscode** jederzeit neu erzeugen; bleibt sonst über Neustarts und Updates erhalten
 - **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart
 - **Live-Ansicht des Displays** in der Weboberfläche; Live-Seite bleibt stehen, automatisches Blättern optional
-- Themes Mint, Ocean, Ember, Hell und Stahl; Deutsch und Englisch (Web und Display)
+- Designs Mint, Ocean, Ember, Hell, Stahl und Blaupause (mit eigener Menüleiste und Energieband);
+  Deutsch und Englisch (Web und Display)
 
 ## Inbetriebnahme
 

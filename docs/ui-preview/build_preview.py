@@ -24,9 +24,10 @@ css = extract("UI_CSS")
 dash = extract("DASH_HTML")
 idx = extract("INDEX_HTML")
 (OUT / "a.css").write_text(css, encoding="utf-8")
+(OUT / "b.js").write_text(extract("UI_JS"), encoding="utf-8")
 
 mock_status = {
-    "version": "0.5.7",
+    "version": "0.5.9",
     "setupComplete": True,
     "demoMode": True,
     "ipShown": "192.0.2.80",

@@ -230,3 +230,63 @@ textarea:focus{border-color:var(--acc);outline:none}
   .main{padding:20px 16px 40px}.grid,.grid2,.cards,.cards.two{grid-template-columns:1fr}
   .flow{overflow-x:auto}.flow svg{min-width:640px}
 }
+:root[data-theme=blueprint]{
+  --bg:#17408f;--side:#17408f;--plate:#17408f;--plate2:#2552a6;--well:#123474;--rule:#5c84cf;--rule2:#8fb0ea;
+  --ink:#f3f7ff;--dim:#b3c7ee;--acc:#ffe27a;--on-acc:#102a60;
+  --sun:#ffb454;--grid:#9fd8ff;--warn:#ffb454;--fault:#ff9486;--home:#ffb8d6;
+  --r:0px;--r-s:0px;
+}
+:root[data-theme=blueprint] body{letter-spacing:.01em;
+  background-image:linear-gradient(#ffffff12 1px,transparent 1px),linear-gradient(90deg,#ffffff12 1px,transparent 1px),
+    linear-gradient(#ffffff20 1px,transparent 1px),linear-gradient(90deg,#ffffff20 1px,transparent 1px);
+  background-size:20px 20px,20px 20px,100px 100px,100px 100px}
+:root[data-theme=blueprint] :is(.panel,.card,.flow,.chip,.kpis div){background:none;border:1.5px solid var(--rule2)}
+:root[data-theme=blueprint] :is(.panel,.card,.flow,.chip,.kpis div,.tag,.pill,.stat-pill,.stepper span,.side nav a,input,select,textarea,button,.btn){border-radius:0}
+:root[data-theme=blueprint] .logo rect{rx:0}
+:root[data-theme=blueprint] .panel{position:relative}
+:root[data-theme=blueprint] .panel>h2{position:absolute;top:-12px;left:14px;margin:0;padding:0 8px;background:var(--bg);font-size:15px;letter-spacing:.06em}
+:root[data-theme=blueprint] h1{font-size:40px;font-weight:400;letter-spacing:.03em}
+:root[data-theme=blueprint] :is(th,td){border-bottom-style:dashed}
+:root[data-theme=blueprint] :is(button,.btn){background:var(--ink);color:var(--bg);border:1.5px solid var(--ink)}
+:root[data-theme=blueprint] :is(button.sec,.btn.sec),:root[data-theme=blueprint] .tabs button:not(.on){background:none;color:var(--ink)}
+:root[data-theme=blueprint] .danger{background:var(--fault);border-color:var(--fault)}
+
+/* Menü: Leiste oben, Einstellungen als aufklappendes Blatt */
+:root[data-theme=blueprint] .app{flex-direction:column}
+:root[data-theme=blueprint] .side{width:100%;height:56px;flex-direction:row;align-items:center;gap:8px;padding:0 clamp(12px,1.6vw,28px);
+  background:var(--bg);border-bottom:1.5px solid var(--rule2);z-index:9}
+:root[data-theme=blueprint] .logo{padding:0 18px 0 0}
+:root[data-theme=blueprint] .logo span{display:none}
+:root[data-theme=blueprint] .side nav{flex-direction:row;align-items:center;gap:4px;overflow:visible}
+:root[data-theme=blueprint] .side nav a{padding:8px 14px}
+:root[data-theme=blueprint] .side nav a.on,:root[data-theme=blueprint] .side nav a.on svg{background:var(--ink);color:var(--bg)}
+:root[data-theme=blueprint] .side .foot{margin:0;padding:0;display:flex;align-items:center;gap:14px}
+:root[data-theme=blueprint] .side .foot .meta{margin:0;white-space:normal}
+:root[data-theme=blueprint] .bp-menu{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border-bottom:1.5px solid var(--rule2);
+  padding:18px clamp(12px,1.6vw,28px) 22px;grid-template-columns:repeat(3,minmax(0,250px)) 1fr;gap:8px 40px;max-height:calc(100vh - 56px);overflow:auto}
+:root[data-theme=blueprint] .side.open .bp-menu{display:grid}
+:root[data-theme=blueprint] .bp-menu .nav-grp{margin:0 14px 8px;padding-bottom:6px;border-bottom:1px dashed var(--rule)}
+:root[data-theme=blueprint] .bp-menu .prefs{align-self:start;justify-self:end;width:230px;margin:0}
+@media(min-height:721px) and (min-width:861px){:root[data-theme=blueprint] .main:has(.hist){height:calc(100vh - 56px)}}
+
+/* Live: Energieband statt Knotenbild, Messfelder aneinander */
+:root[data-theme=blueprint] .flow>svg:not(#bpS){display:none}
+:root[data-theme=blueprint] #bpS{min-width:0;max-width:1000px;margin:0 auto}
+:root[data-theme=blueprint] #bpS .rib{fill-opacity:.55;stroke-width:1.5}
+:root[data-theme=blueprint] #bpS .zero{opacity:.4}
+:root[data-theme=blueprint] #bpS .soc{fill:none;stroke:var(--rule2)}
+:root[data-theme=blueprint] .flow .val{font-weight:400;font-size:34px}
+:root[data-theme=blueprint] #bpS.nar .val{font-size:28px}
+:root[data-theme=blueprint] .cards{gap:0;margin-top:22px}
+:root[data-theme=blueprint] .cards .panel{margin:0 -1.5px 0 0}
+@media(max-width:860px){
+  :root[data-theme=blueprint] .side{position:fixed;top:auto;bottom:0;left:0;height:60px;padding:0 6px;border-bottom:0;border-top:1.5px solid var(--rule2)}
+  :root[data-theme=blueprint] .logo,:root[data-theme=blueprint] .side .foot{display:none}
+  :root[data-theme=blueprint] .side nav{justify-content:space-around;flex-wrap:nowrap}
+  :root[data-theme=blueprint] .side nav>a{flex-direction:column;gap:2px;font-size:12px;padding:6px 8px}
+  :root[data-theme=blueprint] .bp-menu{top:auto;bottom:100%;grid-template-columns:1fr 1fr;gap:18px 8px;border-bottom:0;border-top:1.5px solid var(--rule2);max-height:calc(100vh - 60px)}
+  :root[data-theme=blueprint] .bp-menu .nav-grp{display:block}
+  :root[data-theme=blueprint] .bp-menu .prefs{grid-column:1/-1;justify-self:stretch;width:auto}
+  :root[data-theme=blueprint] .main{padding-bottom:84px}
+  :root[data-theme=blueprint] .cards .panel{margin:0 0 20px}
+}

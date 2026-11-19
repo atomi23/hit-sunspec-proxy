@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 enum class UiLang : uint8_t { De = 0, En = 1 };
-enum class UiTheme : uint8_t { Mint = 0, Ocean = 1, Ember = 2, Light = 3, Steel = 4 };
+enum class UiTheme : uint8_t { Mint = 0, Ocean = 1, Ember = 2, Light = 3, Steel = 4, Blueprint = 5 };
 
 inline const char *uiLangCode(UiLang l) { return l == UiLang::En ? "en" : "de"; }
 inline const char *uiThemeCode(UiTheme t) {
@@ -11,6 +11,7 @@ inline const char *uiThemeCode(UiTheme t) {
     case UiTheme::Ember: return "ember";
     case UiTheme::Light: return "light";
     case UiTheme::Steel: return "steel";
+    case UiTheme::Blueprint: return "blueprint";
     default: return "mint";
   }
 }
@@ -24,6 +25,7 @@ inline UiTheme uiThemeFrom(const char *s) {
   if (!strcmp(s, "ember")) return UiTheme::Ember;
   if (!strcmp(s, "light")) return UiTheme::Light;
   if (!strcmp(s, "steel")) return UiTheme::Steel;
+  if (!strcmp(s, "blueprint")) return UiTheme::Blueprint;
   return UiTheme::Mint;
 }
 

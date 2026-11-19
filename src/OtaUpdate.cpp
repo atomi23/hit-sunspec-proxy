@@ -60,6 +60,7 @@ const char OTA_HTML[] PROGMEM = R"HTML(
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
         <option value="steel">Stahl</option>
+        <option value="blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -126,6 +127,7 @@ async function saveUiPrefs(){
   location.reload();
 }
 </script>
+<script src="/b.js"></script>
 <script>
 function dur(s){s=Number(s)||0;const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
   return (d?d+' d ':'')+(d||h?h+' h ':'')+m+' min';}
