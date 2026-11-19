@@ -19,6 +19,9 @@
 #include "EventLog.h"
 #include "HttpsServer.h"
 #include "BatteryData.h"
+#ifdef TLS_DIAG
+#include <esp_heap_caps.h>
+#endif
 
 void setup() {
   Serial.begin(115200);
@@ -107,6 +110,19 @@ void loop() {
   StatusDisplay::loop();
   Watchdog::stage("Web/HTTPS/OTA");
   WebConfig::loop();
+#ifdef TLS_DIAG
+  {
+    static uint32_t nextDiag = 0;
+    if (int32_t(millis() - nextDiag) >= 0) {
+      nextDiag = millis() + 10000;
+      Serial.printf("[Diag] Heap %u, Block %u, Min %u, Eth %s, WLAN %s, HTTPS %d\n",
+                    unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                    unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)),
+                    unsigned(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL)), gLive.ipEth, gLive.ipWifi,
+                    int(HttpsServer::running()));
+    }
+  }
+#endif
   Watchdog::stage("Hauptschleife");
   Watchdog::checkSoft();
   Watchdog::feed();

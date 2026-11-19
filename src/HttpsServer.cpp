@@ -29,6 +29,7 @@ AppConfig local;
 httpd_handle_t server = nullptr;
 String certPem, keyPem;
 bool ownCert = false;
+bool lowRam = false;
 uint32_t startAfterMs = 0;
 uint32_t restartAt = 0;
 std::atomic<uint8_t> pending{0};
@@ -40,6 +41,8 @@ String info = "{}";
 // Jede TLS-Sitzung belegt rund 38 KB internen RAM. Ruhende Sitzungen schließen wir deshalb nach kurzer Zeit;
 // Browser bauen dann bei Bedarf neu auf. Sitzungen mit laufender Anfrage bleiben unangetastet.
 constexpr int MAX_SESSIONS = 2;
+// mbedTLS reserviert je Sitzung zwei Puffer von je rund 17 KB, jeder am Stück im internen RAM
+constexpr size_t TLS_BUF = 17408;
 constexpr uint32_t IDLE_CLOSE_MS = 4000;
 // Zwei Seiten, die alle 2 s abfragen, würden die Plätze sonst dauerhaft belegen und neue Verbindungen aussperren
 constexpr uint32_t MAX_AGE_MS = 15000;
@@ -278,7 +281,7 @@ void buildInfo() {
   }
   mbedtls_x509_crt_free(&c);
   j += String("\"source\":\"") + (ownCert ? "own" : "self") + "\",\"running\":" + (server ? "true" : "false") +
-       ",\"enabled\":" + (local.httpsEnabled ? "true" : "false") + "}";
+       ",\"enabled\":" + (local.httpsEnabled ? "true" : "false") + ",\"lowRam\":" + (lowRam ? "true" : "false") + "}";
   if (infoLock) xSemaphoreTake(infoLock, portMAX_DELAY);
   info = j;
   if (infoLock) xSemaphoreGive(infoLock);
@@ -484,9 +487,28 @@ void closeIdle() {
   for (size_t i = 0; i < nClose; i++) httpd_sess_trigger_close(server, toClose[i]);
 }
 
+// Passen die Puffer für alle Sitzungen? Probeweise reservieren, weil der freie RAM in Stücken liegt
+bool tlsFits() {
+  void *b[2 * MAX_SESSIONS] = {};
+  bool ok = true;
+  for (void *&p : b) ok = ok && (p = heap_caps_malloc(TLS_BUF, MALLOC_CAP_INTERNAL));
+  for (void *p : b) free(p);
+  return ok;
+}
+
 void start(bool regenerate) {
   stop();
+  lowRam = false;
   if (!local.httpsEnabled) {
+    buildInfo();
+    return;
+  }
+  // Ohne PSRAM reicht der interne RAM oft nicht; ein Port, der jede Verbindung abbricht, sperrt die Oberfläche aus
+  lowRam = !tlsFits();
+  if (lowRam) {
+    EventLog::add('W', "HTTPS", "zu wenig RAM für HTTPS (frei %u, größter Block %u), nur HTTP",
+                  unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                  unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
     buildInfo();
     return;
   }
@@ -542,9 +564,11 @@ void begin(const AppConfig &cfg) {
   local = cfg;
   if (!infoLock) infoLock = xSemaphoreCreateMutex();
   // abgelehnte Handshakes (Browser vor dem Bestätigen des Zertifikats) sind normal, nicht jedes Mal loggen
+#ifndef TLS_DIAG
   esp_log_level_set("esp-tls-mbedtls", ESP_LOG_NONE);
   esp_log_level_set("esp-tls", ESP_LOG_NONE);
   esp_log_level_set("esp_https_server", ESP_LOG_NONE);
+#endif
   esp_log_level_set("httpd", ESP_LOG_NONE);
   esp_log_level_set("httpd_txrx", ESP_LOG_NONE);
   // erst starten, wenn eine Adresse da ist, damit sie ins Zertifikat kommt; sonst nach 30 s trotzdem
@@ -578,6 +602,10 @@ void loop() {
 }
 
 bool running() { return server != nullptr; }
+
+// Ohne PSRAM kann der interne RAM für eine TLS-Sitzung fehlen; dann darf HTTP nicht auf HTTPS umleiten,
+// sonst ist die Oberfläche gar nicht mehr erreichbar
+bool hasRoom() { return server && heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) >= 2 * TLS_BUF + 64; }
 
 String infoJson() {
   if (infoLock) xSemaphoreTake(infoLock, portMAX_DELAY);

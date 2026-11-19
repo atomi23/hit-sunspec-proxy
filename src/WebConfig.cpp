@@ -1574,7 +1574,7 @@ async function loadTls(){
   if(!t){tb.innerHTML='<tr><td>Nicht abrufbar</td></tr>';return;}
   const esc=s=>String(s||'–').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
-  tb.innerHTML=row('Status',!t.enabled?'aus':t.running?'<span class="ok">läuft</span>':'<span class="bad">nicht gestartet</span>')+
+  tb.innerHTML=row('Status',!t.enabled?'aus':t.running?'<span class="ok">läuft</span>':t.lowRam?'<span class="bad">zu wenig Speicher auf diesem Board, die Oberfläche läuft über HTTP</span>':'<span class="bad">nicht gestartet</span>')+
     row('Zertifikat',t.source==='own'?'eigenes'+(t.chain>1?' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')':''):'selbst signiert')+
     row('Ausgestellt für',esc(t.subject))+(t.source==='own'?row('Aussteller',esc(t.issuer)):'')+
     row('Gültig bis',esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`);
@@ -2311,10 +2311,12 @@ void begin() {
     // Bis die Einrichtung fertig ist, führt jede Seite dorthin; Schnittstellen, CSS und Schriften braucht die Einrichtung selbst
     if (!c.setupComplete && req->method() == HTTP_GET) {
       const String &u = req->url();
+#ifdef TLS_DIAG
       // Diagnose für die Einrichtung (selten, nur bis sie fertig ist): kommt jede Datei an, reicht der Speicher?
       Serial.printf("[Setup] GET %s%s  Heap %u, Block %u\n", req->host().c_str(), u.c_str(),
                     unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
                     unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
+#endif
       // Captive Portal: Prüfadressen der Handys (captive.apple.com, connectivitycheck...) auf die Einrichtung
       const String host = req->host();
       const bool viaAp = req->client() && req->client()->localIP() == WiFi.softAPIP();
@@ -2327,7 +2329,7 @@ void begin() {
         return;
       }
     }
-    if (c.httpsRedirect && c.setupComplete && HttpsServer::running() && req->client() &&
+    if (c.httpsRedirect && c.setupComplete && HttpsServer::hasRoom() && req->client() &&
         req->client()->remoteIP() != IPAddress(127, 0, 0, 1)) {
       String host = req->host();
       const int colon = host.indexOf(':');
@@ -2341,10 +2343,10 @@ void begin() {
 
   // Public stylesheet (no auth) — pages stay readable right after login
   server.on("/a.css", HTTP_GET, [](AsyncWebServerRequest *req) {
-    req->send_P(200, "text/css", UI_CSS);
+    req->send(200, "text/css", (const uint8_t *)UI_CSS, strlen(UI_CSS));
   });
   server.on("/b.js", HTTP_GET, [](AsyncWebServerRequest *req) {
-    req->send_P(200, "text/javascript", UI_JS);
+    req->send(200, "text/javascript", (const uint8_t *)UI_JS, strlen(UI_JS));
   });
   server.on("/f/barlow-400.woff", HTTP_GET, [](AsyncWebServerRequest *req) {
     auto *r = req->beginResponse(200, "font/woff", FONT_BARLOW_400, FONT_BARLOW_400_LEN);
@@ -2363,7 +2365,7 @@ void begin() {
       req->redirect("/setup");
       return;
     }
-    req->send_P(200, "text/html", DASH_HTML);
+    req->send(200, "text/html", (const uint8_t *)DASH_HTML, strlen(DASH_HTML));
   });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *req) {
@@ -2372,17 +2374,17 @@ void begin() {
       req->redirect("/setup");
       return;
     }
-    req->send_P(200, "text/html", INDEX_HTML);
+    req->send(200, "text/html", (const uint8_t *)INDEX_HTML, strlen(INDEX_HTML));
   });
 
   server.on("/setup", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send_P(200, "text/html", SETUP_HTML);
+    req->send(200, "text/html", (const uint8_t *)SETUP_HTML, strlen(SETUP_HTML));
   });
 
   server.on("/debug", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send_P(200, "text/html", DEBUG_HTML);
+    req->send(200, "text/html", (const uint8_t *)DEBUG_HTML, strlen(DEBUG_HTML));
   });
 
   server.on("/api/debug", HTTP_GET, [](AsyncWebServerRequest *req) {
@@ -2752,7 +2754,7 @@ void begin() {
 
   server.on("/history", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send_P(200, "text/html", HISTORY_HTML);
+    req->send(200, "text/html", (const uint8_t *)HISTORY_HTML, strlen(HISTORY_HTML));
   });
 
   server.on("/api/history/day", HTTP_GET, [](AsyncWebServerRequest *req) {

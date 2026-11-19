@@ -10,9 +10,16 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.9** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.9)
+Aktuelle Firmware: **v0.5.10** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.10)
 
-### Neu in v0.5.9
+### Neu in v0.5.10
+- **Boards ohne PSRAM (WT32-ETH01):** Die Einstellungsseite kam leer an, und HTTP leitete auf ein HTTPS um, das
+  aus Speichermangel jede Verbindung abbrach; die Oberfläche war damit nicht erreichbar. Seiten werden jetzt
+  direkt aus dem Flash gesendet. Reicht der RAM nicht für HTTPS, startet es nicht und die Oberfläche läuft
+  über HTTP (steht unter *Netzwerk und Zugang* und im Protokoll)
+- Diagnose-Ausgaben auf der seriellen Schnittstelle nur noch mit dem Build-Schalter `-DTLS_DIAG=1`
+
+### v0.5.9
 - Neues Design **Blaupause** mit eigener Bedienung: Menüleiste oben (am Handy unten), Einstellungen als
   aufklappendes Blatt, auf der Live-Seite ein Energieband statt des Knotenbilds. Die Bandbreite entspricht
   der Leistung; PV deckt dabei zuerst das Haus, dann den Akku, dann die Einspeisung
@@ -215,7 +222,7 @@ OTA zwischen App-Slots bleibt danach möglich.
 | Env | Board | Hinweise |
 |-----|-------|----------|
 | `t-connect-pro` (Standard) | LILYGO T-Connect-Pro, ESP32-S3, 16 MB | Display, Touch, W5500, RS485 TX 17 / RX 18 |
-| `wt32-eth01` | WT32-ETH01, ESP32, 4 MB | ohne Display; LAN8720 (PHY 1, Takt GPIO0, Enable GPIO16); RS485 über externen Wandler mit Auto-Richtung an IO17 (TX) / IO5 (RX) |
+| `wt32-eth01` | WT32-ETH01, ESP32, 4 MB | ohne Display; ohne PSRAM, deshalb Oberfläche über HTTP statt HTTPS; LAN8720 (PHY 1, Takt GPIO0, Enable GPIO16); RS485 über externen Wandler mit Auto-Richtung an IO17 (TX) / IO5 (RX) |
 | `t-poe-pro` | [LILYGO T-POE-Pro](https://lilygo.cc/products/t-poe-pro), ESP32-WROVER-E, 16 MB, 8 MB PSRAM | ohne Display; LAN8720 mit PoE; RS485 auf der Platine (TX 32 / RX 33) |
 | `p4-poe-eth` | [Waveshare ESP32-P4-WIFI6-POE-ETH](https://www.waveshare.com/esp32-p4-wifi6-poe-eth.htm), ESP32-P4, 32 MB, 32 MB PSRAM | ohne Display; IP101 mit PoE (MDC 31, MDIO 52, Reset 51); WLAN über den ESP32-C6; RS485 über externen Wandler an GPIO4 (TX) / GPIO5 (RX). Noch nicht auf Hardware getestet |
 

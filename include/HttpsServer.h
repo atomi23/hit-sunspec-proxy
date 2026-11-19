@@ -10,6 +10,7 @@ void applyConfig(const AppConfig &cfg);
 void loop(); // startet, stoppt und wechselt Zertifikate; nur aus der Hauptschleife
 
 bool running();
+bool hasRoom(); // läuft und der interne RAM reicht für eine neue TLS-Sitzung
 String infoJson();
 
 // Prüft Zertifikat (PEM, auch mit Kette) und privaten Schlüssel; bei Erfolg gilt es nach dem nächsten loop()

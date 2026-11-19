@@ -181,7 +181,7 @@ const char *lastError() { return errBuf; }
 void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRequest *)) {
   server.on("/ota", HTTP_GET, [requireAuth](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send_P(200, "text/html", OTA_HTML);
+    req->send(200, "text/html", (const uint8_t *)OTA_HTML, strlen(OTA_HTML));
   });
 
   server.on("/api/restart", HTTP_POST, [requireAuth](AsyncWebServerRequest *req) {
