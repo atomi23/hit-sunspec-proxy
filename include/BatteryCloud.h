@@ -7,7 +7,8 @@
 // Läuft in der Abruf-Task der Hoymiles-Cloud, damit nie zwei TLS-Sitzungen gleichzeitig offen sind.
 
 // Data: neue Werte, dann das Intervall warten; DataMore: neue Werte, gleich die nächste Anfrage (erste Runde)
-enum class CloudResult : int8_t { Error = -1, Busy = 0, Data = 1, RateLimited = 2, DataMore = 3 };
+// NoLink: die Cloud wurde gar nicht erreicht, zählt also nicht gegen ihre Abrufgrenze; bald erneut versuchen
+enum class CloudResult : int8_t { NoLink = -2, Error = -1, Busy = 0, Data = 1, RateLimited = 2, DataMore = 3 };
 
 struct BatteryCloudDriver {
   virtual ~BatteryCloudDriver() = default;

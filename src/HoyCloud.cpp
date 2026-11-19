@@ -175,6 +175,29 @@ float pickF(JsonVariantConst v, const char *k0, const char *k1 = nullptr, const 
   return NAN;
 }
 
+// Ohne eingetragene Anlagen-ID die erste Anlage des Kontos nehmen
+bool findStation() {
+  const String host = local.cloudHost[0] ? local.cloudHost : "neapi.hoymiles.com";
+  String resp;
+  if (!httpsPost("https://" + host + "/pvm/api/0/station/select_by_page", "{\"page\":1,\"page_size\":10}", token, resp)) {
+    EventLog::add('W', "Cloud", "Anlagenliste nicht abrufbar (HTTP %d)", lastHttpCode);
+    return false;
+  }
+  JsonDocument filter, doc;
+  filter["data"]["list"][0]["id"] = true;
+  filter["data"]["list"][0]["sid"] = true;
+  if (deserializeJson(doc, resp, DeserializationOption::Filter(filter))) return false;
+  JsonVariantConst st = doc["data"]["list"][0];
+  const long id = st["sid"].isNull() ? st["id"].as<long>() : st["sid"].as<long>();
+  if (id <= 0) {
+    EventLog::add('W', "Cloud", "keine Anlage im Hoymiles-Konto gefunden");
+    return false;
+  }
+  snprintf(local.cloudStationId, sizeof(local.cloudStationId), "%ld", id);
+  EventLog::add('I', "Cloud", "Anlage %ld im Konto gefunden", id);
+  return true;
+}
+
 bool fetchRealtime() {
   if (!token[0] || (millis() - tokenAt > 50UL * 60UL * 1000UL)) {
     if (!login()) {
@@ -182,7 +205,7 @@ bool fetchRealtime() {
       return false;
     }
   }
-  if (!local.cloudStationId[0]) {
+  if (!local.cloudStationId[0] && !findStation()) {
     gLive.cloudOk = false;
     return false;
   }

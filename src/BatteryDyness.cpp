@@ -10,6 +10,7 @@
 #include <mbedtls/md5.h>
 #include <mbedtls/base64.h>
 #include <time.h>
+#include <esp_heap_caps.h>
 
 namespace {
 
@@ -75,6 +76,26 @@ bool rateLimited(int http, JsonDocument &doc) {
   return sc && !strcasecmp(sc, "TOO_MANY_REQUESTS");
 }
 
+// Die Antwort kommt in Stücken; zwischen zwei Stücken ist kurz nichts da, das ist noch kein Ende
+struct BodyReader {
+  NetworkClient &c;
+  uint32_t deadline;
+  size_t got = 0;
+  int read() {
+    while (!c.available()) {
+      if (!c.connected() || int32_t(millis() - deadline) > 0) return -1;
+      delay(2);
+    }
+    got++;
+    return c.read();
+  }
+  size_t readBytes(char *buf, size_t n) {
+    size_t i = 0;
+    for (int ch; i < n && (ch = read()) >= 0; i++) buf[i] = char(ch);
+    return i;
+  }
+};
+
 class Dyness : public BatteryCloudDriver {
 public:
   CloudResult poll(const AppConfig &cfg, BatteryCloudData &io, String &err) override {
@@ -128,36 +149,46 @@ private:
     return s;
   }
 
-  // Eine Anfrage; res bekommt die gefilterte Antwort. Rückgabe wie poll.
-  CloudResult post(const AppConfig &cfg, const char *path, const String &payload, JsonDocument &res,
-                   JsonDocument &filter, String &err) {
+  struct Req {
     NetworkClientSecure cli;
-    cli.setCACert(CLOUD_CA_DIGICERT);
-    cli.setHandshakeTimeout(10);
     HTTPClient http;
-    http.useHTTP10(true); // keine Chunks, damit die Antwort direkt aus dem Datenstrom gelesen werden kann
+  };
+
+  // Signierte Anfrage abschicken; Rückgabe HTTP-Code, sonst Error oder NoLink als negativer Wert
+  int send(Req &r, const AppConfig &cfg, const char *path, const String &payload, String &err) {
+    r.cli.setCACert(CLOUD_CA_DIGICERT);
+    r.cli.setHandshakeTimeout(10);
+    r.http.useHTTP10(true); // keine Chunks, damit die Antwort direkt aus dem Datenstrom gelesen werden kann
     const String url = String("https://") + cfg.batCloudHost + "/openapi/ems-device" + path;
-    if (!http.begin(cli, url)) {
+    if (!r.http.begin(r.cli, url)) {
       err = "URL ungültig";
-      return CloudResult::Error;
+      return int(CloudResult::Error);
     }
-    http.setConnectTimeout(5000);
-    http.setTimeout(10000);
+    r.http.setConnectTimeout(5000);
+    r.http.setTimeout(10000);
     const String date = httpDate();
     String md5;
     const String sig = sign(cfg.batCloudSecret, payload, date.c_str(), path, md5);
-    http.addHeader("Content-Type", "application/json;charset=UTF-8");
-    http.addHeader("Content-MD5", md5);
-    http.addHeader("Date", date);
-    http.addHeader("Authorization", String("API ") + cfg.batCloudAppId + ":" + sig);
-    const int code = http.POST(payload);
-    if (code <= 0) {
-      err = String("keine Verbindung (") + code + ")";
-      http.end();
-      return CloudResult::Error;
-    }
-    const DeserializationError de =
-        deserializeJson(res, http.getStream(), DeserializationOption::Filter(filter));
+    r.http.addHeader("Content-Type", "application/json;charset=UTF-8");
+    r.http.addHeader("Content-MD5", md5);
+    r.http.addHeader("Date", date);
+    r.http.addHeader("Authorization", String("API ") + cfg.batCloudAppId + ":" + sig);
+    const int code = r.http.POST(payload);
+    if (code > 0) return code;
+    err = String("keine Verbindung (") + code + ")";
+    r.http.end();
+    return int(CloudResult::NoLink);
+  }
+
+  // Eine Anfrage; res bekommt die gefilterte Antwort. Rückgabe wie poll.
+  CloudResult post(const AppConfig &cfg, const char *path, const String &payload, JsonDocument &res,
+                   JsonDocument &filter, String &err) {
+    Req rq;
+    HTTPClient &http = rq.http;
+    const int code = send(rq, cfg, path, payload, err);
+    if (code <= 0) return CloudResult(code);
+    BodyReader body{http.getStream(), millis() + 10000};
+    const DeserializationError de = deserializeJson(res, body, DeserializationOption::Filter(filter));
     http.end();
     if (rateLimited(code, res)) return CloudResult::RateLimited;
     if (code == 401 || code == 403) {
@@ -165,7 +196,8 @@ private:
       return CloudResult::Error;
     }
     if (de) {
-      err = String("HTTP ") + code + ", Antwort unlesbar";
+      err = String("HTTP ") + code + " unlesbar (" + de.c_str() + ", " + body.got + " B, Block " +
+            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) + ")";
       return CloudResult::Error;
     }
     if (!codeOk(res["code"])) {
@@ -262,27 +294,64 @@ private:
   }
 
   CloudResult power(const AppConfig &cfg, BatteryCloudData &io, String &err) {
-    JsonDocument filter, res;
-    filter["code"] = true;
-    filter["info"] = true;
-    filter["sourceCode"] = true;
-    JsonObject e = filter["data"][0].to<JsonObject>();
-    e["soc"] = true;
-    e["realTimePower"] = true;
-    e["realTimeCurrent"] = true;
-    const CloudResult r = post(cfg, "/v1/device/getLastPowerDataBySn", body(true, true), res, filter, err);
-    if (r != CloudResult::Data) return r;
-    JsonVariantConst last;
-    for (JsonVariantConst d : res["data"].as<JsonArrayConst>())
-      if (!d["soc"].isNull()) last = d;
-    if (!last.isNull()) {
-      const float soc = num(last["soc"]);
-      if (!isnan(soc) && soc >= 0 && soc <= 100) io.soc = soc;
-      const float p = num(last["realTimePower"]);
-      if (!isnan(p)) io.powerW = p;
-      const float a = num(last["realTimeCurrent"]);
-      if (!isnan(a)) io.currA = a;
+    // Die Liste kann über 50 KB groß sein (alle Werte des Tages) und passt ohne PSRAM nicht am Stück in den RAM:
+    // den Umschlag als Text merken, die Einträge einzeln lesen und nur den letzten mit Ladestand behalten
+    Req rq;
+    const int code = send(rq, cfg, "/v1/device/getLastPowerDataBySn", body(true, true), err);
+    if (code <= 0) return CloudResult(code);
+    BodyReader in{rq.http.getStream(), millis() + 15000};
+    static const char KEY[] = "\"data\"";
+    String env;
+    size_t k = 0;
+    bool list = false;
+    int ch;
+    while ((ch = in.read()) >= 0) {
+      if (env.length() < 300) env += char(ch);
+      if (k < 6) {
+        k = ch == KEY[k] ? k + 1 : (ch == '"' ? 1 : 0);
+        continue;
+      }
+      if (ch == ' ' || ch == ':') continue;
+      list = ch == '[';
+      break;
     }
+    JsonDocument filter;
+    filter["soc"] = true;
+    filter["realTimePower"] = true;
+    filter["realTimeCurrent"] = true;
+    float soc = NAN, p = NAN, a = NAN;
+    while (list) {
+      JsonDocument item;
+      if (deserializeJson(item, in, DeserializationOption::Filter(filter))) break; // auch das Ende der Liste
+      if (!item["soc"].isNull()) {
+        soc = num(item["soc"]);
+        p = num(item["realTimePower"]);
+        a = num(item["realTimeCurrent"]);
+      }
+      do ch = in.read();
+      while (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
+      list = ch == ',';
+    }
+    while (env.length() < 600 && (ch = in.read()) >= 0) env += char(ch);
+    rq.http.end();
+
+    String ec; // "code" aus dem Umschlag, als Text oder Zahl
+    int i = env.indexOf("\"code\"");
+    if (i >= 0)
+      for (i = env.indexOf(':', i) + 1; i > 0 && i < int(env.length()) && env[i] != ',' && env[i] != '}'; i++)
+        if (env[i] != '"' && env[i] != ' ') ec += env[i];
+    if (code == 429 || ec == "429" || env.indexOf("TOO_MANY_REQUESTS") >= 0) return CloudResult::RateLimited;
+    if (code == 401 || code == 403) {
+      err = "Anmeldung abgelehnt (App-ID, Secret oder Uhrzeit prüfen)";
+      return CloudResult::Error;
+    }
+    if (ec != "0" && ec != "200") {
+      err = String("Fehler ") + (ec.length() ? ec : String(code));
+      return CloudResult::Error;
+    }
+    if (!isnan(soc) && soc >= 0 && soc <= 100) io.soc = soc;
+    if (!isnan(p)) io.powerW = p;
+    if (!isnan(a)) io.currA = a;
     finish(io);
     return CloudResult::Data;
   }

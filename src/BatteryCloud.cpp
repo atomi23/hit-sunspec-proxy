@@ -104,6 +104,10 @@ void step(const AppConfig &cfg) {
       nextPoll = (millis() + intervalMs(cfg)) | 1;
       break;
     }
+    case CloudResult::NoLink:
+      fail(err.c_str());
+      nextPoll = (millis() + 2 * SETUP_GAP_MS) | 1;
+      break;
     default:
       fail(err.length() ? err.c_str() : "Abruf fehlgeschlagen");
       nextPoll = (millis() + intervalMs(cfg)) | 1;

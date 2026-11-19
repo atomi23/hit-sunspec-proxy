@@ -27,7 +27,7 @@ idx = extract("INDEX_HTML")
 (OUT / "b.js").write_text(extract("UI_JS"), encoding="utf-8")
 
 mock_status = {
-    "version": "0.5.11",
+    "version": "0.5.12",
     "setupComplete": True,
     "demoMode": True,
     "ipShown": "192.0.2.80",

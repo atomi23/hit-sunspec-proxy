@@ -62,7 +62,8 @@ void setCloudError(const char *err) {
 }
 
 void toJson(JsonDocument &doc, const AppConfig &cfg) {
-  const BatteryInfo b = snapshot();
+  // nicht const: ArduinoJson kopiert nur char[], const char* merkt es sich als Zeiger, und b ist beim Serialisieren weg
+  BatteryInfo b = snapshot();
   doc["enabled"] = cfg.batEnabled;
   doc["hitEnabled"] = cfg.batHitEnabled;
   doc["cloud"] = int(cfg.batCloud);
