@@ -10,9 +10,17 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.10** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.10)
+Aktuelle Firmware: **v0.5.11** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.11)
 
-### Neu in v0.5.10
+### Neu in v0.5.11
+- **Geräte-WLAN folgt dem Schalter:** Ist *Geräte-WLAN zusätzlich anlassen* aus und das Gerät hängt am Kabel,
+  bleibt das WLAN jetzt wirklich aus (bisher lief es ohne Heim-WLAN immer). Als Notzugang geht es von selbst
+  an, wenn das Gerät am Kabel eine Minute lang keine Adresse hat, und wieder aus, wenn das Kabel zurück ist
+- **HTTPS nur mit genug Speicher:** Die Prüfung beim Start rechnet jetzt auch den Platz für parallele
+  Verbindungen eines Browsers ein. Der **WT32-ETH01** (ohne PSRAM) läuft damit immer über HTTP, auch mit
+  abgeschaltetem WLAN; Boards mit PSRAM nutzen weiter HTTPS
+
+### v0.5.10
 - **Boards ohne PSRAM (WT32-ETH01):** Die Einstellungsseite kam leer an, und HTTP leitete auf ein HTTPS um, das
   aus Speichermangel jede Verbindung abbrach; die Oberfläche war damit nicht erreichbar. Seiten werden jetzt
   direkt aus dem Flash gesendet. Reicht der RAM nicht für HTTPS, startet es nicht und die Oberfläche läuft
@@ -163,12 +171,14 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **SunSpec** GEN24-kompatibel, Abbild ab Adresse 0, 40000 und 50000
 - **Schutz des Netzschutz-Bereichs:** FC6 auf HIT-Register 101–299 wird nie gesendet
   (laut Hoymiles V2.8 lädt das alle Netzschutz-Werkswerte)
-- **HTTPS** auf Port 443, HTTP leitet um (außer während der Einrichtung). Selbst signiertes Zertifikat mit
+- **HTTPS** auf Port 443, HTTP leitet um (außer während der Einrichtung). Auf Boards ohne PSRAM reicht der
+  Speicher dafür nicht; dort läuft die Oberfläche über HTTP. Selbst signiertes Zertifikat mit
   IP-Adresse und `<gerätename>.local`, wird bei neuer IP oder vor Ablauf selbst erneuert; eigenes Zertifikat
   (PEM, auch mit Zwischenzertifikaten) hochladbar, der ESP prüft ob Schlüssel und Zertifikat zusammenpassen
 - **Werksreset**, **Neustart** (mit letztem Neustartgrund) und **OTA-Update** in der Weboberfläche
 - **Zugangscode** jederzeit neu erzeugen; bleibt sonst über Neustarts und Updates erhalten
-- **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart
+- **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart; das Geräte-WLAN lässt sich
+  abschalten und kommt nur zurück, wenn das Gerät am Kabel keine Adresse bekommt
 - **Live-Ansicht des Displays** in der Weboberfläche; Live-Seite bleibt stehen, automatisches Blättern optional
 - Designs Mint, Ocean, Ember, Hell, Stahl und Blaupause (mit eigener Menüleiste und Energieband);
   Deutsch und Englisch (Web und Display)

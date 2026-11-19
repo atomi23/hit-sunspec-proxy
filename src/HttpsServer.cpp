@@ -43,6 +43,9 @@ String info = "{}";
 constexpr int MAX_SESSIONS = 2;
 // mbedTLS reserviert je Sitzung zwei Puffer von je rund 17 KB, jeder am Stück im internen RAM
 constexpr size_t TLS_BUF = 17408;
+// Daneben brauchen Server-Task, Handshakes und die Weboberfläche selbst Platz. Gemessen am WT32-ETH01:
+// mit 43 KB Rest (WLAN aus) scheitern parallele Verbindungen eines Browsers fast immer
+constexpr size_t TLS_SPARE = 60000;
 constexpr uint32_t IDLE_CLOSE_MS = 4000;
 // Zwei Seiten, die alle 2 s abfragen, würden die Plätze sonst dauerhaft belegen und neue Verbindungen aussperren
 constexpr uint32_t MAX_AGE_MS = 15000;
@@ -492,6 +495,7 @@ bool tlsFits() {
   void *b[2 * MAX_SESSIONS] = {};
   bool ok = true;
   for (void *&p : b) ok = ok && (p = heap_caps_malloc(TLS_BUF, MALLOC_CAP_INTERNAL));
+  ok = ok && heap_caps_get_free_size(MALLOC_CAP_INTERNAL) >= TLS_SPARE;
   for (void *p : b) free(p);
   return ok;
 }

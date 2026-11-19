@@ -1,5 +1,6 @@
 #include "AppConfig.h"
 #include "LiveData.h"
+#include "EventLog.h"
 #include <WiFi.h>
 #include <DNSServer.h>
 #include <esp_log.h>
@@ -26,6 +27,13 @@ static char activeStaPass[65] = "";
 static char activeApPass[65] = "";
 static bool activeAp = false;
 static bool activeWifi = false;
+// Notzugang: Kabel gewählt, aber seit einer Minute keine Adresse; dann läuft das Geräte-WLAN auch ohne Schalter
+static bool rescueAp = false;
+
+// Geräte-WLAN: wenn eingeschaltet, sonst nur wenn es weder Heim-WLAN noch eine Adresse am Kabel gibt
+static bool apWanted(const AppConfig &cfg) {
+  return cfg.wifiApMode || (!cfg.staSsid[0] && (!cfg.useEthernet || rescueAp));
+}
 
 // Captive Portal: nur während der Einrichtung und nur mit Geräte-WLAN beantwortet der ESP jede
 // DNS-Anfrage mit seiner AP-Adresse, damit Handys die Einrichtungsseite von selbst öffnen.
@@ -87,14 +95,13 @@ static void startWifi(const AppConfig &cfg) {
   strlcpy(activeSta, cfg.staSsid, sizeof(activeSta));
   strlcpy(activeStaPass, cfg.staPass, sizeof(activeStaPass));
   strlcpy(activeApPass, cfg.wifiPass, sizeof(activeApPass));
-  if (!cfg.wifiEnabled) {
+  const bool sta = cfg.staSsid[0] != 0;
+  activeAp = cfg.wifiEnabled && apWanted(cfg);
+  if (!cfg.wifiEnabled || (!activeAp && !sta)) {
     WiFi.mode(WIFI_OFF);
     activeAp = false;
     return;
   }
-  const bool sta = cfg.staSsid[0] != 0;
-  // ohne Heim-WLAN immer Geräte-WLAN, sonst wäre das Gerät ohne Kabel nicht erreichbar
-  activeAp = cfg.wifiApMode || !sta;
   WiFi.mode(activeAp && sta ? WIFI_AP_STA : (sta ? WIFI_STA : WIFI_AP));
   if (activeAp) WiFi.softAP(cfg.wifiSsid, cfg.wifiPass);
   if (sta) {
@@ -128,8 +135,7 @@ void begin(const AppConfig &cfg) {
 
 // aus dem Web-Task: WLAN erst im loop() neu aufbauen, und nur wenn sich daran etwas geändert hat
 void applyConfig(const AppConfig &cfg) {
-  const bool apWanted = cfg.wifiApMode || !cfg.staSsid[0];
-  if (cfg.wifiEnabled == activeWifi && apWanted == activeAp && strcmp(cfg.staSsid, activeSta) == 0 &&
+  if (cfg.wifiEnabled == activeWifi && (cfg.wifiEnabled && apWanted(cfg)) == activeAp && strcmp(cfg.staSsid, activeSta) == 0 &&
       strcmp(cfg.staPass, activeStaPass) == 0 && strcmp(cfg.wifiPass, activeApPass) == 0)
     return;
   pending = cfg;
@@ -146,8 +152,22 @@ void loop(const AppConfig &cfg) {
   static uint32_t next = 0;
   if (int32_t(millis() - next) < 0) return;
   next = millis() + 2000;
-  updateDns(cfg);
   refreshIps(cfg);
+  // Notzugang erst nach einer Minute ohne Adresse am Kabel an, und erst nach einer Minute mit Adresse wieder aus
+  static uint32_t since = 0;
+  const bool ethUp = gLive.ethOk && strcmp(gLive.ipEth, "-") != 0 && strcmp(gLive.ipEth, "0.0.0.0") != 0;
+  if (!cfg.useEthernet || ethUp != rescueAp) {
+    since = 0;
+  } else if (!since) {
+    since = millis() | 1;
+  } else if (millis() - since > 60000) {
+    since = 0;
+    rescueAp = !ethUp;
+    EventLog::add(rescueAp ? 'W' : 'I', "Netz", rescueAp ? "Kabel ohne Adresse, Geräte-WLAN als Notzugang an"
+                                                          : "Kabel wieder da, Notzugang über Geräte-WLAN aus");
+    if ((cfg.wifiEnabled && apWanted(cfg)) != activeAp) startWifi(cfg);
+  }
+  updateDns(cfg);
 }
 
 } // namespace NetBoot

@@ -1100,7 +1100,7 @@ Die neue Adresse steht danach auf dem Display (Seite System).</p>
 <label><input name="wifiApMode" type="checkbox"/> Geräte-WLAN zusätzlich anlassen (Notzugang)</label>
 <label>Name des Geräte-WLANs</label><input name="wifiSsid"/>
 <label>Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input name="wifiPass" readonly/>
-<p class="hint">Ohne Heim-WLAN und ohne Kabel bleibt das Geräte-WLAN immer an, damit das Gerät erreichbar bleibt.</p>
+<p class="hint">Ist der Schalter aus, läuft das Geräte-WLAN nur als Notzugang: ohne Heim-WLAN und wenn das Gerät am Kabel seit einer Minute keine Adresse hat. Ohne WLAN bleibt mehr Speicher frei.</p>
 <button class="sec" type="button" onclick="newCode()" style="margin-top:12px">Neuen Zugangscode erzeugen</button>
 <p class="hint">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
 und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich neu anmelden. Das eigene Web-Passwort bleibt gültig.</p>
