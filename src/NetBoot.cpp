@@ -1,6 +1,7 @@
 #include "AppConfig.h"
 #include "LiveData.h"
 #include <WiFi.h>
+#include <DNSServer.h>
 #include <esp_log.h>
 
 #if defined(BOARD_T_CONNECT_PRO)
@@ -25,6 +26,23 @@ static char activeStaPass[65] = "";
 static char activeApPass[65] = "";
 static bool activeAp = false;
 static bool activeWifi = false;
+
+// Captive Portal: nur während der Einrichtung und nur mit Geräte-WLAN beantwortet der ESP jede
+// DNS-Anfrage mit seiner AP-Adresse, damit Handys die Einrichtungsseite von selbst öffnen.
+static DNSServer dns;
+static bool dnsOn = false;
+
+static void updateDns(const AppConfig &cfg) {
+  const bool want = activeAp && !cfg.setupComplete;
+  if (want == dnsOn) return;
+  if (want) {
+    dns.setErrorReplyCode(DNSReplyCode::NoError);
+    dnsOn = dns.start(53, "*", WiFi.softAPIP());
+  } else {
+    dns.stop();
+    dnsOn = false;
+  }
+}
 
 static void refreshIps(const AppConfig &cfg) {
   strlcpy(gLive.ipEth, "-", sizeof(gLive.ipEth));
@@ -119,6 +137,7 @@ void applyConfig(const AppConfig &cfg) {
 }
 
 void loop(const AppConfig &cfg) {
+  if (dnsOn) dns.processNextRequest();
   if (wifiDirty) {
     wifiDirty = false;
     delay(300); // Antwort auf das Speichern noch ausliefern
@@ -127,6 +146,7 @@ void loop(const AppConfig &cfg) {
   static uint32_t next = 0;
   if (int32_t(millis() - next) < 0) return;
   next = millis() + 2000;
+  updateDns(cfg);
   refreshIps(cfg);
 }
 

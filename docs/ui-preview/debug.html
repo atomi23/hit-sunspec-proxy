@@ -31,6 +31,7 @@ window.fetch=async(u,o)=>{
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
     <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
     <div class="nav-grp">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
@@ -57,6 +58,7 @@ window.fetch=async(u,o)=>{
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>
@@ -121,7 +123,7 @@ let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
   F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
-    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }

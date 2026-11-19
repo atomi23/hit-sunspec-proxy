@@ -149,7 +149,7 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **Zugangscode** jederzeit neu erzeugen; bleibt sonst über Neustarts und Updates erhalten
 - **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart
 - **Live-Ansicht des Displays** in der Weboberfläche; Live-Seite bleibt stehen, automatisches Blättern optional
-- Themes Mint, Ocean, Ember und Hell; Deutsch und Englisch (Web und Display)
+- Themes Mint, Ocean, Ember, Hell und Stahl; Deutsch und Englisch (Web und Display)
 
 ## Inbetriebnahme
 

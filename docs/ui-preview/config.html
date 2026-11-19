@@ -6,8 +6,8 @@
 <link rel="stylesheet" href="/a.css"/>
 </head><body>
 <script>
-const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14019, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14019, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14019, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14019, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14033, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}]};
-const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/38", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false, "sunspecEnabled": true, "inverterType": 0};
+const META={"points": [{"id": "pv_w", "label": "PV Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_w", "label": "MPPT1 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv1_v", "label": "MPPT1 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv1_a", "label": "MPPT1 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv2_w", "label": "MPPT2 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv2_v", "label": "MPPT2 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv2_a", "label": "MPPT2 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv3_w", "label": "MPPT3 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv3_v", "label": "MPPT3 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv3_a", "label": "MPPT3 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "pv4_w", "label": "MPPT4 Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "pv4_v", "label": "MPPT4 Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "pv4_a", "label": "MPPT4 Strom", "dpt": 14019, "kind": "Amp"}, {"id": "bat_w", "label": "Batterie Leistung", "dpt": 14056, "kind": "PowerW"}, {"id": "bat_v", "label": "Batterie Spannung", "dpt": 14027, "kind": "Volt"}, {"id": "bat_a", "label": "Batterie Strom", "dpt": 14019, "kind": "Amp"}, {"id": "soc", "label": "Batterie SoC", "dpt": 5001, "kind": "Percent"}, {"id": "soh", "label": "Batterie SoH", "dpt": 5001, "kind": "Percent"}, {"id": "grid_w", "label": "Netz Leistung gesamt", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w1", "label": "Netz Leistung L1", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w2", "label": "Netz Leistung L2", "dpt": 14056, "kind": "PowerW"}, {"id": "grid_w3", "label": "Netz Leistung L3", "dpt": 14056, "kind": "PowerW"}, {"id": "v1", "label": "AC Spannung L1", "dpt": 14027, "kind": "Volt"}, {"id": "v2", "label": "AC Spannung L2", "dpt": 14027, "kind": "Volt"}, {"id": "v3", "label": "AC Spannung L3", "dpt": 14027, "kind": "Volt"}, {"id": "i1", "label": "AC Strom L1", "dpt": 14019, "kind": "Amp"}, {"id": "i2", "label": "AC Strom L2", "dpt": 14019, "kind": "Amp"}, {"id": "i3", "label": "AC Strom L3", "dpt": 14019, "kind": "Amp"}, {"id": "freq", "label": "Netzfrequenz", "dpt": 14033, "kind": "Hz"}, {"id": "epv", "label": "PV Energie", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eimp", "label": "Bezug Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "eexp", "label": "Einspeisung Energie HIT", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_w", "label": "Z\u00e4hler Leistung Tasmota", "dpt": 14056, "kind": "PowerW"}, {"id": "tas_in", "label": "Z\u00e4hler E_in Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "tas_out", "label": "Z\u00e4hler E_out Tasmota", "dpt": 13010, "kind": "EnergyKwh"}, {"id": "lpp", "label": "Consolinno LPP %", "dpt": 5001, "kind": "RatioPct"}, {"id": "akku_tmax", "label": "Zelltemperatur max", "dpt": 9001, "kind": "Temp"}, {"id": "akku_tmin", "label": "Zelltemperatur min", "dpt": 9001, "kind": "Temp"}, {"id": "akku_vmax", "label": "Zellspannung max", "dpt": 9020, "kind": "MilliVolt"}, {"id": "akku_vmin", "label": "Zellspannung min", "dpt": 9020, "kind": "MilliVolt"}, {"id": "akku_vdiff", "label": "Zellspannung Spreizung", "dpt": 9020, "kind": "MilliVolt"}, {"id": "akku_cycles", "label": "Ladezyklen", "dpt": 12001, "kind": "Count"}, {"id": "akku_remain", "label": "Restenergie", "dpt": 13013, "kind": "EnergyKwh"}, {"id": "akku_alarm", "label": "Akku-Alarm", "dpt": 1005, "kind": "Flag"}]};
+const CFG={"knxEnabled": true, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/38", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 9001}, {"ena": false, "ga": "", "dpt": 9001}, {"ena": false, "ga": "", "dpt": 9020}, {"ena": false, "ga": "", "dpt": 9020}, {"ena": false, "ga": "", "dpt": 9020}, {"ena": false, "ga": "", "dpt": 12001}, {"ena": false, "ga": "", "dpt": 13013}, {"ena": false, "ga": "", "dpt": 1005}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "192.0.2.50", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 25000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "gatewayEnabled": true, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": true, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false, "sunspecEnabled": true, "inverterType": 0};
 const STATUS={"version": "0.5.7", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok", "board": "T-Connect-Pro", "hasDisplay": true, "features": {"sunspec": true, "mqtt": false, "gateway": true, "knx": true, "tasmota": false, "cloud": false}};
 const TLS={subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
   sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
@@ -36,6 +36,7 @@ window.alert=()=>{};
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
     <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
     <div class="nav-grp">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
@@ -62,6 +63,7 @@ window.alert=()=>{};
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>
@@ -107,6 +109,7 @@ window.alert=()=>{};
 <label><input type="checkbox" data-feat="knxEnabled"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
 <label><input type="checkbox" data-feat="tasmotaEnabled"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
 <label><input type="checkbox" data-feat="cloudEnabled"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
+<label><input type="checkbox" data-feat="batEnabled"/> <span><b>Akkudaten</b>: Temperaturen, Zellspannungen und Grenzwerte vom HIT, optional aus der Akku-Cloud</span></label>
 <p class="hint">Die Einstellungen eines Dienstes stehen in seinem Menüpunkt. Speichern übernimmt die Auswahl ohne Neustart.</p>
 </div>
 <div class="card" id="netz" data-sub="Verbindung ins Heimnetz und Anmeldung an dieser Oberfläche."><strong>Netzwerk und Zugang</strong>
@@ -216,6 +219,20 @@ Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spann
 <label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
 <p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
+<div class="card" id="akku" data-sub="Zusätzliche Akkuwerte vom HIT und aus der Cloud des Akku-Herstellers. Nur lesen."><strong>Akku</strong>
+<label><input name="batEnabled" type="checkbox"/> aktiv</label>
+<label><input name="batHitEnabled" type="checkbox"/> Werte vom HIT lesen (jeder Hersteller, soweit das BMS sie liefert)</label>
+<label>HIT-Abfrage alle (s)</label><input name="batHitPollS" type="number" min="30" max="3600"/>
+<label>Akku-Cloud</label>
+<select name="batCloud"><option value="0">keine</option><option value="1">Dyness</option></select>
+<label>API Host</label><input name="batCloudHost" placeholder="open-api.dyness.com"/>
+<label>App-ID</label><input name="batCloudAppId" autocomplete="off"/>
+<label>App-Secret</label><input name="batCloudSecret" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert"/>
+<label>Seriennummer</label><input name="batCloudSn" autocomplete="off" placeholder="leer = automatisch das erste Gerät"/>
+<label>Cloud-Abfrage alle (s)</label><input name="batCloudPollS" type="number" min="300" max="3600"/>
+<p class="hint">App-ID und Secret legt man im Dyness-Portal ems.dyness.com unter Entwicklerzentrum, API-Verwaltung an. Das Secret wird dort nur einmal angezeigt. Nutzt ein anderes Programm (z. B. die Home-Assistant-Integration) dieselbe App-ID, teilen sich beide die Abrufgrenze von Dyness.</p>
+<div id="batBox"></div>
+</div>
 <div class="card" id="gateway" data-sub="Andere Programme lesen den HIT über den ESP, statt selbst eine Verbindung aufzubauen."><strong>Modbus-Gateway</strong>
 <label><input name="gatewayEnabled" type="checkbox"/> Gateway einschalten</label>
 <label>Port</label><input name="gatewayPort" type="number" min="1" max="65535"/>
@@ -271,7 +288,7 @@ let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
   F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
-    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
@@ -292,13 +309,14 @@ async function saveUiPrefs(){
 }
 </script>
 <script>
-const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']]};
+const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[13013,'13.013 kWh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']],Temp:[[9001,'9.001 °C'],[14068,'14.068 °C']],MilliVolt:[[9020,'9.020 mV']],Count:[[12001,'12.001']],Flag:[[1005,'1.005 Alarm']]};
 let KNX_META=[];
 function dptOpts(kind,cur){
   return (KNX_DPT[kind]||KNX_DPT.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
 }
 function knxGrp(id){
   if(/^pv/.test(id))return 'PV';
+  if(/^akku/.test(id))return 'Akku-Details';
   if(/^(bat|soc|soh)/.test(id))return 'Batterie';
   if(/^(grid|v\d|i\d|freq)/.test(id))return 'Netz';
   if(/^e/.test(id))return 'Energie HIT';
@@ -482,11 +500,11 @@ async function knxImport(inp){
 // Funktionen: Spiegel der "aktiv"-Schalter der einzelnen Dienste; das Menü folgt dem Formular
 window.NAV_FROM_FORM=true;
 let CFG_LOADED=false,HAS_DISPLAY=true;
-const FEAT_KEY={sunspecEnabled:'sunspec',gatewayEnabled:'gateway',mqttEnabled:'mqtt',knxEnabled:'knx',tasmotaEnabled:'tasmota',cloudEnabled:'cloud'};
+const FEAT_KEY={sunspecEnabled:'sunspec',gatewayEnabled:'gateway',mqttEnabled:'mqtt',knxEnabled:'knx',tasmotaEnabled:'tasmota',cloudEnabled:'cloud',batEnabled:'akku'};
 function formFeat(){
   const f=document.getElementById('f');const g=n=>{const e=f.elements.namedItem(n);return !!(e&&e.checked);};
   return {sunspec:g('sunspecEnabled'),gateway:g('gatewayEnabled'),mqtt:g('mqttEnabled')||g('mqttIngestEnabled'),
-    knx:g('knxEnabled'),tasmota:g('tasmotaEnabled'),cloud:g('cloudEnabled')};
+    knx:g('knxEnabled'),tasmota:g('tasmotaEnabled'),cloud:g('cloudEnabled'),akku:g('batEnabled')};
 }
 function syncFeat(){
   const F=formFeat();
@@ -535,8 +553,44 @@ async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
-  renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls();
+  renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls(); batBox();
 }
+async function batBox(){
+  const box=document.getElementById('batBox');if(!box||!document.getElementById('akku').classList.contains('show'))return;
+  const d=await fetch('/api/battery').then(r=>r.json()).catch(()=>null);if(!d)return;
+  const esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+  const v=(x,u)=>x===undefined?'-':esc(x)+(u?' '+u:'');
+  const age=s=>s===undefined?'':(s<90?s+' s':Math.round(s/60)+' min')+' alt';
+  const row=(k,x)=>`<tr><td>${k}</td><td>${x}</td></tr>`;
+  const h=d.hit||{},c=d.cloudData||{};
+  let hit;
+  if(!d.hitEnabled)hit=row('Status','aus');
+  else if(h.valid)hit=row('Stand',age(h.ageS))+row('Zelltemperatur max / min',v(h.cellTempMax,'°C')+' / '+v(h.cellTempMin,'°C'))+
+    row('Modultemperatur max / min',v(h.modTempMax,'°C')+' / '+v(h.modTempMin,'°C'))+
+    row('Zellspannung max / min',v(h.cellVMax,'V')+' / '+v(h.cellVMin,'V'))+row('Modulspannung max / min',v(h.modVMax,'V')+' / '+v(h.modVMin,'V'))+
+    row('Max. Lade- / Entladestrom',v(h.maxChargeA,'A')+' / '+v(h.maxDischargeA,'A'))+row('Lade- / Entladeschluss',v(h.chargeCutV,'V')+' / '+v(h.dischargeCutV,'V'));
+  else hit=row('Status',h.missing?'<span class="bad">vom HIT nicht geliefert</span>':'noch keine Abfrage');
+  let cl;
+  if(!d.cloud)cl=row('Status','keine Akku-Cloud gewählt');
+  else{cl=(c.error?row('Fehler','<span class="bad">'+esc(c.error)+'</span>'):'')+(c.sn?row('Gerät',esc(c.sn)+(c.model?' ('+esc(c.model)+')':'')):'');
+    if(c.valid)cl+=row('Stand',age(c.ageS))+row('SoC / SoH',v(c.soc,'%')+' / '+v(c.soh,'%'))+row('Leistung',v(c.powerW,'W'))+
+      row('Spannung / Strom',v(c.voltV,'V')+' / '+v(c.currA,'A'))+row('Temperatur max / min',v(c.tempMax,'°C')+' / '+v(c.tempMin,'°C'))+
+      row('Zellspannung max / min',v(c.cellVMax,'V')+' / '+v(c.cellVMin,'V'))+row('Spreizung',v(c.cellDiffMv,'mV'))+
+      row('Ladezyklen',v(c.cycles))+row('Kapazität / Restenergie',v(c.capKwh,'kWh')+' / '+v(c.remainKwh,'kWh'))+
+      row('Alarm',c.alarm===undefined?'-':(c.alarm?'<span class="bad">ja</span>':'nein'));
+    else if(!c.error)cl+=row('Status','noch keine Daten');}
+  let packs='';
+  if((d.packs||[]).length)packs='<h3 style="margin:18px 0 6px">Packs (vom HIT)</h3><table class="tbl"><tr><th>Seriennummer</th><th>BMS-Firmware</th><th>Nennkapazität (roh)</th></tr>'+
+    d.packs.map(p=>`<tr><td>${esc(p.sn)||'-'}</td><td>${esc(p.bmsFw)}</td><td>${esc(p.ratedCap)}</td></tr>`).join('')+'</table>';
+  let cells='';
+  if((c.cells||[]).length){const xs=c.cells.map(Number),lo=Math.min(...xs),hi=Math.max(...xs),span=Math.max(hi-lo,0.005);
+    cells='<h3 style="margin:18px 0 6px">Zellspannungen (Cloud)</h3><div style="display:flex;gap:4px;align-items:flex-end;height:90px">'+
+      xs.map((x,i)=>`<div title="Zelle ${i+1}: ${x.toFixed(3)} V" style="flex:1;background:var(--acc);border-radius:3px;height:${20+70*(x-lo)/span}px"></div>`).join('')+
+      `</div><p class="hint">${lo.toFixed(3)} bis ${hi.toFixed(3)} V, Spreizung ${Math.round((hi-lo)*1000)} mV</p>`;}
+  box.innerHTML='<div class="cards two" style="margin-top:18px"><div class="panel"><h2>Vom HIT</h2><table class="tbl">'+hit+'</table></div>'+
+    '<div class="panel"><h2>Akku-Cloud</h2><table class="tbl">'+cl+'</table></div></div>'+packs+cells;
+}
+setInterval(()=>{if(!document.hidden)batBox();},10000);window.addEventListener('hashchange',batBox);
 async function loadTls(){
   const t=await fetch('/api/tls').then(r=>r.json()).catch(()=>null);const tb=document.getElementById('tlsInfo');if(!tb)return;
   if(!t){tb.innerHTML='<tr><td>Nicht abrufbar</td></tr>';return;}

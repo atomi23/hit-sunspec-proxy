@@ -66,6 +66,7 @@ def side(active: str) -> str:
             '        <option value="ocean">Ocean</option>',
             '        <option value="ember">Ember</option>',
             '        <option value="light">Hell</option>',
+            '        <option value="steel">Stahl</option>',
             "      </select>",
             "    </div>",
             "  </div>",

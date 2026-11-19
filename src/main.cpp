@@ -61,7 +61,7 @@ void setup() {
   Serial.printf("Display-Code: %s  Web-Pass: %s\n",
                 cfg.displayCode, cfg.webPass[0] ? "(gesetzt)" : "(leer → Code nutzen)");
   if (!cfg.setupComplete) {
-    Serial.printf("SETUP AP: SSID \"%s\"\n", cfg.wifiSsid);
+    Serial.printf("SETUP AP: SSID \"%s\" Passwort \"%s\"\n", cfg.wifiSsid, cfg.wifiPass);
   }
   if (cfg.demoMode) Serial.println("*** DEMO MODE — kein HIT ***");
   Serial.printf("Display: Seitenwechsel %lus, aus nach %us\n", (unsigned long)(cfg.displayPageMs / 1000),

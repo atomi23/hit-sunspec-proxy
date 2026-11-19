@@ -26,6 +26,21 @@
   box-shadow:0 1px 2px rgba(20,30,25,.06),0 4px 14px rgba(20,30,25,.05)}
 :root[data-theme=light] .side{border-right:1px solid var(--rule)}
 :root[data-theme=light] .side nav a:hover{background:rgba(0,0,0,.04)}
+:root[data-theme=steel]{
+  color-scheme:light;
+  --bg:#dfe2e0;--side:#22272a;--plate:#f3f4f2;--plate2:#e3e6e3;--well:#fcfcfb;--rule:#c0c6c2;--rule2:#9ea6a1;
+  --ink:#14181a;--dim:#555e5a;--acc:#0b6b7a;--on-acc:#ffffff;
+  --sun:#b07400;--grid:#2563a8;--warn:#b85c00;--fault:#c2331f;--home:#6d4bb3;
+  --c-pv:#d9820f;--c-house:#c2331f;--c-imp:#7a5bc7;--c-exp:#2e9e62;--c-chg:#b89000;--c-dis:#2f7fc4;
+  --r:6px;--r-s:4px;
+}
+:root[data-theme=steel] .side{color-scheme:dark;color:var(--ink);
+  --bg:#22272a;--plate2:#343c40;--well:#191d1f;--rule:#3d464a;--rule2:#566065;--ink:#eef0ee;--dim:#a2aaa6;--acc:#6cc9d8}
+:root[data-theme=steel] .side nav a{border-radius:var(--r-s)}
+:root[data-theme=steel] .side nav a.on{box-shadow:inset 3px 0 0 var(--acc)}
+:root[data-theme=steel] :is(.panel,.card,.flow,.chip){border:1px solid var(--rule)}
+:root[data-theme=steel] .flow{border-radius:var(--r);background:var(--plate)}
+:root[data-theme=steel] :is(button,.btn,input,select,textarea,.kpis div){border-radius:var(--r-s)}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;font:400 15px/1.5 var(--font);color:var(--ink);background:var(--bg);
   font-variant-numeric:tabular-nums lining-nums;-webkit-font-smoothing:antialiased}
@@ -170,7 +185,7 @@ ul{margin:10px 0 0 18px;color:var(--dim);line-height:1.5}
 .cfg .card.show{columns:2 380px;column-gap:48px}
 .cfg .card label{break-after:avoid}
 .cfg .card input,.cfg .card select,.cfg .card .hint,.cfg .card button{break-inside:avoid}
-.cfg #knxRows,.cfg #probeBox,.cfg #tlsBox{column-span:all}
+.cfg #knxRows,.cfg #probeBox,.cfg #tlsBox,.cfg #batBox{column-span:all}
 .cfg #features.show{columns:auto}
 textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--well);color:var(--ink);
   font:400 12px/1.4 ui-monospace,Consolas,monospace;resize:vertical}

@@ -27,6 +27,7 @@ window.fetch=async(u,o)=>{
     <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
     <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
     <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
     <div class="nav-grp">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
@@ -53,6 +54,7 @@ window.fetch=async(u,o)=>{
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>
@@ -165,7 +167,7 @@ let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
   F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
-    tasmota:F.tasmota===false,cloud:F.cloud===false,display:disp===false};
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
@@ -193,7 +195,7 @@ const TX={
    charge:'lädt',discharge:'entlädt',idle:'ruht',imp:'Bezug',exp:'Einspeisung',soc:'Ladestand',
    hitOk:'antwortet',hitBad:'keine Antwort',hemsOk:'fragt ab',hemsWait:'wartet',
    string:'String',total:'Summe',phase:'Phase',freq:'Netzfrequenz',yield:'PV-Ertrag gesamt',eimp:'Netzbezug gesamt',
-   eexp:'Einspeisung gesamt',batv:'Akkuspannung',bata:'Akkustrom',soh:'Akkuzustand (SoH)',
+   eexp:'Einspeisung gesamt',batv:'Akkuspannung',bata:'Akkustrom',soh:'Akkuzustand (SoH)',ctmax:'Zelltemperatur max',cspread:'Zellspreizung',
    lim:'Begrenzung',limOn:'aktiv',limOff:'keine',limVal:'Grenzwert',noWrite:'Consolinno hat noch nichts geschrieben.',
    tasOff:'Kein Tasmota-Zähler verbunden. Einrichten unter Datenquellen, Tasmota-Zähler.',power:'Leistung',
    src:'Quelle',srcN:'HIT direkt',srcM:'MQTT',srcC:'Hoymiles-Cloud',srcD:'Demo',srcX:'keine',
@@ -205,7 +207,7 @@ const TX={
    charge:'charging',discharge:'discharging',idle:'idle',imp:'import',exp:'export',soc:'Charge',
    hitOk:'responding',hitBad:'no response',hemsOk:'polling',hemsWait:'waiting',
    string:'String',total:'Total',phase:'Phase',freq:'Grid frequency',yield:'PV yield total',eimp:'Grid import total',
-   eexp:'Export total',batv:'Battery voltage',bata:'Battery current',soh:'Battery health (SoH)',
+   eexp:'Export total',batv:'Battery voltage',bata:'Battery current',soh:'Battery health (SoH)',ctmax:'Cell temperature max',cspread:'Cell spread',
    lim:'Limit',limOn:'active',limOff:'none',limVal:'Setpoint',noWrite:'Consolinno has not written anything yet.',
    tasOff:'No Tasmota meter connected. Set it up under Data sources, Tasmota meter.',power:'Power',
    src:'Source',srcN:'HIT direct',srcM:'MQTT',srcC:'Hoymiles cloud',srcD:'Demo',srcX:'none',
@@ -213,16 +215,20 @@ const TX={
    today:'Total yield',flow:'Energy flow between solar, battery, HIT, grid and home'}
 };
 const T=k=>(TX[LANG]||TX.de)[k];
+// Akkudetails (eigener Abruf alle 30 s); nur Zeilen mit Werten
+let BAT=null,BAT_AT=0;
+function batRows(F){const m=(BAT&&BAT.merged)||{},r=[];if(F.akku===false)return r;
+  if(m.cellTempMax!==undefined)r.push([T('ctmax'),m.cellTempMax+' °C']);
+  if(m.cellDiffMv!==undefined)r.push([T('cspread'),m.cellDiffMv+' mV']);return r;}
 const $=id=>document.getElementById(id);
 const num=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
 // Netz: Bezug positiv, Einspeisung mit Minus; Farbe Weiß→Rot / Gelb→Grün
 const wattGrid=n=>{const v=Number(n)||0;return (v<0?'−':'')+num(Math.abs(v))+'<tspan dx="6">W</tspan>';};
 const gridFill=n=>{
-  const v=Number(n)||0,t=Math.min(1,Math.abs(v)/2000);
-  const mix=(a,b)=>Math.round(a+(b-a)*t);
-  if(v>=0){const r=mix(237,239),g=mix(239,111),b=mix(236,98);return`rgb(${r},${g},${b})`;} // ink→rot
-  const r=mix(241,46),g=mix(196,180),b=mix(83,120);return`rgb(${r},${g},${b})`; // gelb→grün
+  const v=Number(n)||0,p=Math.round(Math.min(1,Math.abs(v)/2000)*100);
+  if(v>=0)return`color-mix(in srgb,var(--fault) ${p}%,var(--ink))`; // ink→rot
+  return`color-mix(in srgb,#2eb478 ${p}%,var(--sun))`; // gelb→grün
 };
 const rows=r=>r.map(([k,v])=>`<tr><td>${k}</td><td class="n">${v}</td></tr>`).join('');
 function run(id,w,forward){const e=$(id);const on=Math.abs(w)>20;e.classList.toggle('on',on);e.classList.toggle('rev',on&&!forward);}
@@ -260,6 +266,7 @@ async function refresh(){
   $('wData').classList.toggle('live',!!s.sunspecClient);
   $('hemsBox').classList.toggle('live',!!s.sunspecClient);
   const F=s.features||{};
+  if(F.akku!==false&&Date.now()-BAT_AT>30000){BAT_AT=Date.now();fetch('/api/battery').then(r=>r.json()).then(d=>{BAT=d;}).catch(()=>{});}
   $('hemsG').style.display=F.sunspec===false?'none':'';
 
   const src={NATIVE:T('srcN'),MQTT:T('srcM'),CLOUD:T('srcC'),DEMO:T('srcD')}[s.dataOrigin]||T('srcX');
@@ -283,7 +290,7 @@ async function refresh(){
     [T('yield'),num(s.energyPvKwh,1)+' kWh'],[T('eimp'),num(s.energyImpKwh,1)+' kWh'],[T('eexp'),num(s.energyExpKwh,1)+' kWh'],
     [T('soc'),num(soc)+' %'],[T('batv'),num(s.batV,1)+' V'],
     [T('bata'),(()=>{const a=-(Number(s.batA)||0);return (a>0?'+':'')+num(a,1)+' A';})()],
-    [T('soh'),num(s.soh)+' %']]);
+    [T('soh'),num(s.soh)+' %']].concat(batRows(F)));
   $('tLim').innerHTML=rows([[T('lim'),s.wMaxLimEna?T('limOn'):T('limOff')],[T('limVal'),num((Number(s.wMaxLimPct)||0)/100,1)+' %']]);
   $('nLim').textContent=s.lastWriteNote||T('noWrite');
   if(s.tasmotaOk){

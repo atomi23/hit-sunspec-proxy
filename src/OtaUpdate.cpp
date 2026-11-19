@@ -22,7 +22,7 @@ const char OTA_HTML[] PROGMEM = R"HTML(
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="color-scheme" content="dark"/><title>Firmware und Reset · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
-<style>input[type=file]{width:100%;margin:14px 0;color:var(--txt)}.card{max-width:720px}.card+.card{margin-top:16px}.danger{background:var(--fault);color:#2a0d0a}</style>
+<style>input[type=file]{width:100%;margin:14px 0;color:var(--ink)}.card{max-width:720px}.card+.card{margin-top:16px}.danger{background:var(--fault);color:#2a0d0a}</style>
 </head><body><div class="app">
 <aside class="side">
   <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
@@ -59,6 +59,7 @@ const char OTA_HTML[] PROGMEM = R"HTML(
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>

@@ -24,6 +24,8 @@
 #include "ModbusGateway.h"
 #include "DataBroker.h"
 #include <ESPAsyncWebServer.h>
+#include <WiFi.h>
+#include <esp_heap_caps.h>
 #include <ArduinoJson.h>
 
 // Board für Status und Funktionsauswahl (Display gibt es nur auf dem T-Connect-Pro)
@@ -76,6 +78,21 @@ const char UI_CSS[] PROGMEM = R"CSS(
   box-shadow:0 1px 2px rgba(20,30,25,.06),0 4px 14px rgba(20,30,25,.05)}
 :root[data-theme=light] .side{border-right:1px solid var(--rule)}
 :root[data-theme=light] .side nav a:hover{background:rgba(0,0,0,.04)}
+:root[data-theme=steel]{
+  color-scheme:light;
+  --bg:#dfe2e0;--side:#22272a;--plate:#f3f4f2;--plate2:#e3e6e3;--well:#fcfcfb;--rule:#c0c6c2;--rule2:#9ea6a1;
+  --ink:#14181a;--dim:#555e5a;--acc:#0b6b7a;--on-acc:#ffffff;
+  --sun:#b07400;--grid:#2563a8;--warn:#b85c00;--fault:#c2331f;--home:#6d4bb3;
+  --c-pv:#d9820f;--c-house:#c2331f;--c-imp:#7a5bc7;--c-exp:#2e9e62;--c-chg:#b89000;--c-dis:#2f7fc4;
+  --r:6px;--r-s:4px;
+}
+:root[data-theme=steel] .side{color-scheme:dark;color:var(--ink);
+  --bg:#22272a;--plate2:#343c40;--well:#191d1f;--rule:#3d464a;--rule2:#566065;--ink:#eef0ee;--dim:#a2aaa6;--acc:#6cc9d8}
+:root[data-theme=steel] .side nav a{border-radius:var(--r-s)}
+:root[data-theme=steel] .side nav a.on{box-shadow:inset 3px 0 0 var(--acc)}
+:root[data-theme=steel] :is(.panel,.card,.flow,.chip){border:1px solid var(--rule)}
+:root[data-theme=steel] .flow{border-radius:var(--r);background:var(--plate)}
+:root[data-theme=steel] :is(button,.btn,input,select,textarea,.kpis div){border-radius:var(--r-s)}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;font:400 15px/1.5 var(--font);color:var(--ink);background:var(--bg);
   font-variant-numeric:tabular-nums lining-nums;-webkit-font-smoothing:antialiased}
@@ -311,6 +328,7 @@ const char DASH_HTML[] PROGMEM = R"HTML(
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>
@@ -482,10 +500,9 @@ const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
 // Netz: Bezug positiv, Einspeisung mit Minus; Farbe Weiß→Rot / Gelb→Grün
 const wattGrid=n=>{const v=Number(n)||0;return (v<0?'−':'')+num(Math.abs(v))+'<tspan dx="6">W</tspan>';};
 const gridFill=n=>{
-  const v=Number(n)||0,t=Math.min(1,Math.abs(v)/2000);
-  const mix=(a,b)=>Math.round(a+(b-a)*t);
-  if(v>=0){const r=mix(237,239),g=mix(239,111),b=mix(236,98);return`rgb(${r},${g},${b})`;} // ink→rot
-  const r=mix(241,46),g=mix(196,180),b=mix(83,120);return`rgb(${r},${g},${b})`; // gelb→grün
+  const v=Number(n)||0,p=Math.round(Math.min(1,Math.abs(v)/2000)*100);
+  if(v>=0)return`color-mix(in srgb,var(--fault) ${p}%,var(--ink))`; // ink→rot
+  return`color-mix(in srgb,#2eb478 ${p}%,var(--sun))`; // gelb→grün
 };
 const rows=r=>r.map(([k,v])=>`<tr><td>${k}</td><td class="n">${v}</td></tr>`).join('');
 function run(id,w,forward){const e=$(id);const on=Math.abs(w)>20;e.classList.toggle('on',on);e.classList.toggle('rev',on&&!forward);}
@@ -632,6 +649,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>
@@ -892,6 +910,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>
@@ -1737,6 +1756,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
         <option value="light">Hell</option>
+        <option value="steel">Stahl</option>
       </select>
     </div>
   </div>
@@ -2158,6 +2178,17 @@ void begin() {
     // Bis die Einrichtung fertig ist, führt jede Seite dorthin; Schnittstellen, CSS und Schriften braucht die Einrichtung selbst
     if (!c.setupComplete && req->method() == HTTP_GET) {
       const String &u = req->url();
+      // Diagnose für die Einrichtung (selten, nur bis sie fertig ist): kommt jede Datei an, reicht der Speicher?
+      Serial.printf("[Setup] GET %s%s  Heap %u, Block %u\n", req->host().c_str(), u.c_str(),
+                    unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+                    unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
+      // Captive Portal: Prüfadressen der Handys (captive.apple.com, connectivitycheck...) auf die Einrichtung
+      const String host = req->host();
+      const bool viaAp = req->client() && req->client()->localIP() == WiFi.softAPIP();
+      if (viaAp && host.length() && !isDigit(host[0]) && !host.endsWith(".local")) {
+        req->redirect("http://" + WiFi.softAPIP().toString() + "/setup");
+        return;
+      }
       if (u != "/setup" && !u.startsWith("/api/") && u != "/a.css" && !u.startsWith("/f/")) {
         req->redirect("/setup");
         return;
