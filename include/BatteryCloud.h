@@ -20,6 +20,7 @@ struct BatteryCloudDriver {
 
 BatteryCloudDriver &dynessDriver();
 bool dynessSignSelftest(); // fester Testvektor, siehe BatteryDyness.cpp
+bool dynessTest(const AppConfig &cfg, String &msg); // Zugangsdaten prüfen; msg: Modell und Seriennummer oder der Fehler
 
 namespace BatteryCloud {
 void step(const AppConfig &cfg); // aus der Cloud-Task, alle 250 ms

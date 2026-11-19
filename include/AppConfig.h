@@ -27,6 +27,16 @@ constexpr uint16_t BAT_CLOUD_MIN_S = 300;
 constexpr uint16_t BAT_CLOUD_MIN_S = 600;
 #endif
 
+// Zugang: mit Display ein zufälliger Code (steht dort samt QR-Code). Ohne Display kann niemand einen Code
+// ablesen; dort gilt bis zur Einrichtung ein festes Passwort, danach nur noch das selbst gewählte.
+#ifdef BOARD_T_CONNECT_PRO
+constexpr bool HAS_DISPLAY = true;
+#else
+constexpr bool HAS_DISPLAY = false;
+#endif
+constexpr char DEFAULT_PASS[] = "hitproxy1";
+constexpr size_t MIN_PASS_LEN = 8; // WPA2 verlangt mindestens 8 Zeichen
+
 struct AppConfig {
   // Network
   bool useEthernet = true;

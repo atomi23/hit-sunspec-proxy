@@ -318,11 +318,57 @@ void takeConfig() {
 
 void step();
 
+// Test der Zugangsdaten aus dem Einrichtungsassistenten
+HoyCloud::Test testKind = HoyCloud::Test::None;
+AppConfig testCfg;
+uint8_t testSt = 0;
+char testMsg[96] = "", testStation[24] = "";
+
+void runTest() {
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  const HoyCloud::Test kind = testKind;
+  testKind = HoyCloud::Test::None;
+  static AppConfig cfg, keep; // nicht auf dem Stack: darunter läuft der TLS-Handshake
+  if (kind != HoyCloud::Test::None) cfg = testCfg;
+  xSemaphoreGive(cfgLock);
+  if (kind == HoyCloud::Test::None) return;
+  String msg, station;
+  bool ok = false;
+  if (kind == HoyCloud::Test::Hoymiles) {
+    // mit den Testdaten anmelden, danach die laufenden Einstellungen wiederherstellen
+    keep = local;
+    const uint32_t blocked = loginBlockedUntil;
+    local = cfg;
+    token[0] = 0;
+    loginBlockedUntil = 0;
+    if (!local.cloudUser[0] || !local.cloudPass[0]) msg = "Benutzer und Passwort fehlen";
+    else if (!login()) msg = lastHttpCode > 0 ? "Anmeldung abgelehnt" : "Hoymiles-Cloud nicht erreichbar";
+    else if (!local.cloudStationId[0] && !findStation()) msg = "Anmeldung ok, aber keine Anlage im Konto";
+    else {
+      ok = true;
+      station = local.cloudStationId;
+      msg = "Anmeldung ok, Anlage " + station;
+    }
+    local = keep;
+    token[0] = 0;
+    loginBlockedUntil = blocked;
+  } else {
+    ok = cfg.batCloud == BatteryCloudType::Dyness ? dynessTest(cfg, msg) : false;
+    if (cfg.batCloud != BatteryCloudType::Dyness) msg = "kein Anbieter gewählt";
+  }
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  strlcpy(testMsg, msg.c_str(), sizeof(testMsg));
+  strlcpy(testStation, station.c_str(), sizeof(testStation));
+  testSt = ok ? 2 : 3;
+  xSemaphoreGive(cfgLock);
+}
+
 // Eigene Task: DNS, TLS-Handshake und Antwort dauern Sekunden und dürfen die Hauptschleife
 // (SunSpec für Consolinno, Modbus-Gateway) nicht aufhalten
 void taskMain(void *) {
   for (;;) {
     takeConfig();
+    runTest();
     step();
     BatteryCloud::step(local); // Akku-Cloud nach der Hoymiles-Cloud, nie gleichzeitig
     vTaskDelay(pdMS_TO_TICKS(250));
@@ -355,6 +401,26 @@ bool pollNow() {
     return false;
   }
   return fetchRealtime();
+}
+
+void startTest(Test kind, const AppConfig &cfg) {
+  if (!cfgLock) return;
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  testCfg = cfg;
+  testKind = kind;
+  testSt = 1;
+  testMsg[0] = testStation[0] = 0;
+  xSemaphoreGive(cfgLock);
+}
+
+uint8_t testState(String &msg, String &station) {
+  if (!cfgLock) return 0;
+  xSemaphoreTake(cfgLock, portMAX_DELAY);
+  msg = testMsg;
+  station = testStation;
+  const uint8_t s = testSt;
+  xSemaphoreGive(cfgLock);
+  return s;
 }
 
 bool fresh(uint32_t maxAgeMs) {

@@ -10,9 +10,20 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.12** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.12)
+Aktuelle Firmware: **v0.5.13** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.13)
 
-### Neu in v0.5.12
+### Neu in v0.5.13
+- **Neuer Einrichtungsassistent** mit zwei Wegen: *Einfach* stellt Fragen („Hast du ein Consolinno HEMS?“,
+  „Hast du KNX im Haus?“ …) und schaltet die Dienste daraus selbst; *Experte* zeigt alle Felder (Ports,
+  Unit-IDs, RS485). Zugangsdaten für Hoymiles-Cloud, Dyness-Cloud, MQTT, Tasmota und Heim-WLAN werden gleich
+  im Assistenten eingegeben; die beiden Cloud-Zugänge lassen sich dort testen. Deutsch und Englisch
+- **Boards ohne Display:** Bis zur Einrichtung gilt das Standard-Passwort `hitproxy1` (Geräte-WLAN und
+  Anmeldung mit `admin`). Der Assistent verlangt ein eigenes Passwort mit mindestens 8 Zeichen; danach ist
+  das Standard-Passwort überall ungültig, auch das Geräte-WLAN nutzt dann das eigene Passwort
+- **Boards mit Display** wie bisher: zufälliger Zugangscode und QR-Code auf dem Display
+- Bereits eingerichtete Geräte behalten beim Update ihren bisherigen Zugangscode
+
+### v0.5.12
 - **Hoymiles-Cloud ohne Anlagen-ID:** Bleibt das Feld leer, nimmt der Proxy die erste Anlage des Kontos und
   schreibt ihre Nummer ins Protokoll. Bisher passierte ohne ID nichts, auch keine Meldung
 - **Dyness-Cloud auf Boards ohne PSRAM:** Die Leistungsabfrage liefert über 50 KB und scheiterte am Speicher;
@@ -195,8 +206,10 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 
 1. Erstes Flashen per USB: `pio run -e t-connect-pro -t upload`  
    (oder Release-`firmware.bin` unter *Firmware und Reset* per OTA — bei hängendem OTA vorher neu starten)
-2. Das Display zeigt WLAN-Name, Zugangscode und einen QR-Code. Mit dem Geräte-WLAN verbinden.
-3. Browser `http://192.168.4.1/` → Einrichtung (HIT-Adresse, Netzwerk)
+2. Mit dem Geräte-WLAN `HIT-Proxy-XXXX` verbinden. Mit Display: WLAN-Name, Zugangscode und QR-Code stehen
+   auf dem Display. Ohne Display: Passwort `hitproxy1`, Anmeldung mit `admin` und `hitproxy1`.
+3. Die Einrichtung öffnet sich am Handy von selbst, sonst Browser `http://192.168.4.1/`. Der Assistent
+   fragt ab, was gebraucht wird; ohne Display ist dabei ein eigenes Passwort Pflicht.
 4. Consolinno: Gerät als Fronius Hybrid / SunSpec, **Proxy-IP**, Port **1502**, Unit-ID **1**  
    (Scan nur auf 502 findet den Proxy nicht, solange SunSpec auf 1502 lauscht)
 5. Danach läuft die Oberfläche über `https://<esp-ip>/`. Der Browser warnt beim ersten Aufruf, weil das

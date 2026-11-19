@@ -40,8 +40,12 @@ void provisionFirstBoot() {
   uint64_t mac = ESP.getEfuseMac();
   uint16_t tail = uint16_t(mac & 0xffff);
   snprintf(cfg.wifiSsid, sizeof(cfg.wifiSsid), "HIT-Proxy-%04X", tail);
-  randomPass(cfg.displayCode, sizeof(cfg.displayCode));
-  strlcpy(cfg.wifiPass, cfg.displayCode, sizeof(cfg.wifiPass)); // AP = Display-Code
+  if (HAS_DISPLAY) {
+    randomPass(cfg.displayCode, sizeof(cfg.displayCode));
+    strlcpy(cfg.wifiPass, cfg.displayCode, sizeof(cfg.wifiPass)); // AP = Display-Code
+  } else {
+    strlcpy(cfg.wifiPass, DEFAULT_PASS, sizeof(cfg.wifiPass));
+  }
   strlcpy(cfg.webUser, "admin", sizeof(cfg.webUser));
   cfg.webPass[0] = '\0'; // selbst wählen nach Login mit Display-Code
   cfg.wifiApMode = true;
@@ -56,11 +60,17 @@ void begin() {
   if (!prefs.isKey("ok")) {
     provisionFirstBoot();
     save();
-    Serial.printf("First-Boot: AP \"%s\" Display-Code \"%s\" (Web-Pass leer)\n",
-                  cfg.wifiSsid, cfg.displayCode);
+    Serial.printf("First-Boot: AP \"%s\" Passwort \"%s\" (Web-Pass leer)\n", cfg.wifiSsid, cfg.wifiPass);
   } else {
     load();
-    if (!cfg.displayCode[0]) {
+    if (!HAS_DISPLAY) {
+      // vor v0.5.13 geflasht, aber nie eingerichtet: der Zufallscode war ohne Display nicht ablesbar
+      if (!cfg.setupComplete && !cfg.webPass[0] && (cfg.displayCode[0] || strcmp(cfg.wifiPass, DEFAULT_PASS))) {
+        cfg.displayCode[0] = '\0';
+        strlcpy(cfg.wifiPass, DEFAULT_PASS, sizeof(cfg.wifiPass));
+        save();
+      }
+    } else if (!cfg.displayCode[0]) {
       randomPass(cfg.displayCode, sizeof(cfg.displayCode));
       if (!cfg.wifiPass[0] || strcmp(cfg.wifiPass, "hitproxy1") == 0)
         strlcpy(cfg.wifiPass, cfg.displayCode, sizeof(cfg.wifiPass));

@@ -1099,14 +1099,15 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 Die neue Adresse steht danach auf dem Display (Seite System).</p>
 <label><input name="wifiApMode" type="checkbox"/> Geräte-WLAN zusätzlich anlassen (Notzugang)</label>
 <label>Name des Geräte-WLANs</label><input name="wifiSsid"/>
-<label>Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input name="wifiPass" readonly/>
+<label class="has-code">Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input class="has-code" name="wifiPass" readonly/>
+<p class="hint own-only hide">Das Passwort des Geräte-WLANs ist dein eigenes Web-Passwort (mindestens 8 Zeichen). Das Standard-Passwort gilt seit der Einrichtung nicht mehr.</p>
 <p class="hint">Ist der Schalter aus, läuft das Geräte-WLAN nur als Notzugang: ohne Heim-WLAN und wenn das Gerät am Kabel seit einer Minute keine Adresse hat. Ohne WLAN bleibt mehr Speicher frei.</p>
-<button class="sec" type="button" onclick="newCode()" style="margin-top:12px">Neuen Zugangscode erzeugen</button>
-<p class="hint">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
+<button class="sec has-code" type="button" onclick="newCode()" style="margin-top:12px">Neuen Zugangscode erzeugen</button>
+<p class="hint has-code">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
 und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich neu anmelden. Das eigene Web-Passwort bleibt gültig.</p>
 <label>Benutzername</label><input name="webUser"/>
 <label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer = unverändert / nur Zugangscode"/>
-<p class="hint">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
+<p class="hint has-code">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 <label><input name="httpsEnabled" type="checkbox"/> HTTPS (Port 443)</label>
 <label><input name="httpsRedirect" type="checkbox"/> Aufrufe über HTTP auf HTTPS umleiten</label>
 <p class="hint">Der ESP erzeugt sein Zertifikat selbst. Der Browser warnt deshalb beim ersten Aufruf; vergleiche den Fingerabdruck
@@ -1531,6 +1532,8 @@ async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
+  document.querySelectorAll('.has-code').forEach(e=>e.classList.toggle('hide',!!c.ownPassOnly));
+  document.querySelectorAll('.own-only').forEach(e=>e.classList.toggle('hide',!c.ownPassOnly));
   renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls(); batBox();
 }
 async function batBox(){
@@ -1652,192 +1655,398 @@ const char SETUP_HTML[] PROGMEM = R"HTML(
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="color-scheme" content="dark"/><title>Einrichtung · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
-<style>.wrap{max-width:560px}.card{margin-top:14px}</style>
+<style>
+.card{margin-top:14px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.top .logo{padding:0}.top select{width:auto}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.modes button{text-align:left;border-radius:var(--r-s);padding:16px;background:var(--well);color:var(--ink);border:1px solid var(--rule);font-weight:400}
+.modes button.on{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+.modes b{display:block;font-size:17px;margin-bottom:4px}
+.modes span{display:block;font-size:13px;line-height:1.4;color:var(--dim)}
+.q{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.q:last-child{border-bottom:0}
+.seg{display:flex;flex-shrink:0;border-radius:999px;background:var(--well);padding:3px}
+.seg button{padding:6px 16px;background:none;color:var(--dim);font-size:14px;border:0}
+.seg button.on{background:var(--acc);color:var(--on-acc)}
+.sec-t{display:block;font-size:17px;font-weight:600}
+#s_data>div[id^=x_]{margin-top:22px;padding-top:20px;border-top:1px solid var(--rule)}
+@media(max-width:520px){.modes{grid-template-columns:1fr}.q{flex-direction:column;align-items:flex-start;gap:8px}}
+</style>
 </head><body><div class="wizard">
-<div class="logo" style="border:0;margin-bottom:8px;padding:0">
-  <div class="mark">HS</div><div><b>HIT SunSpec</b><span>Proxy · Einrichtung</span></div>
+<div class="top">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-t="brand"></span></div></div>
+  <select id="lang" onchange="setLang(this.value)" aria-label="Sprache / Language"><option value="de">Deutsch</option><option value="en">English</option></select>
 </div>
-<h1>Einrichtung</h1>
-<p class="sub">Hoymiles HIT → dieser Proxy → Consolinno, Home Assistant, KNX …</p>
+<h1 style="margin-top:18px" data-t="title"></h1>
+<p class="sub" data-t="sub"></p>
 <div class="stepper" id="stepLabels"></div>
 <div class="steps" id="bar"></div>
 
-<div class="card" id="s0" data-label="Willkommen">
+<div class="card" id="s_mode">
 <span class="pill"></span>
-<strong style="margin-top:10px">Willkommen</strong>
-<p class="hint">Der Proxy hält die einzige Verbindung zum Wechselrichter und verteilt die Werte: als SunSpec-Wechselrichter
-an Consolinno, an Home Assistant, KNX oder andere Modbus-Programme. Welche Dienste laufen, wählst du gleich aus.</p>
-<ul>
-<li>Display zeigt die Proxy-IP (Ethernet bevorzugt), falls das Board eines hat</li>
-<li>Alles lässt sich später unter Einstellungen ändern</li>
-</ul>
-<div class="row"><button type="button" onclick="next()">Weiter</button></div>
+<strong style="margin-top:10px" data-t="modeH"></strong>
+<p class="hint" data-t="modeP"></p>
+<div class="modes">
+  <button type="button" id="m_easy" onclick="setMode('easy')"><b data-t="easy"></b><span data-t="easyP"></span></button>
+  <button type="button" id="m_pro" onclick="setMode('pro')"><b data-t="pro"></b><span data-t="proP"></span></button>
 </div>
-
-<div class="card hide" id="s1" data-label="Zugang">
-<span class="pill"></span>
-<strong style="margin-top:10px">Zugang</strong>
-<p class="hint">Display-Code (Login-Fallback, auf dem Display):</p>
-<div class="ip" id="dcode">…</div>
-<label>Web-User</label><input id="webUser" value="admin"/>
-<label>Eigenes Web-Passwort (gemerkt)</label><input id="webPass" type="password" placeholder="empfohlen"/>
-<p class="hint">Login danach: User + Passwort <b>oder</b> Display-Code.</p>
-<div class="row"><button class="sec" type="button" onclick="back()">Zurück</button><button type="button" onclick="next()">Weiter</button></div>
-</div>
-
-<div class="card hide" id="s2" data-label="Funktionen">
-<span class="pill"></span>
-<strong style="margin-top:10px">Was soll das Gerät tun?</strong>
 <p class="hint" id="boardInfo"></p>
-<label><input id="w_sunspec" type="checkbox"/> <span><b>Consolinno / SunSpec</b>: HIT als SunSpec-Wechselrichter fürs HEMS (Port 1502)</span></label>
-<label><input id="w_gateway" type="checkbox"/> <span><b>Modbus-Gateway</b>: andere Programme lesen den HIT über den ESP</span></label>
-<label><input id="w_mqtt" type="checkbox"/> <span><b>Home Assistant</b>: Messwerte per MQTT mit Discovery</span></label>
-<label><input id="w_knx" type="checkbox"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
-<label><input id="w_tasmota" type="checkbox"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
-<label><input id="w_cloud" type="checkbox"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
-<label><input id="w_akku" type="checkbox"/> <span><b>Akkudaten</b>: Temperaturen, Zellspannungen und Grenzwerte vom HIT</span></label>
-<p class="hint">Abgewählte Dienste starten nicht und erscheinen nicht im Menü. Unter Einstellungen, Funktionen lassen sie sich jederzeit einschalten.</p>
-<div class="row"><button class="sec" type="button" onclick="back()">Zurück</button><button type="button" onclick="next()">Weiter</button></div>
-<p class="hint" id="featMsg"></p>
+<div class="row"><button type="button" onclick="next()" data-t="next"></button></div>
 </div>
 
-<div class="card hide" id="s3" data-label="Wechselrichter">
+<div class="card hide" id="s_access">
 <span class="pill"></span>
-<strong style="margin-top:10px">Wechselrichter</strong>
-<label>Hersteller / Modell</label>
-<select id="inverterType"><option value="0">Hoymiles HIT</option></select>
-<p class="hint">Weitere Hersteller sind vorbereitet und folgen.</p>
-<label><input id="demoMode" type="checkbox"/> Erst nur Demo (Fake-Daten, kein Wechselrichter)</label>
-<label>IP-Adresse</label><input id="hitHost" placeholder="z.B. 192.168.x.x"/>
-<label>Port</label><input id="hitPort" type="number" value="502"/>
+<strong style="margin-top:10px" data-t="accH"></strong>
+<p class="hint" id="accP"></p>
+<div class="ip hide" id="dcode" style="text-align:left"></div>
+<div class="pro"><label data-t="user"></label><input id="webUser" value="admin" autocomplete="username"/></div>
+<label id="passL"></label><input id="webPass" type="password" autocomplete="new-password"/>
+<label data-t="pass2"></label><input id="webPass2" type="password" autocomplete="new-password"/>
+<p class="hint" id="accHint"></p>
+<div class="row"><button class="sec" type="button" onclick="back()" data-t="back"></button><button type="button" onclick="next()" data-t="next"></button></div>
+<p class="hint bad" id="accMsg"></p>
+</div>
+
+<div class="card hide" id="s_feat">
+<span class="pill"></span>
+<strong style="margin-top:10px" id="featH"></strong>
+<p class="hint" id="featP"></p>
+<div id="featList"></div>
+<div class="row"><button class="sec" type="button" onclick="back()" data-t="back"></button><button type="button" onclick="next()" data-t="next"></button></div>
+<p class="hint bad" id="featMsg"></p>
+</div>
+
+<div class="card hide" id="s_inv">
+<span class="pill"></span>
+<strong style="margin-top:10px" data-t="invH"></strong>
+<p class="hint" data-t="invP"></p>
+<div class="pro">
+<label data-t="invType"></label><select id="inverterType"><option value="0">Hoymiles HIT</option></select>
+<label data-t="link"></label><select id="hitMode" onchange="paint()"><option value="0">TCP (Modbus TCP)</option><option value="1">RS485 (Modbus RTU)</option></select>
+</div>
+<div id="tcpBox">
+<label data-t="ip"></label><input id="hitHost" placeholder="192.168.x.x" inputmode="decimal"/>
+<div class="pro"><label>Port</label><input id="hitPort" type="number" value="502"/></div>
+</div>
+<div class="pro">
+<div id="rtuBox"><label>Baud</label><input id="hitRtuBaud" type="number" value="9600"/></div>
 <label>Unit-ID</label><input id="hitUnitId" type="number" value="1"/>
+</div>
+<label><input id="demoMode" type="checkbox"/> <span data-t="demo"></span></label>
 <div class="row">
-<button class="sec" type="button" onclick="back()">Zurück</button>
-<button class="sec" type="button" onclick="testHit()">Verbindung testen</button>
-<button type="button" onclick="next()">Weiter</button>
+<button class="sec" type="button" onclick="back()" data-t="back"></button>
+<button class="sec" type="button" onclick="testHit()" data-t="test"></button>
+<button type="button" onclick="next()" data-t="next"></button>
 </div>
 <p class="hint" id="hitMsg"></p>
 </div>
 
-<div class="card hide" id="s4" data-label="Consolinno">
+<div class="card hide" id="s_data">
 <span class="pill"></span>
-<strong style="margin-top:10px">Consolinno anbinden</strong>
-<p class="hint">In der Consolinno-App „Fronius Hybrid (SunSpec)“ oder „SunSpec Generic“ wählen.
-IP = diese Proxy-Adresse, Port = <b>1502</b> (SunSpec). Automatischer Scan auf 502 findet den Proxy nur, wenn SunSpec dort lauscht — Standard hier ist 1502.</p>
-<div class="ip" id="proxyIp">…</div>
-<ul>
-<li>SunSpec-Port am Proxy: <code id="ssPort">1502</code></li>
-<li>Unit / Slave = <code>1</code></li>
-</ul>
-<p class="hint">Den HIT nicht zusätzlich direkt in Consolinno eintragen. Modbus-Gateway (:502) dann auslassen oder auf einen anderen Port legen.</p>
-<div class="row"><button class="sec" type="button" onclick="back()">Zurück</button><button type="button" onclick="next()">Weiter</button></div>
+<strong style="margin-top:10px" data-t="dataH"></strong>
+<p class="hint" data-t="dataP"></p>
+
+<div id="x_net"><b class="sec-t" data-t="netH"></b>
+<p class="hint" id="netP"></p>
+<label data-t="ssid"></label><input id="staSsid" autocapitalize="off"/>
+<label data-t="wpass"></label><input id="staPass" type="password"/>
+<div class="pro"><label><input id="wifiApMode" type="checkbox"/> <span data-t="apOn"></span></label></div></div>
+
+<div id="x_mqtt"><b class="sec-t">Home Assistant (MQTT)</b>
+<p class="hint" data-t="mqttP"></p>
+<label data-t="mqttHost"></label><input id="mqttHost" placeholder="192.168.x.x"/>
+<div class="pro"><label>Port</label><input id="mqttPort" type="number" value="1883"/></div>
+<label data-t="mqttUser"></label><input id="mqttUser" autocapitalize="off"/>
+<label data-t="mqttPass"></label><input id="mqttPass" type="password"/>
+<div class="pro"><label data-t="mqttBase"></label><input id="mqttBase"/></div></div>
+
+<div id="x_cloud"><b class="sec-t">Hoymiles-Cloud (S-Miles)</b>
+<p class="hint" data-t="cloudP"></p>
+<label data-t="cloudUser"></label><input id="cloudUser" autocapitalize="off"/>
+<label data-t="cloudPass"></label><input id="cloudPass" type="password"/>
+<div class="pro"><label data-t="cloudSid"></label><input id="cloudStationId"/></div>
+<div class="row" style="margin-top:14px"><button class="sec" type="button" onclick="cloudTest('hoymiles')" data-t="testLogin"></button></div>
+<p class="hint" id="msg_hoymiles"></p></div>
+
+<div id="x_dyness"><b class="sec-t">Dyness-Cloud</b>
+<p class="hint" data-t="dynP"></p>
+<label>App-ID</label><input id="batCloudAppId" autocapitalize="off"/>
+<label>Secret</label><input id="batCloudSecret" type="password"/>
+<div class="pro"><label data-t="dynSn"></label><input id="batCloudSn"/></div>
+<div class="row" style="margin-top:14px"><button class="sec" type="button" onclick="cloudTest('akku')" data-t="testLogin"></button></div>
+<p class="hint" id="msg_akku"></p></div>
+
+<div id="x_tasmota"><b class="sec-t" data-t="tasH"></b>
+<label data-t="tasHost"></label><input id="tasmotaHost" placeholder="192.168.x.x"/>
+<div class="pro"><label>Port</label><input id="tasmotaPort" type="number" value="80"/>
+<label data-t="tasUser"></label><input id="tasmotaUser"/>
+<label data-t="tasPass"></label><input id="tasmotaPass" type="password"/></div></div>
+
+<div id="x_knx"><b class="sec-t">KNX</b>
+<p class="hint" data-t="knxP"></p>
+<div class="pro"><label data-t="knxPa"></label><input id="knxPa"/></div></div>
+
+<div id="x_ports" class="pro"><b class="sec-t">Modbus</b>
+<div id="x_ss"><label data-t="ssPortL"></label><input id="sunspecPort" type="number" value="1502"/>
+<label data-t="ssUnitL"></label><input id="sunspecUnitId" type="number" value="1"/></div>
+<div id="x_gw"><label data-t="gwPortL"></label><input id="gatewayPort" type="number" value="502"/></div></div>
+
+<div class="row"><button class="sec" type="button" onclick="back()" data-t="back"></button><button type="button" onclick="next()" data-t="next"></button></div>
+<p class="hint bad" id="dataMsg"></p>
 </div>
 
-<div class="card hide" id="s5" data-label="Fertig">
+<div class="card hide" id="s_hems">
 <span class="pill"></span>
-<strong style="margin-top:10px">Fertig — autark</strong>
-<p class="hint">Speichern schaltet den Setup-Screen am Display aus. Danach laufen diese Dienste:</p>
+<strong style="margin-top:10px" data-t="hemsH"></strong>
+<p class="hint" data-t="hemsP"></p>
+<div class="ip" id="proxyIp" style="text-align:left">…</div>
+<ul>
+<li><span data-t="hemsPort"></span> <code id="ssPort">1502</code></li>
+<li>Unit / Slave <code id="ssUnit">1</code></li>
+</ul>
+<p class="hint" data-t="hemsNote"></p>
+<div class="row"><button class="sec" type="button" onclick="back()" data-t="back"></button><button type="button" onclick="next()" data-t="next"></button></div>
+</div>
+
+<div class="card hide" id="s_done">
+<span class="pill"></span>
+<strong style="margin-top:10px" data-t="doneH"></strong>
+<p class="hint" data-t="doneP"></p>
 <ul id="sumList"></ul>
 <p class="hint" id="sumTodo"></p>
 <div class="row">
-<button class="sec" type="button" onclick="back()">Zurück</button>
-<button type="button" onclick="finish()">Einrichtung abschließen</button>
+<button class="sec" type="button" onclick="back()" data-t="back"></button>
+<button type="button" onclick="finish()" data-t="finish"></button>
 </div>
 <p class="hint" id="finMsg"></p>
 </div>
 </div>
 <script>
-const FEATS=[['sunspec','sunspecEnabled','Consolinno / SunSpec','Consolinno'],['gateway','gatewayEnabled','Modbus-Gateway','Modbus-Gateway'],
-  ['mqtt','mqttEnabled','Home Assistant (MQTT)','Home Assistant'],['knx','knxEnabled','KNX','KNX'],
-  ['tasmota','tasmotaEnabled','Tasmota-Zähler','Tasmota-Zähler'],['cloud','cloudEnabled','Hoymiles-Cloud','Hoymiles-Cloud'],
-  ['akku','batEnabled','Akkudaten','Akkudaten']];
-const $w=id=>document.getElementById(id);
-const feat=k=>$w('w_'+k).checked;
-// Consolinno-Schritt nur, wenn SunSpec gewählt ist
-const visible=()=>[0,1,2,3,4,5].filter(i=>i!==4||feat('sunspec'));
-let step=0;
-function paint(){
-  const vis=visible();
-  if(!vis.includes(step))step=vis[vis.length-1];
-  const pos=vis.indexOf(step);
-  $w('stepLabels').innerHTML=vis.map((i,n)=>`<span class="${n===pos?'on':(n<pos?'done':'')}">${$w('s'+i).dataset.label}</span>`).join('');
-  $w('bar').innerHTML=vis.map((i,n)=>`<i class="${n<=pos?'on':''}"></i>`).join('');
-  for(let i=0;i<6;i++){
-    const c=$w('s'+i);c.classList.toggle('hide',i!==step);
-    c.querySelector('.pill').textContent='Schritt '+(vis.indexOf(i)+1)+' / '+vis.length;
-  }
-  if(step===5)summary();
-}
-function next(){
-  if(step===2&&!FEATS.some(([k])=>feat(k))){$w('featMsg').innerHTML='<span class="bad">Mindestens eine Funktion wählen</span>';return;}
-  $w('featMsg').textContent='';
-  const vis=visible();step=vis[Math.min(vis.indexOf(step)+1,vis.length-1)];paint();
-}
-function back(){const vis=visible();step=vis[Math.max(vis.indexOf(step)-1,0)];paint();}
-function summary(){
-  const on=FEATS.filter(([k])=>feat(k));
-  $w('sumList').innerHTML=on.map(([,,l])=>`<li>${l}</li>`).join('');
-  const todo=on.filter(([k])=>k!=='sunspec').map(([,,,m])=>m);
-  $w('sumTodo').textContent=todo.length?('Danach unter Einstellungen einrichten: '+todo.join(', ')+'.'):'';
-}
-async function boot(){
-  const [c,s]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/status').then(r=>r.json())]);
-  if(c.setupComplete){location.href='/';return;}
-  $w('dcode').textContent=c.displayCode||c.wifiPass||'—';
-  $w('webUser').value=c.webUser||'admin';
-  $w('hitHost').value=(c.hitHost&&!c.hitHost.startsWith('192.0.2'))?c.hitHost:'';
-  $w('hitPort').value=c.hitPort||502;
-  $w('hitUnitId').value=c.hitUnitId||1;
-  $w('inverterType').value=String(c.inverterType||0);
-  $w('demoMode').checked=!!c.demoMode;
-  $w('proxyIp').textContent=s.ipShown||'—';
-  $w('ssPort').textContent=c.sunspecPort||1502;
-  $w('boardInfo').textContent='Board: '+(s.board||'-')+(s.hasDisplay?', mit Display':', ohne Display');
-  for(const [k,key] of FEATS)$w('w_'+k).checked=key==='mqttEnabled'?!!(c.mqttEnabled||c.mqttIngestEnabled):!!c[key];
-  FEATS.forEach(([k])=>$w('w_'+k).addEventListener('change',paint));
+const TXT={
+de:{brand:'Einrichtung',title:'Einrichtung',sub:'Ein paar Fragen, dann läuft der Proxy. Alles lässt sich später unter Einstellungen ändern.',
+ st_mode:'Start',st_access:'Zugang',st_feat:'Funktionen',st_q:'Fragen',st_inv:'Wechselrichter',st_data:'Zugangsdaten',st_hems:'Consolinno',st_done:'Fertig',
+ step:(a,b)=>'Schritt '+a+' / '+b,next:'Weiter',back:'Zurück',test:'Verbindung testen',finish:'Einrichtung abschließen',yes:'Ja',no:'Nein',
+ modeH:'Wie möchtest du einrichten?',modeP:'Beide Wege führen zum selben Ergebnis.',
+ easy:'Einfach',easyP:'Ich beantworte ein paar Fragen. Der Assistent stellt den Rest selbst ein.',
+ pro:'Experte',proP:'Ich wähle die Dienste selbst und sehe alle Felder: Ports, Unit-IDs, RS485.',
+ board:(b,d)=>'Board: '+b+(d?', mit Display':', ohne Display'),
+ accH:'Zugang',user:'Benutzername',pass2:'Passwort wiederholen',
+ accNoDisp:'Dieses Gerät hat kein Display. Bis jetzt gilt das Standard-Passwort <code>hitproxy1</code>. Wähle jetzt dein eigenes Passwort. Danach gilt nur noch dieses, für die Anmeldung und für das Geräte-WLAN.',
+ accDisp:'Der Zugangscode steht auf dem Display und gilt weiter. Zusätzlich kannst du ein eigenes Passwort wählen.',
+ passReq:'Eigenes Passwort (mindestens 8 Zeichen)',passOpt:'Eigenes Passwort (optional)',
+ accHintReq:'Merk dir das Passwort. Ohne Display gibt es keinen anderen Weg, es abzulesen.',accHintOpt:'Anmelden geht dann mit dem eigenen Passwort oder dem Code vom Display.',
+ eShort:'Das Passwort braucht mindestens 8 Zeichen.',eMatch:'Die beiden Passwörter sind verschieden.',eStd:'Bitte ein anderes Passwort als das Standard-Passwort wählen.',
+ featHE:'Was hast du im Haus?',featPE:'Aus den Antworten wählt der Assistent die Dienste.',featHP:'Welche Dienste sollen laufen?',featPP:'Abgewählte Dienste starten nicht und erscheinen nicht im Menü.',
+ q_sunspec:'Hast du ein Consolinno HEMS?',q_mqtt:'Nutzt du Home Assistant?',q_knx:'Hast du KNX im Haus?',
+ q_gateway:'Sollen andere Programme den Wechselrichter per Modbus lesen, zum Beispiel evcc?',
+ q_tasmota:'Hast du einen Tasmota-Lesekopf am Stromzähler?',q_dyness:'Hast du einen Dyness-Akku mit Cloud-Zugang?',
+ q_cloud:'Soll die Hoymiles-Cloud einspringen, wenn der Wechselrichter nicht antwortet?',
+ l_sunspec:'Consolinno / SunSpec (Port 1502)',l_mqtt:'Home Assistant (MQTT mit Discovery)',l_knx:'KNX (Gruppentelegramme)',l_gateway:'Modbus-Gateway für andere Programme',
+ l_tasmota:'Tasmota-Zähler',l_dyness:'Dyness-Cloud (Akkuwerte)',l_cloud:'Hoymiles-Cloud als Ersatzquelle',l_akku:'Akkudaten vom Wechselrichter',
+ eFeat:'Bitte mindestens eine Frage mit Ja beantworten.',eFeatP:'Bitte mindestens einen Dienst wählen.',
+ invH:'Wechselrichter',invP:'Der Proxy hält die einzige Verbindung zum Wechselrichter. Trag ihn deshalb nicht zusätzlich in anderen Programmen ein.',
+ invType:'Hersteller / Modell',link:'Verbindung',ip:'IP-Adresse des Wechselrichters',demo:'Erst ohne Wechselrichter ausprobieren (Demo-Daten)',
+ eIp:'Bitte die IP-Adresse eintragen oder Demo wählen.',tDemo:'Demo gewählt, kein Test nötig.',tRun:'Frage den Wechselrichter ab …',
+ tOk:(pv,soc)=>'Wechselrichter antwortet: '+pv+' W PV, Ladestand '+soc+' %',tBad:'Keine Antwort. IP-Adresse und Netzwerk prüfen.',
+ dataH:'Zugangsdaten',dataP:'Nur was du gewählt hast. Passwörter bleiben auf dem Gerät und werden nie wieder angezeigt.',
+ netH:'Heim-WLAN',netCable:'Nur nötig, wenn das Gerät später ohne Netzwerkkabel laufen soll.',netNoCable:'Kein Netzwerkkabel erkannt. Trag dein Heim-WLAN ein, sonst ist das Gerät nur über sein eigenes WLAN erreichbar.',
+ ssid:'Name des WLANs',wpass:'WLAN-Passwort',apOn:'Geräte-WLAN zusätzlich anlassen',
+ mqttP:'Der MQTT-Server von Home Assistant, meist das Mosquitto-Add-on.',mqttHost:'Adresse des MQTT-Servers',mqttUser:'Benutzer',mqttPass:'Passwort',mqttBase:'Topic-Präfix',
+ cloudP:'Dein Zugang zur S-Miles-App. Die Anlage findet der Proxy selbst.',cloudUser:'E-Mail oder Benutzername',cloudPass:'Passwort',cloudSid:'Anlagen-ID (leer = erste Anlage des Kontos)',
+ dynP:'App-ID und Secret legst du im Portal ems.dyness.com unter Entwicklerzentrum, API-Verwaltung an. Das Secret zeigt das Portal nur einmal.',dynSn:'Seriennummer (leer = erstes Gerät)',
+ tasH:'Tasmota-Zähler',tasHost:'Adresse des Lesekopfs',tasUser:'Benutzer',tasPass:'Passwort',
+ knxP:'Die Gruppenadressen ordnest du nach der Einrichtung unter Einstellungen, KNX zu. Dort lassen sie sich auch aus ETS importieren.',knxPa:'Physikalische Adresse',
+ ssPortL:'SunSpec-Port',ssUnitL:'SunSpec Unit-ID',gwPortL:'Port des Modbus-Gateways',
+ testLogin:'Zugang testen',cRun:'Prüfe den Zugang …',cOk:'Zugang funktioniert',cBad:'Zugang funktioniert nicht',cTime:'Keine Antwort vom Gerät.',
+ eMqtt:'Bitte die Adresse des MQTT-Servers eintragen.',eCloud:'Bitte Benutzer und Passwort der Hoymiles-Cloud eintragen.',eDyn:'Bitte App-ID und Secret eintragen.',eTas:'Bitte die Adresse des Lesekopfs eintragen.',
+ hemsH:'Consolinno anbinden',hemsP:'Wähle in der Consolinno-App „Fronius Hybrid (SunSpec)“ oder „SunSpec Generic“ und trag diese Adresse ein:',
+ hemsPort:'Port',hemsNote:'Die automatische Suche von Consolinno findet den Proxy nicht, sie sucht auf Port 502. Den Wechselrichter selbst nicht zusätzlich in Consolinno eintragen.',
+ doneH:'Fast fertig',doneP:'Diese Dienste starten nach dem Abschließen:',todoKnx:'Danach unter Einstellungen, KNX die Gruppenadressen zuordnen.',
+ saving:'Speichere …',ePass:'Bitte zuerst ein eigenes Passwort mit mindestens 8 Zeichen wählen.',eSave:'Speichern fehlgeschlagen.',
+ fin:'Fertig. Die Live-Seite öffnet sich gleich.',finPass:u=>'Fertig. Melde dich gleich mit „'+u+'“ und deinem neuen Passwort an.',
+ finAp:'Das Geräte-WLAN nutzt ab jetzt dein neues Passwort. Verbinde dein Handy damit neu.',
+ finTls:'Der Browser warnt einmal wegen des eigenen Zertifikats. Bestätigen und anmelden.'},
+en:{brand:'Setup',title:'Setup',sub:'A few questions, then the proxy runs. Everything can be changed later under Settings.',
+ st_mode:'Start',st_access:'Access',st_feat:'Features',st_q:'Questions',st_inv:'Inverter',st_data:'Credentials',st_hems:'Consolinno',st_done:'Done',
+ step:(a,b)=>'Step '+a+' / '+b,next:'Next',back:'Back',test:'Test connection',finish:'Finish setup',yes:'Yes',no:'No',
+ modeH:'How do you want to set up?',modeP:'Both ways lead to the same result.',
+ easy:'Simple',easyP:'I answer a few questions. The wizard sets the rest itself.',
+ pro:'Expert',proP:'I pick the services myself and see every field: ports, unit IDs, RS485.',
+ board:(b,d)=>'Board: '+b+(d?', with display':', no display'),
+ accH:'Access',user:'User name',pass2:'Repeat password',
+ accNoDisp:'This device has no display. Until now the default password <code>hitproxy1</code> applies. Choose your own password now. After that only yours works, for sign-in and for the device Wi-Fi.',
+ accDisp:'The access code is shown on the display and stays valid. You can also choose your own password.',
+ passReq:'Your password (at least 8 characters)',passOpt:'Your password (optional)',
+ accHintReq:'Remember the password. Without a display there is no other way to read it.',accHintOpt:'You can then sign in with your password or the code on the display.',
+ eShort:'The password needs at least 8 characters.',eMatch:'The two passwords differ.',eStd:'Please choose a password other than the default one.',
+ featHE:'What do you have at home?',featPE:'The wizard picks the services from your answers.',featHP:'Which services should run?',featPP:'Services you leave out do not start and do not show in the menu.',
+ q_sunspec:'Do you have a Consolinno HEMS?',q_mqtt:'Do you use Home Assistant?',q_knx:'Do you have KNX at home?',
+ q_gateway:'Should other programs read the inverter via Modbus, for example evcc?',
+ q_tasmota:'Do you have a Tasmota reader on your electricity meter?',q_dyness:'Do you have a Dyness battery with cloud access?',
+ q_cloud:'Should the Hoymiles cloud step in when the inverter does not respond?',
+ l_sunspec:'Consolinno / SunSpec (port 1502)',l_mqtt:'Home Assistant (MQTT with discovery)',l_knx:'KNX (group telegrams)',l_gateway:'Modbus gateway for other programs',
+ l_tasmota:'Tasmota meter',l_dyness:'Dyness cloud (battery values)',l_cloud:'Hoymiles cloud as fallback source',l_akku:'Battery data from the inverter',
+ eFeat:'Please answer at least one question with Yes.',eFeatP:'Please pick at least one service.',
+ invH:'Inverter',invP:'The proxy holds the only connection to the inverter, so do not add the inverter to other programs as well.',
+ invType:'Make / model',link:'Connection',ip:'IP address of the inverter',demo:'Try it without an inverter first (demo data)',
+ eIp:'Please enter the IP address or choose demo.',tDemo:'Demo chosen, no test needed.',tRun:'Polling the inverter …',
+ tOk:(pv,soc)=>'Inverter responds: '+pv+' W solar, charge '+soc+' %',tBad:'No response. Check the IP address and the network.',
+ dataH:'Credentials',dataP:'Only what you picked. Passwords stay on the device and are never shown again.',
+ netH:'Home Wi-Fi',netCable:'Only needed if the device should run without a network cable later.',netNoCable:'No network cable detected. Enter your home Wi-Fi, otherwise the device is reachable only through its own Wi-Fi.',
+ ssid:'Wi-Fi name',wpass:'Wi-Fi password',apOn:'Keep the device Wi-Fi on as well',
+ mqttP:'The MQTT server of Home Assistant, usually the Mosquitto add-on.',mqttHost:'Address of the MQTT server',mqttUser:'User',mqttPass:'Password',mqttBase:'Topic prefix',
+ cloudP:'Your S-Miles app account. The proxy finds the plant itself.',cloudUser:'E-mail or user name',cloudPass:'Password',cloudSid:'Plant ID (empty = first plant of the account)',
+ dynP:'Create the app ID and secret in the portal ems.dyness.com under Developer Center, API Management. The portal shows the secret only once.',dynSn:'Serial number (empty = first device)',
+ tasH:'Tasmota meter',tasHost:'Address of the reader',tasUser:'User',tasPass:'Password',
+ knxP:'You assign the group addresses after setup under Settings, KNX. They can also be imported from ETS there.',knxPa:'Physical address',
+ ssPortL:'SunSpec port',ssUnitL:'SunSpec unit ID',gwPortL:'Modbus gateway port',
+ testLogin:'Test access',cRun:'Checking access …',cOk:'Access works',cBad:'Access does not work',cTime:'No answer from the device.',
+ eMqtt:'Please enter the address of the MQTT server.',eCloud:'Please enter user and password for the Hoymiles cloud.',eDyn:'Please enter app ID and secret.',eTas:'Please enter the address of the reader.',
+ hemsH:'Connect Consolinno',hemsP:'In the Consolinno app choose “Fronius Hybrid (SunSpec)” or “SunSpec Generic” and enter this address:',
+ hemsPort:'Port',hemsNote:'Consolinno’s automatic search does not find the proxy because it searches on port 502. Do not add the inverter itself to Consolinno as well.',
+ doneH:'Almost done',doneP:'These services start once you finish:',todoKnx:'Afterwards assign the group addresses under Settings, KNX.',
+ saving:'Saving …',ePass:'Please choose your own password with at least 8 characters first.',eSave:'Saving failed.',
+ fin:'Done. The live page opens in a moment.',finPass:u=>'Done. Sign in with “'+u+'” and your new password in a moment.',
+ finAp:'The device Wi-Fi now uses your new password. Reconnect your phone to it.',
+ finTls:'The browser warns once about the device’s own certificate. Confirm and sign in.'}
+};
+let LANG='de',MODE='easy',C={},S={},step='s_mode';
+const T=(k,...a)=>{const v=(TXT[LANG]||TXT.de)[k];return typeof v==='function'?v(...a):v;};
+const $=id=>document.getElementById(id);
+const val=id=>$(id).value.trim();
+// Dienste: Schlüssel, Feld in den Einstellungen, nur im Experten-Weg
+const FEATS=[['sunspec','sunspecEnabled'],['mqtt','mqttEnabled'],['knx','knxEnabled'],['gateway','gatewayEnabled'],
+  ['tasmota','tasmotaEnabled'],['dyness',null],['cloud','cloudEnabled'],['akku','batEnabled',true]];
+const F={};
+const STEPS=['s_mode','s_access','s_feat','s_inv','s_data','s_hems','s_done'];
+const SECT={net:()=>!S.ethOk||MODE==='pro',mqtt:()=>F.mqtt,cloud:()=>F.cloud,dyness:()=>F.dyness,tasmota:()=>F.tasmota,knx:()=>F.knx,
+  ports:()=>MODE==='pro'&&(F.sunspec||F.gateway)};
+const visible=()=>STEPS.filter(s=>s==='s_data'?Object.values(SECT).some(f=>f()):s==='s_hems'?F.sunspec:true);
+function setLang(l){
+  LANG=l==='en'?'en':'de';document.documentElement.lang=LANG;$('lang').value=LANG;document.title=T('title')+' · HIT Proxy';
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=T(e.dataset.t));
+  if(C.uiLang&&C.uiLang!==LANG){C.uiLang=LANG;post('/api/config',{uiLang:LANG,setupComplete:false});}
   paint();
 }
+function setMode(m){MODE=m;if(m==='easy')F.akku=true;paint();}
+function featList(){
+  $('featH').textContent=T(MODE==='pro'?'featHP':'featHE');$('featP').textContent=T(MODE==='pro'?'featPP':'featPE');
+  $('featList').innerHTML=FEATS.filter(f=>MODE==='pro'||!f[2]).map(([k])=>MODE==='pro'
+    ?`<label><input type="checkbox" ${F[k]?'checked':''} onchange="F.${k}=this.checked;paint()"/> <span>${T('l_'+k)}</span></label>`
+    :`<div class="q"><span>${T('q_'+k)}</span><span class="seg"><button type="button" class="${F[k]?'on':''}" aria-pressed="${!!F[k]}" onclick="F.${k}=true;paint()">${T('yes')}</button>`+
+     `<button type="button" class="${F[k]?'':'on'}" aria-pressed="${!F[k]}" onclick="F.${k}=false;paint()">${T('no')}</button></span></div>`).join('');
+}
+function paint(){
+  const vis=visible();if(!vis.includes(step))step=vis[vis.length-1];
+  const pos=vis.indexOf(step);
+  $('stepLabels').innerHTML=vis.map((s,n)=>`<span class="${n===pos?'on':(n<pos?'done':'')}">${T(s==='s_feat'&&MODE==='easy'?'st_q':'st_'+s.slice(2))}</span>`).join('');
+  $('bar').innerHTML=vis.map((s,n)=>`<i class="${n<=pos?'on':''}"></i>`).join('');
+  STEPS.forEach(s=>{const c=$(s);c.classList.toggle('hide',s!==step);c.querySelector('.pill').textContent=T('step',vis.indexOf(s)+1,vis.length);});
+  document.querySelectorAll('.pro').forEach(e=>e.classList.toggle('hide',MODE!=='pro'));
+  $('m_easy').classList.toggle('on',MODE==='easy');$('m_pro').classList.toggle('on',MODE==='pro');
+  $('boardInfo').textContent=S.board?T('board',S.board,S.hasDisplay):'';
+  const own=!!C.ownPassOnly;
+  $('accP').innerHTML=T(own?'accNoDisp':'accDisp');$('passL').textContent=T(own?'passReq':'passOpt');$('accHint').textContent=T(own?'accHintReq':'accHintOpt');
+  $('dcode').classList.toggle('hide',own);$('dcode').textContent=C.displayCode||'';
+  featList();
+  const rtu=MODE==='pro'&&$('hitMode').value==='1';
+  $('tcpBox').classList.toggle('hide',rtu);$('rtuBox').classList.toggle('hide',!rtu);
+  for(const k in SECT)$('x_'+k).classList.toggle('hide',!SECT[k]());
+  $('x_ss').classList.toggle('hide',!F.sunspec);$('x_gw').classList.toggle('hide',!F.gateway);
+  $('netP').textContent=T(S.ethOk?'netCable':'netNoCable');
+  $('proxyIp').textContent=(S.ethOk&&S.ipEth&&S.ipEth!=='-')?S.ipEth:(S.ipShown||'—');
+  $('ssPort').textContent=MODE==='pro'?(val('sunspecPort')||1502):(C.sunspecPort||1502);$('ssUnit').textContent=MODE==='pro'?(val('sunspecUnitId')||1):(C.sunspecUnitId||1);
+  if(step==='s_done'){
+    $('sumList').innerHTML=FEATS.filter(([k])=>F[k]).map(([k])=>`<li>${T('l_'+k)}</li>`).join('');
+    $('sumTodo').textContent=F.knx?T('todoKnx'):'';
+  }
+}
+function check(){
+  const m=(id,k)=>{$(id).textContent=k?T(k):'';return !k;};
+  if(step==='s_access'){
+    const p=$('webPass').value,own=!!C.ownPassOnly;
+    return m('accMsg',(own||p)&&p.length<8?'eShort':p!==$('webPass2').value?'eMatch':own&&p==='hitproxy1'?'eStd':'');
+  }
+  if(step==='s_feat')return m('featMsg',FEATS.some(([k])=>F[k]&&k!=='akku')?'':(MODE==='pro'?'eFeatP':'eFeat'));
+  if(step==='s_inv'){
+    const rtu=MODE==='pro'&&$('hitMode').value==='1';
+    if($('demoMode').checked||rtu||val('hitHost')){$('hitMsg').textContent='';return true;}
+    $('hitMsg').innerHTML='<span class="bad">'+T('eIp')+'</span>';return false;
+  }
+  if(step==='s_data')return m('dataMsg',F.mqtt&&!val('mqttHost')?'eMqtt':F.cloud&&(!val('cloudUser')||!($('cloudPass').value||C.cloudPassSet))?'eCloud':
+    F.dyness&&(!val('batCloudAppId')||!($('batCloudSecret').value||C.batCloudSecretSet))?'eDyn':F.tasmota&&!val('tasmotaHost')?'eTas':'');
+  return true;
+}
+function next(){if(!check())return;const vis=visible();step=vis[Math.min(vis.indexOf(step)+1,vis.length-1)];paint();scrollTo(0,0);}
+function back(){const vis=visible();step=vis[Math.max(vis.indexOf(step)-1,0)];paint();scrollTo(0,0);}
+const post=(u,b)=>fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+const sleep=ms=>new Promise(x=>setTimeout(x,ms));
+function hitBody(){
+  const pro=MODE==='pro',b={hitHost:val('hitHost'),demoMode:$('demoMode').checked,inverterType:Number($('inverterType').value)||0,hitMode:pro?Number($('hitMode').value):0};
+  if(pro)Object.assign(b,{hitPort:Number(val('hitPort'))||502,hitUnitId:Number(val('hitUnitId'))||1,hitRtuBaud:Number(val('hitRtuBaud'))||9600});
+  return b;
+}
 async function testHit(){
-  const msg=$w('hitMsg');
-  if($w('demoMode').checked){msg.innerHTML='<span class="ok">Demo gewählt — Test übersprungen.</span>';return;}
-  const body={hitHost:$w('hitHost').value.trim(),hitPort:Number($w('hitPort').value),
-    hitUnitId:Number($w('hitUnitId').value),inverterType:Number($w('inverterType').value),demoMode:false,hitMode:0,setupComplete:false};
-  if(!body.hitHost){msg.innerHTML='<span class="bad">IP-Adresse fehlt</span>';return;}
-  msg.textContent='Speichern & pollen…';
+  const msg=$('hitMsg');
+  if($('demoMode').checked){msg.innerHTML='<span class="ok">'+T('tDemo')+'</span>';return;}
+  if(!check())return;
+  msg.textContent=T('tRun');
   const s0=await(await fetch('/api/status')).json();
-  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  await post('/api/config',Object.assign(hitBody(),{demoMode:false,setupComplete:false}));
   await fetch('/api/poll',{method:'POST'});
   // die Abfrage läuft im Hintergrund; auf ihr Ergebnis warten (max. ~15 s)
   let s=s0;
-  for(let i=0;i<30;i++){await new Promise(x=>setTimeout(x,500));s=await(await fetch('/api/status')).json();if(s.hitPollsDone>s0.hitPollsDone)break;}
-  msg.innerHTML=s.hitOk?('<span class="ok">Wechselrichter ok — '+s.pvW+' W PV, SoC '+s.soc+' %</span>'):('<span class="bad">Keine Antwort — IP/Netz prüfen ('+(s.status||'')+')</span>');
+  for(let i=0;i<30;i++){await sleep(500);s=await(await fetch('/api/status')).json();if(s.hitPollsDone>s0.hitPollsDone)break;}
+  msg.innerHTML=s.hitOk?'<span class="ok">'+T('tOk',s.pvW,s.soc)+'</span>':'<span class="bad">'+T('tBad')+'</span>';
+}
+async function cloudTest(kind){
+  const msg=$('msg_'+kind),esc=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const b=kind==='akku'?{kind,batCloud:1,batCloudAppId:val('batCloudAppId'),batCloudSecret:$('batCloudSecret').value,batCloudSn:val('batCloudSn')}
+    :{kind,cloudUser:val('cloudUser'),cloudPass:$('cloudPass').value,cloudStationId:MODE==='pro'?val('cloudStationId'):''};
+  msg.textContent=T('cRun');
+  await post('/api/cloud/test',b);
+  let r={pending:true};
+  for(let i=0;i<90&&r.pending;i++){await sleep(500);r=await fetch('/api/cloud/test/result').then(x=>x.json()).catch(()=>({pending:true}));}
+  if(r.pending){msg.innerHTML='<span class="bad">'+T('cTime')+'</span>';return;}
+  if(r.ok&&r.station)$('cloudStationId').value=r.station;
+  msg.innerHTML=r.ok?'<span class="ok">'+T('cOk')+'</span> ('+esc(r.msg)+')':'<span class="bad">'+T('cBad')+'</span> ('+esc(r.msg)+')';
 }
 async function finish(){
-  const fin=$w('finMsg'); fin.textContent='Speichere…';
-  const body={
-    webUser:$w('webUser').value.trim()||'admin',
-    webPass:$w('webPass').value,
-    inverterType:Number($w('inverterType').value)||0,
-    hitHost:$w('hitHost').value.trim(),
-    hitPort:Number($w('hitPort').value)||502,
-    hitUnitId:Number($w('hitUnitId').value)||1,
-    hitMode:0,
-    demoMode:$w('demoMode').checked,
-    sunspecPort:1502,sunspecUnitId:1,
-    setupComplete:true,wifiApMode:false
-  };
-  for(const [k,key] of FEATS)body[key]=feat(k);
-  if(!feat('mqtt'))body.mqttIngestEnabled=false;
-  if(!body.demoMode && !body.hitHost){fin.innerHTML='<span class="bad">IP-Adresse oder Demo nötig</span>';step=3;paint();return;}
-  const r=await(await fetch('/api/setup/finish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
-  if(!r.ok){fin.innerHTML='<span class="bad">'+(r.error||'Fehler')+'</span>';return;}
-  const host=(location.hostname==='192.168.4.1'&&r.ip&&r.ip!=='-')?r.ip:location.hostname;
+  const fin=$('finMsg'),pro=MODE==='pro',num=id=>Number(val(id))||undefined;
+  fin.textContent=T('saving');
+  const b=Object.assign(hitBody(),{webUser:pro?(val('webUser')||'admin'):(C.webUser||'admin'),webPass:$('webPass').value,
+    setupComplete:true,wifiApMode:pro&&$('wifiApMode').checked,uiLang:LANG,batCloud:F.dyness?1:0});
+  for(const [k,key] of FEATS)if(key)b[key]=!!F[k];
+  if(!F.mqtt)b.mqttIngestEnabled=false;
+  if(SECT.net()){b.staSsid=val('staSsid');b.staPass=$('staPass').value;}
+  if(F.mqtt)Object.assign(b,{mqttHost:val('mqttHost'),mqttUser:val('mqttUser'),mqttPass:$('mqttPass').value},pro?{mqttPort:num('mqttPort'),mqttBase:val('mqttBase')}:{});
+  if(F.cloud)Object.assign(b,{cloudUser:val('cloudUser'),cloudPass:$('cloudPass').value,cloudStationId:val('cloudStationId')});
+  if(F.dyness)Object.assign(b,{batCloudAppId:val('batCloudAppId'),batCloudSecret:$('batCloudSecret').value,batCloudSn:pro?val('batCloudSn'):''});
+  if(F.tasmota)Object.assign(b,{tasmotaHost:val('tasmotaHost')},pro?{tasmotaPort:num('tasmotaPort'),tasmotaUser:val('tasmotaUser'),tasmotaPass:$('tasmotaPass').value}:{});
+  if(pro&&F.knx)b.knxPa=val('knxPa');
+  if(pro&&F.sunspec)Object.assign(b,{sunspecPort:num('sunspecPort'),sunspecUnitId:num('sunspecUnitId')});
+  if(pro&&F.gateway)b.gatewayPort=num('gatewayPort');
+  const r=await post('/api/setup/finish',b).then(x=>x.json()).catch(()=>null);
+  if(!r||!r.ok){fin.innerHTML='<span class="bad">'+T(r&&r.error==='password'?'ePass':'eSave')+'</span>';if(r&&r.error==='password'){step='s_access';paint();}return;}
+  const viaAp=location.hostname==='192.168.4.1',host=(viaAp&&r.ip&&r.ip!=='-')?r.ip:location.hostname;
   const dest=r.https?`https://${host}/`:(host===location.hostname?'/':`http://${host}/`);
-  fin.innerHTML=r.https
-    ?`<span class="ok">Fertig.</span> Weiter über HTTPS: <a href="${dest}">${dest}</a><br>`+
-     `<span class="muted">Der Browser warnt einmal wegen des eigenen Zertifikats; bestätigen und mit demselben Zugang anmelden.</span>`
-    :'<span class="ok">Fertig — weiter zum Live-Dashboard…</span>';
-  setTimeout(()=>location.href=dest,r.https?2500:1200);
+  fin.innerHTML='<span class="ok">'+(b.webPass?T('finPass',b.webUser):T('fin'))+'</span>'+
+    (viaAp&&host===location.hostname&&C.ownPassOnly?'<br>'+T('finAp'):'')+(r.https?'<br>'+T('finTls'):'')+`<br><a href="${dest}">${dest}</a>`;
+  setTimeout(()=>location.href=dest,4000);
+}
+async function boot(){
+  [C,S]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/status').then(r=>r.json())]);
+  if(C.setupComplete){location.href='/';return;}
+  document.documentElement.dataset.theme=S.uiTheme||'mint';
+  for(const [k,key] of FEATS)F[k]=key?!!C[key]:C.batCloud===1;
+  F.mqtt=!!(C.mqttEnabled||C.mqttIngestEnabled);
+  const ex=v=>(v&&!String(v).startsWith('192.0.2'))?v:''; // Beispieladressen der Werkseinstellung nicht vorschlagen
+  for(const id of ['webUser','hitPort','hitUnitId','hitRtuBaud','staSsid','mqttPort','mqttUser','mqttBase','cloudUser','cloudStationId',
+    'batCloudAppId','batCloudSn','tasmotaPort','tasmotaUser','knxPa','sunspecPort','sunspecUnitId','gatewayPort'])if(C[id]!==undefined&&C[id]!=='')$(id).value=C[id];
+  for(const id of ['hitHost','mqttHost','tasmotaHost'])$(id).value=ex(C[id]);
+  $('hitMode').value=String(C.hitMode||0);$('inverterType').value=String(C.inverterType||0);$('demoMode').checked=!!C.demoMode;$('wifiApMode').checked=false;
+  setLang(C.uiLang||S.uiLang||'de');
 }
 boot();
 </script></body></html>
@@ -2186,6 +2395,17 @@ uint8_t unitId(JsonVariantConst v, uint8_t old) {
   return (u >= 1 && u <= 247) ? uint8_t(u) : old;
 }
 
+// Boards ohne Display haben keinen ablesbaren Code: Zugang nur mit dem eigenen Passwort, das auch für das
+// Geräte-WLAN gilt. Geräte, die vor v0.5.13 eingerichtet wurden, behalten ihren Code.
+bool ownPassOnly(const AppConfig &c) { return !BOARD_HAS_DISPLAY && !c.displayCode[0]; }
+
+// Ohne eigenes Passwort gilt die Einrichtung nicht als fertig; danach ist das Standard-Passwort überall ungültig
+void enforceAccess(AppConfig &c) {
+  if (!ownPassOnly(c)) return;
+  if (strlen(c.webPass) < MIN_PASS_LEN) c.setupComplete = false;
+  else if (c.setupComplete) strlcpy(c.wifiPass, c.webPass, sizeof(c.wifiPass));
+}
+
 void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["useEthernet"].isNull()) c.useEthernet = o["useEthernet"];
   if (!o["wifiEnabled"].isNull()) c.wifiEnabled = o["wifiEnabled"];
@@ -2202,9 +2422,9 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   // wifiPass / displayCode: random — nicht aus Form überschreiben außer explizit
   if (o["webUser"].is<const char *>()) strlcpy(c.webUser, o["webUser"], sizeof(c.webUser));
   // Passwörter nie ausliefern; leeres Feld = unverändert
-  if (o["webPass"].is<const char *>() && o["webPass"].as<const char *>()[0])
+  if (o["webPass"].is<const char *>() && strlen(o["webPass"].as<const char *>()) >= (ownPassOnly(c) ? MIN_PASS_LEN : 1))
     strlcpy(c.webPass, o["webPass"], sizeof(c.webPass));
-  if (!o["webPassClear"].isNull() && o["webPassClear"].as<bool>()) c.webPass[0] = '\0';
+  if (!o["webPassClear"].isNull() && o["webPassClear"].as<bool>() && !ownPassOnly(c)) c.webPass[0] = '\0';
   if (!o["httpsEnabled"].isNull()) c.httpsEnabled = o["httpsEnabled"];
   if (!o["httpsRedirect"].isNull()) c.httpsRedirect = o["httpsRedirect"];
   if (!o["hitWriteEnabled"].isNull()) c.hitWriteEnabled = o["hitWriteEnabled"];
@@ -2476,8 +2696,13 @@ void begin() {
                 return;
               }
               auto &c = ConfigStore::get();
+              if (ownPassOnly(c) && strlen(doc["webPass"] | "") < MIN_PASS_LEN && strlen(c.webPass) < MIN_PASS_LEN) {
+                req->send(400, "application/json", "{\"ok\":false,\"error\":\"password\"}");
+                return;
+              }
               applyJson(doc.as<JsonObjectConst>(), c);
               c.setupComplete = true;
+              enforceAccess(c);
               c.sunspecPort = c.sunspecPort ? c.sunspecPort : 1502;
               c.sunspecUnitId = c.sunspecUnitId ? c.sunspecUnitId : 1;
               // Autark-Pfad: Assistent beendet AP-Zwang; LAN/Eth bleibt
@@ -2592,7 +2817,9 @@ void begin() {
     doc["staSsid"] = c.staSsid;
     doc["staPass"] = "";
     doc["staPassSet"] = c.staPass[0] != 0;
-    doc["wifiPass"] = c.displayCode[0] ? c.displayCode : c.wifiPass; // UI zeigt Display-Code
+    // UI zeigt den Display-Code; ohne Display ist es das eigene Passwort und wird nicht ausgeliefert
+    doc["wifiPass"] = c.displayCode[0] ? c.displayCode : (ownPassOnly(c) ? "" : c.wifiPass);
+    doc["ownPassOnly"] = ownPassOnly(c);
     doc["webUser"] = c.webUser;
     doc["webPass"] = "";
     doc["webPassSet"] = c.webPass[0] != 0;
@@ -2717,6 +2944,7 @@ void begin() {
               applyJson(doc.as<JsonObjectConst>(), c);
               // Speichern = Setup erledigt (QR-Screen aus), außer explizit false
               if (doc["setupComplete"].isNull()) c.setupComplete = true;
+              enforceAccess(c);
               ConfigStore::save();
               gLive.setupScreen = !c.setupComplete;
               req->send(200, "application/json", "{\"ok\":true}");
@@ -2801,6 +3029,10 @@ void begin() {
 
   server.on("/api/access/new-code", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
+    if (ownPassOnly(ConfigStore::get())) { // ohne Display könnte den neuen Code niemand ablesen
+      req->send(400, "application/json", "{\"ok\":false,\"error\":\"no display\"}");
+      return;
+    }
     ConfigStore::newDisplayCode();
     addWork(W_NEWCODE); // NetBoot + Display in der Hauptschleife (SPI!)
     req->send(200, "application/json", "{\"ok\":true}");
@@ -2846,6 +3078,37 @@ void begin() {
               addWork(W_PROBE);
               req->send(200, "application/json", "{\"ok\":true,\"pending\":true}");
             });
+
+  // Cloud-Zugangsdaten prüfen, ohne sie zu speichern; leere Passwortfelder nehmen den gespeicherten Wert
+  server.on("/api/cloud/test", HTTP_POST, [](AsyncWebServerRequest *req) {}, NULL,
+            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
+              const char *body = fullBody(req, data, len, index, total);
+              if (!body) return;
+              JsonDocument in;
+              if (deserializeJson(in, body)) {
+                req->send(400, "application/json", "{\"ok\":false,\"error\":\"bad json\"}");
+                return;
+              }
+              static AppConfig t; // groß, nicht auf den Stack der Web-Task
+              t = ConfigStore::get();
+              applyJson(in.as<JsonObjectConst>(), t);
+              const bool bat = !strcmp(in["kind"] | "", "akku");
+              HoyCloud::startTest(bat ? HoyCloud::Test::Battery : HoyCloud::Test::Hoymiles, t);
+              req->send(200, "application/json", "{\"ok\":true,\"pending\":true}");
+            });
+
+  server.on("/api/cloud/test/result", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    String msg, station;
+    const uint8_t st = HoyCloud::testState(msg, station);
+    JsonDocument out;
+    out["pending"] = st == 1;
+    out["ok"] = st == 2;
+    out["msg"] = msg;
+    out["station"] = station;
+    String s; serializeJson(out, s);
+    req->send(200, "application/json", s);
+  });
 
   server.on("/api/tasmota/probe/result", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;

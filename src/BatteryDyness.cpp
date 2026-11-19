@@ -119,6 +119,14 @@ public:
     return r;
   }
 
+  // Nur die Zugangsdaten prüfen: Gerät suchen oder, mit eingetragener Seriennummer, binden
+  CloudResult probe(const AppConfig &cfg, BatteryCloudData &io, String &err) {
+    if (!cfg.batCloudSn[0]) return discover(cfg, io, err);
+    strlcpy(sn_, cfg.batCloudSn, sizeof(sn_));
+    strlcpy(io.sn, sn_, sizeof(io.sn));
+    return bind(cfg, err);
+  }
+
   void reset() override {
     sn_[0] = collector_[0] = 0;
     bound_ = false;
@@ -371,6 +379,31 @@ Dyness gDyness;
 } // namespace
 
 BatteryCloudDriver &dynessDriver() { return gDyness; }
+
+bool dynessTest(const AppConfig &cfg, String &msg) {
+  if (!cfg.batCloudAppId[0] || !cfg.batCloudSecret[0]) {
+    msg = "App-ID und Secret fehlen";
+    return false;
+  }
+  if (time(nullptr) < 1700000000) {
+    msg = "Uhrzeit fehlt noch; das Gerät braucht dafür Internet";
+    return false;
+  }
+  Dyness d;
+  BatteryCloudData io;
+  String err;
+  const CloudResult r = d.probe(cfg, io, err);
+  if (r == CloudResult::RateLimited) {
+    msg = "Abrufgrenze erreicht, in ein paar Minuten erneut versuchen";
+    return false;
+  }
+  if (r != CloudResult::Busy && r != CloudResult::Data) {
+    msg = err.length() ? err : String("Abruf fehlgeschlagen");
+    return false;
+  }
+  msg = String(io.model[0] ? io.model : "Akku") + " " + io.sn;
+  return true;
+}
 
 // Testvektor, berechnet mit dem Verfahren aus tools/dyness_test.py (siehe tools/battery_check.py --sign-selftest):
 // Secret "test-secret", Body {"deviceSn":"X"}, Date "Tue, 18 Nov 2026 10:00:00 GMT", Pfad /v1/device/realTime/data
