@@ -327,6 +327,9 @@ textarea:focus{border-color:var(--acc);outline:none}
   .display-week .week-time-label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
   .display-week input[type=time]{width:100%;min-width:0}
 }
+@media(max-width:360px){
+  .display-week td:nth-child(n+3){grid-column:1/-1}
+}
 .knx-tbl{min-width:560px;max-width:860px;border-collapse:separate;border-spacing:0;font-size:14px}
 .knx-tbl th{position:sticky;top:0;z-index:1;background:var(--plate);padding:8px 10px;border-bottom:1px solid var(--rule2)}
 .knx-tbl td{padding:4px 10px;border-bottom:1px solid var(--rule);vertical-align:middle}
