@@ -13,6 +13,7 @@ namespace DebugLog {
   void clear();
   void add(uint8_t fc, uint16_t addr, uint16_t value, const char *note);
   size_t count();
+  size_t copyTo(DebugEvt *out, size_t capacity);
   const DebugEvt *at(size_t i); // 0 = oldest in window
   // JSON array string (ring, newest last)
   String toJson(size_t maxN = 40);

@@ -14,6 +14,7 @@ namespace EventLog {
   void add(char level, const char *src, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
   void clear();
   size_t count();
+  size_t copyTo(SysEvt *out, size_t capacity);
   uint32_t warnings(); // W+E seit Start, auch wenn schon aus dem Ring gefallen
   String toJson(size_t maxN = 60);
 }
