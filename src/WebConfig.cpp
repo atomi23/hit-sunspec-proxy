@@ -2281,9 +2281,9 @@ bool requireAuth(AsyncWebServerRequest *req) {
 
 // Der Body kommt in mehreren TCP-Stücken; erst das letzte liefert den ganzen Text.
 // _tempObject gibt AsyncWebServer beim Ende des Requests selbst frei.
-const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
-  constexpr size_t MAX_BODY = 16384;
-  if (total > MAX_BODY) {
+const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total,
+                     size_t maxBody = 16384) {
+  if (total > maxBody) {
     if (index == 0) req->send(413, "application/json", "{\"ok\":false,\"error\":\"body too large\"}");
     return nullptr;
   }
@@ -2690,6 +2690,36 @@ void begin() {
     HttpsServer::useSelfSigned();
     req->send(200, "application/json", "{\"ok\":true}");
   });
+
+  server.on("/api/backup", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    const AsyncWebParameter *p = req->getParam("secrets");
+    const bool secrets = !p || p->value() != "0";
+    AsyncWebServerResponse *res = req->beginResponse(200, "application/json", ConfigStore::exportBackup(secrets));
+    res->addHeader("Content-Disposition", "attachment; filename=\"hit-proxy-backup.json\"");
+    res->addHeader("Cache-Control", "no-store");
+    req->send(res);
+  });
+
+  server.on("/api/backup/restore", HTTP_POST, [](AsyncWebServerRequest *req) {}, NULL,
+            [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total) {
+              const char *body = fullBody(req, data, len, index, total, 32768);
+              if (!body) return;
+              if (!requireAuth(req)) return;
+              String err;
+              if (!ConfigStore::importBackup(body, err)) {
+                JsonDocument out;
+                out["ok"] = false;
+                out["error"] = err;
+                String s;
+                serializeJson(out, s);
+                req->send(400, "application/json", s);
+                return;
+              }
+              EventLog::add('I', "WEB", "Einstellungen aus Sicherung wiederhergestellt, Neustart folgt");
+              req->send(200, "application/json", "{\"ok\":true,\"reboot\":true}");
+              OtaUpdate::restartSoon();
+            });
 
   server.on("/api/events/clear", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;

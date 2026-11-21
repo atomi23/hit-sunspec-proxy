@@ -163,4 +163,10 @@ namespace ConfigStore {
   void factoryReset();
   // Neuer zufälliger Zugangscode (Login + Passwort des Geräte-WLANs), sofort gespeichert
   const char *newDisplayCode();
+  // Sicherung als JSON; withSecrets=false lässt Passwörter, Schlüssel und Zugangscode weg
+  constexpr char BACKUP_FORMAT[] = "hit-sunspec-proxy-config";
+  constexpr int BACKUP_FORMAT_VERSION = 1;
+  String exportBackup(bool withSecrets);
+  // Prüft die ganze Datei, schreibt dann die enthaltenen Einträge; fehlende bleiben unverändert. Danach neu starten.
+  bool importBackup(const char *json, String &err);
 }
