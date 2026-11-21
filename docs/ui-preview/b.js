@@ -2,6 +2,24 @@
 (()=>{
 const base=window.applyThemeLang;let built=false;
 const en=()=>document.documentElement.lang==='en';
+window.uiText=(de,english)=>en()?english:de;
+let renderedLang='de';
+const german=new WeakMap();
+const translatedAttrs=['placeholder','title','aria-label'];
+function translate(){
+  const lang=document.documentElement.lang;
+  if(renderedLang===lang)return;
+  renderedLang=lang;
+  document.querySelectorAll('[data-en],[data-en-placeholder],[data-en-title],[data-en-aria-label]').forEach(el=>{
+    if(!german.has(el))german.set(el,{text:el.textContent,attrs:translatedAttrs.map(a=>el.getAttribute(a))});
+    const original=german.get(el);
+    if(el.hasAttribute('data-en'))el.textContent=en()?el.getAttribute('data-en'):original.text;
+    translatedAttrs.forEach((attr,i)=>{
+      const english=el.getAttribute('data-en-'+attr);
+      if(english!==null)el.setAttribute(attr,en()?english:original.attrs[i]);
+    });
+  });
+}
 function build(){
   built=true;
   const side=document.querySelector('.side'),nav=side&&side.querySelector('nav');if(!nav)return;
@@ -57,6 +75,6 @@ function menu(){
   const b=document.querySelector('.bp-btn span');if(b)b.textContent=en()?'Settings':'Einstellungen';
   return true;
 }
-window.applyThemeLang=s=>{base(s);if(menu())live(s);};
+window.applyThemeLang=s=>{base(s);translate();if(menu())live(s);};
 menu();
 })();

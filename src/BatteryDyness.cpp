@@ -169,7 +169,7 @@ private:
     r.http.useHTTP10(true); // keine Chunks, damit die Antwort direkt aus dem Datenstrom gelesen werden kann
     const String url = String("https://") + cfg.batCloudHost + "/openapi/ems-device" + path;
     if (!r.http.begin(r.cli, url)) {
-      err = "URL ungültig";
+      err = cfg.uiLang == UiLang::En ? "Invalid URL" : "URL ungültig";
       return int(CloudResult::Error);
     }
     r.http.setConnectTimeout(5000);
@@ -183,7 +183,7 @@ private:
     r.http.addHeader("Authorization", String("API ") + cfg.batCloudAppId + ":" + sig);
     const int code = r.http.POST(payload);
     if (code > 0) return code;
-    err = String("keine Verbindung (") + code + ")";
+    err = String(cfg.uiLang == UiLang::En ? "No connection (" : "keine Verbindung (") + code + ")";
     r.http.end();
     return int(CloudResult::NoLink);
   }
@@ -191,6 +191,7 @@ private:
   // Eine Anfrage; res bekommt die gefilterte Antwort. Rückgabe wie poll.
   CloudResult post(const AppConfig &cfg, const char *path, const String &payload, JsonDocument &res,
                    JsonDocument &filter, String &err) {
+    const bool en = cfg.uiLang == UiLang::En;
     Req rq;
     HTTPClient &http = rq.http;
     const int code = send(rq, cfg, path, payload, err);
@@ -200,17 +201,19 @@ private:
     http.end();
     if (rateLimited(code, res)) return CloudResult::RateLimited;
     if (code == 401 || code == 403) {
-      err = "Anmeldung abgelehnt (App-ID, Secret oder Uhrzeit prüfen)";
+      err = en ? "Sign-in rejected (check the app ID, secret or clock)"
+               : "Anmeldung abgelehnt (App-ID, Secret oder Uhrzeit prüfen)";
       return CloudResult::Error;
     }
     if (de) {
-      err = String("HTTP ") + code + " unlesbar (" + de.c_str() + ", " + body.got + " B, Block " +
+      err = String("HTTP ") + code + (en ? " unreadable (" : " unlesbar (") + de.c_str() +
+            ", " + body.got + (en ? " B, block " : " B, Block ") +
             heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) + ")";
       return CloudResult::Error;
     }
     if (!codeOk(res["code"])) {
       const char *info = res["info"].as<const char *>();
-      err = String("Fehler ") + (res["code"].as<const char *>() ? res["code"].as<const char *>() : String(code).c_str()) +
+      err = String(en ? "Error " : "Fehler ") + (res["code"].as<const char *>() ? res["code"].as<const char *>() : String(code).c_str()) +
             (info ? String(": ") + info : String());
       return CloudResult::Error;
     }
@@ -240,7 +243,7 @@ private:
     }
     if (pick.isNull() && list.size()) pick = list[0];
     if (pick.isNull()) {
-      err = "kein Gerät im Dyness-Konto";
+      err = cfg.uiLang == UiLang::En ? "No device in the Dyness account" : "kein Gerät im Dyness-Konto";
       return CloudResult::Error;
     }
     strlcpy(sn_, pick["deviceSn"] | "", sizeof(sn_));
@@ -350,11 +353,12 @@ private:
         if (env[i] != '"' && env[i] != ' ') ec += env[i];
     if (code == 429 || ec == "429" || env.indexOf("TOO_MANY_REQUESTS") >= 0) return CloudResult::RateLimited;
     if (code == 401 || code == 403) {
-      err = "Anmeldung abgelehnt (App-ID, Secret oder Uhrzeit prüfen)";
+      err = cfg.uiLang == UiLang::En ? "Sign-in rejected (check the app ID, secret or clock)"
+                                    : "Anmeldung abgelehnt (App-ID, Secret oder Uhrzeit prüfen)";
       return CloudResult::Error;
     }
     if (ec != "0" && ec != "200") {
-      err = String("Fehler ") + (ec.length() ? ec : String(code));
+      err = String(cfg.uiLang == UiLang::En ? "Error " : "Fehler ") + (ec.length() ? ec : String(code));
       return CloudResult::Error;
     }
     if (!isnan(soc) && soc >= 0 && soc <= 100) io.soc = soc;
@@ -381,12 +385,14 @@ Dyness gDyness;
 BatteryCloudDriver &dynessDriver() { return gDyness; }
 
 bool dynessTest(const AppConfig &cfg, String &msg) {
+  const bool en = cfg.uiLang == UiLang::En;
   if (!cfg.batCloudAppId[0] || !cfg.batCloudSecret[0]) {
-    msg = "App-ID und Secret fehlen";
+    msg = en ? "App ID and secret are missing" : "App-ID und Secret fehlen";
     return false;
   }
   if (time(nullptr) < 1700000000) {
-    msg = "Uhrzeit fehlt noch; das Gerät braucht dafür Internet";
+    msg = en ? "The device needs an internet connection to set its clock"
+             : "Uhrzeit fehlt noch; das Gerät braucht dafür Internet";
     return false;
   }
   Dyness d;
@@ -394,14 +400,15 @@ bool dynessTest(const AppConfig &cfg, String &msg) {
   String err;
   const CloudResult r = d.probe(cfg, io, err);
   if (r == CloudResult::RateLimited) {
-    msg = "Abrufgrenze erreicht, in ein paar Minuten erneut versuchen";
+    msg = en ? "Rate limit reached. Try again in a few minutes."
+             : "Abrufgrenze erreicht, in ein paar Minuten erneut versuchen";
     return false;
   }
   if (r != CloudResult::Busy && r != CloudResult::Data) {
-    msg = err.length() ? err : String("Abruf fehlgeschlagen");
+    msg = err.length() ? err : String(en ? "Request failed" : "Abruf fehlgeschlagen");
     return false;
   }
-  msg = String(io.model[0] ? io.model : "Akku") + " " + io.sn;
+  msg = String(io.model[0] ? io.model : (en ? "Battery" : "Akku")) + " " + io.sn;
   return true;
 }
 

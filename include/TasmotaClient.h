@@ -9,5 +9,5 @@ namespace TasmotaClient {
   bool pollNow();
 
   // One-Click: Status 8 holen, parsen, Roh-JSON + erkannte Felder liefern
-  bool probe(String &rawOut, String &summaryOut);
+  bool probe(String &rawOut, String &summaryOut, bool english);
 }

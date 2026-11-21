@@ -366,7 +366,7 @@ async function cloudTest(kind){
   const b=kind==='akku'?{kind,batCloud:1,batCloudAppId:val('batCloudAppId'),batCloudSecret:$('batCloudSecret').value,batCloudSn:val('batCloudSn')}
     :{kind,cloudUser:val('cloudUser'),cloudPass:$('cloudPass').value,cloudStationId:MODE==='pro'?val('cloudStationId'):''};
   msg.textContent=T('cRun');
-  await post('/api/cloud/test',b);
+  await post('/api/cloud/test',Object.assign(b,{uiLang:LANG}));
   let r={pending:true};
   for(let i=0;i<90&&r.pending;i++){await sleep(500);r=await fetch('/api/cloud/test/result').then(x=>x.json()).catch(()=>({pending:true}));}
   if(r.pending){msg.innerHTML='<span class="bad">'+T('cTime')+'</span>';return;}

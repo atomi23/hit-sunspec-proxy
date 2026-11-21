@@ -226,7 +226,8 @@ textarea:focus{border-color:var(--acc);outline:none}
   .app{flex-direction:column}
   .side{width:100%;height:auto;position:relative;padding:14px 10px 8px}
   .side nav{flex-direction:row;flex-wrap:wrap;gap:4px}.side nav a{padding:6px 10px}
-  .side .nav-grp{display:none}.side .foot{display:none}.logo{padding:0 8px 10px}
+  .side .nav-grp,.side .foot .online,.side .foot .meta{display:none}
+  .side .foot{padding:0 8px 6px}.logo{padding:0 8px 10px}
   .main{padding:20px 16px 40px}.grid,.grid2,.cards,.cards.two{grid-template-columns:1fr}
   .flow{overflow-x:auto}.flow svg{min-width:640px}
 }

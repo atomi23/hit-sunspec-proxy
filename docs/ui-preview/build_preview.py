@@ -101,11 +101,11 @@ window.fetch=async(u,o)=>{{
 kp = (ROOT / "include" / "KnxPoints.h").read_text(encoding="utf-8")
 meta = []
 for m in re.finditer(
-    r'\{\s*"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*KnxValKind::(\w+)\s*\}',
+    r'\{\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*(\d+),\s*KnxValKind::(\w+)\s*\}',
     kp,
 ):
     meta.append(
-        {"id": m.group(1), "label": m.group(2), "dpt": int(m.group(3)), "kind": m.group(4)}
+        {"id": m.group(1), "label": m.group(2), "labelEn": m.group(3), "dpt": int(m.group(4)), "kind": m.group(5)}
     )
 
 ch = []

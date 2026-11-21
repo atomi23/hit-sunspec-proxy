@@ -618,13 +618,15 @@ String infoJson() {
   return s;
 }
 
-bool installCustom(const char *crtPem, const char *kPem, String &err) {
+bool installCustom(const char *crtPem, const char *kPem, String &err, bool english) {
   if (!crtPem || !kPem || !strstr(crtPem, "-----BEGIN CERTIFICATE-----") || !strstr(kPem, "PRIVATE KEY-----")) {
-    err = "Zertifikat und Schlüssel bitte im PEM-Format (-----BEGIN …)";
+    err = english ? "Use PEM format for the certificate and key (-----BEGIN …)"
+                  : "Zertifikat und Schlüssel bitte im PEM-Format (-----BEGIN …)";
     return false;
   }
   if (strstr(kPem, "ENCRYPTED")) {
-    err = "Schlüssel ist verschlüsselt; bitte ohne Passwort exportieren";
+    err = english ? "The key is encrypted. Export it without a password."
+                  : "Schlüssel ist verschlüsselt; bitte ohne Passwort exportieren";
     return false;
   }
   Rng rng;
@@ -636,14 +638,14 @@ bool installCustom(const char *crtPem, const char *kPem, String &err) {
   char why[96];
   int rc = mbedtls_x509_crt_parse(&c, reinterpret_cast<const unsigned char *>(crtPem), strlen(crtPem) + 1);
   if (rc != 0) {
-    snprintf(why, sizeof(why), "Zertifikat nicht lesbar (-0x%04X)", unsigned(-rc));
+    snprintf(why, sizeof(why), english ? "Cannot read certificate (-0x%04X)" : "Zertifikat nicht lesbar (-0x%04X)", unsigned(-rc));
   } else if ((rc = mbedtls_pk_parse_key(&k, reinterpret_cast<const unsigned char *>(kPem), strlen(kPem) + 1, nullptr, 0,
                                         mbedtls_ctr_drbg_random, &rng.drbg)) != 0) {
-    snprintf(why, sizeof(why), "Schlüssel nicht lesbar (-0x%04X)", unsigned(-rc));
+    snprintf(why, sizeof(why), english ? "Cannot read key (-0x%04X)" : "Schlüssel nicht lesbar (-0x%04X)", unsigned(-rc));
   } else if (mbedtls_pk_check_pair(&c.pk, &k, mbedtls_ctr_drbg_random, &rng.drbg) != 0) {
-    snprintf(why, sizeof(why), "Schlüssel passt nicht zum Zertifikat");
+    snprintf(why, sizeof(why), "%s", english ? "The key does not match the certificate" : "Schlüssel passt nicht zum Zertifikat");
   } else if (time(nullptr) > 1700000000 && validTo(c) < time(nullptr)) {
-    snprintf(why, sizeof(why), "Zertifikat ist abgelaufen");
+    snprintf(why, sizeof(why), "%s", english ? "The certificate has expired" : "Zertifikat ist abgelaufen");
   } else {
     ok = true;
   }
@@ -656,7 +658,7 @@ bool installCustom(const char *crtPem, const char *kPem, String &err) {
   if (!writeFile(OWN_CRT, crtPem) || !writeFile(OWN_KEY, kPem)) {
     LittleFS.remove(OWN_CRT);
     LittleFS.remove(OWN_KEY);
-    err = "Speichern fehlgeschlagen";
+    err = english ? "Could not save the certificate and key" : "Speichern fehlgeschlagen";
     return false;
   }
   EventLog::add('I', "HTTPS", "eigenes Zertifikat hochgeladen");

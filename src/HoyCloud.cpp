@@ -332,6 +332,7 @@ void runTest() {
   if (kind != HoyCloud::Test::None) cfg = testCfg;
   xSemaphoreGive(cfgLock);
   if (kind == HoyCloud::Test::None) return;
+  const bool en = cfg.uiLang == UiLang::En;
   String msg, station;
   bool ok = false;
   if (kind == HoyCloud::Test::Hoymiles) {
@@ -341,20 +342,22 @@ void runTest() {
     local = cfg;
     token[0] = 0;
     loginBlockedUntil = 0;
-    if (!local.cloudUser[0] || !local.cloudPass[0]) msg = "Benutzer und Passwort fehlen";
-    else if (!login()) msg = lastHttpCode > 0 ? "Anmeldung abgelehnt" : "Hoymiles-Cloud nicht erreichbar";
-    else if (!local.cloudStationId[0] && !findStation()) msg = "Anmeldung ok, aber keine Anlage im Konto";
+    if (!local.cloudUser[0] || !local.cloudPass[0]) msg = en ? "Username and password are missing" : "Benutzer und Passwort fehlen";
+    else if (!login()) msg = lastHttpCode > 0 ? (en ? "Sign-in rejected" : "Anmeldung abgelehnt")
+                                             : (en ? "Cannot reach Hoymiles Cloud" : "Hoymiles-Cloud nicht erreichbar");
+    else if (!local.cloudStationId[0] && !findStation()) msg = en ? "Signed in, but no plant was found in the account"
+                                                                : "Anmeldung ok, aber keine Anlage im Konto";
     else {
       ok = true;
       station = local.cloudStationId;
-      msg = "Anmeldung ok, Anlage " + station;
+      msg = (en ? "Signed in, plant " : "Anmeldung ok, Anlage ") + station;
     }
     local = keep;
     token[0] = 0;
     loginBlockedUntil = blocked;
   } else {
     ok = cfg.batCloud == BatteryCloudType::Dyness ? dynessTest(cfg, msg) : false;
-    if (cfg.batCloud != BatteryCloudType::Dyness) msg = "kein Anbieter gewählt";
+    if (cfg.batCloud != BatteryCloudType::Dyness) msg = en ? "No provider selected" : "kein Anbieter gewählt";
   }
   xSemaphoreTake(cfgLock, portMAX_DELAY);
   strlcpy(testMsg, msg.c_str(), sizeof(testMsg));
