@@ -27,6 +27,8 @@
 #include <WiFi.h>
 #include <esp_heap_caps.h>
 #include <ArduinoJson.h>
+#include <memory>
+#include <new>
 
 // Board für Status und Funktionsauswahl (Display gibt es nur auf dem T-Connect-Pro)
 #if defined(BOARD_T_CONNECT_PRO)
@@ -48,6 +50,65 @@
 
 namespace {
 AsyncWebServer server(80);
+
+size_t logLine(char *line, size_t size, const SysEvt &e) {
+  return snprintf(line, size, "ms=%lu ts=%lu [%c] %s: %s\n",
+                  (unsigned long)e.ms, (unsigned long)e.epoch, e.level, e.src, e.msg);
+}
+
+size_t logLine(char *line, size_t size, const DebugEvt &e) {
+  return snprintf(line, size, "ms=%lu FC=%u Addr=%u Wert=%u %s\n",
+                  (unsigned long)e.ms, e.fc, e.addr, e.value, e.note);
+}
+
+template <typename Event, size_t Capacity>
+void downloadLog(AsyncWebServerRequest *req, const char *type,
+                 size_t (*copyTo)(Event *, size_t)) {
+  struct Snapshot {
+    Event events[Capacity];
+    size_t count;
+  };
+  auto snapshot = std::shared_ptr<Snapshot>(new (std::nothrow) Snapshot);
+  if (!snapshot) {
+    req->send(503, "text/plain; charset=utf-8", "Nicht genug Speicher für den Download.\n");
+    return;
+  }
+  snapshot->count = copyTo(snapshot->events, Capacity);
+  auto *response = req->beginChunkedResponse("text/plain; charset=utf-8",
+      [snapshot](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        size_t written = 0;
+        char line[256];
+        // Der Byte-Index macht auch kleine Chunks und wiederholte Aufrufe unabhängig.
+        for (size_t i = 0; i <= snapshot->count && written < maxLen; i++) {
+          size_t len;
+          if (i == 0) {
+            strlcpy(line, "HIT-Proxy Protokoll (älteste Einträge zuerst; ms seit Start, ts Unixzeit oder 0)\n", sizeof(line));
+            len = strlen(line);
+          } else {
+            len = logLine(line, sizeof(line), snapshot->events[i - 1]);
+            if (len >= sizeof(line)) len = sizeof(line) - 1;
+          }
+          if (index >= len) {
+            index -= len;
+            continue;
+          }
+          const size_t n = (len - index < maxLen - written) ? len - index : maxLen - written;
+          memcpy(buffer + written, line + index, n);
+          written += n;
+          index = 0;
+        }
+        return written;
+      });
+  String hostname = WiFi.getHostname() ? WiFi.getHostname() : "hit-proxy";
+  for (size_t i = 0; i < hostname.length(); i++) {
+    const char c = hostname[i];
+    if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+          (c >= '0' && c <= '9') || c == '-' || c == '_')) hostname.setCharAt(i, '_');
+  }
+  response->addHeader("Content-Disposition", "attachment; filename=\"hit-proxy-" + String(type) + "-" + hostname + ".txt\"");
+  response->addHeader("Cache-Control", "no-store");
+  req->send(response);
+}
 
 // Shared UI — sidebar + mint accents (all pages link /a.css)
 const char UI_CSS[] PROGMEM = R"CSS(
@@ -822,6 +883,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   <div>
     <h1 data-t="title">Verlauf</h1>
     <p class="sub" data-t="sub">Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.</p>
+    <button class="sec" type="button" onclick="location.href='/api/history/download'" data-en="Download history (CSV)">Verlaufsdaten herunterladen (CSV)</button>
   </div>
 </div>
 
@@ -2202,6 +2264,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 <div class="row" style="margin-top:0;margin-bottom:12px">
 <button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
 <button class="sec" type="button" onclick="clrSys()" data-en="Clear log">Protokoll leeren</button>
+<button class="sec" type="button" onclick="location.href='/api/events/download'" data-en="Download log">Protokoll herunterladen</button>
 </div>
 <table><thead><tr><th data-en="Time">Zeit</th><th data-en="Source">Quelle</th><th data-en="Message">Meldung</th></tr></thead>
 <tbody id="sys"></tbody></table>
@@ -2214,6 +2277,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 <div class="row" style="margin-top:0;margin-bottom:12px">
 <button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
 <button class="sec" type="button" onclick="clr()" data-en="Clear log">Log leeren</button>
+<button class="sec" type="button" onclick="location.href='/api/debug/download'" data-en="Download log">Protokoll herunterladen</button>
 </div>
 <table><thead><tr><th data-en="Age">Alter</th><th>FC</th><th data-en="Address">Addr</th><th data-en="Value">Wert</th><th data-en="Note">Hinweis</th></tr></thead>
 <tbody id="tb"></tbody></table>
@@ -2709,6 +2773,16 @@ void begin() {
     req->send(200, "application/json", out);
   });
 
+  server.on("/api/debug/download", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    downloadLog<DebugEvt, 48>(req, "debug", DebugLog::copyTo);
+  });
+
+  server.on("/api/events/download", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    downloadLog<SysEvt, 80>(req, "events", EventLog::copyTo);
+  });
+
   server.on("/api/debug/clear", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     DebugLog::clear();
@@ -3083,6 +3157,11 @@ void begin() {
     String out;
     serializeJson(doc, out);
     req->send(200, "application/json", out);
+  });
+
+  server.on("/api/history/download", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    History::downloadCsv(req);
   });
 
   server.on("/api/history/bars", HTTP_GET, [](AsyncWebServerRequest *req) {

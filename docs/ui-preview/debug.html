@@ -90,6 +90,7 @@ window.fetch=async(u,o)=>{
 <div class="row" style="margin-top:0;margin-bottom:12px">
 <button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
 <button class="sec" type="button" onclick="clrSys()" data-en="Clear log">Protokoll leeren</button>
+<button class="sec" type="button" onclick="location.href='/api/events/download'" data-en="Download log">Protokoll herunterladen</button>
 </div>
 <table><thead><tr><th data-en="Time">Zeit</th><th data-en="Source">Quelle</th><th data-en="Message">Meldung</th></tr></thead>
 <tbody id="sys"></tbody></table>
@@ -102,6 +103,7 @@ window.fetch=async(u,o)=>{
 <div class="row" style="margin-top:0;margin-bottom:12px">
 <button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
 <button class="sec" type="button" onclick="clr()" data-en="Clear log">Log leeren</button>
+<button class="sec" type="button" onclick="location.href='/api/debug/download'" data-en="Download log">Protokoll herunterladen</button>
 </div>
 <table><thead><tr><th data-en="Age">Alter</th><th>FC</th><th data-en="Address">Addr</th><th data-en="Value">Wert</th><th data-en="Note">Hinweis</th></tr></thead>
 <tbody id="tb"></tbody></table>

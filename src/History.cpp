@@ -2,6 +2,10 @@
 #include "LiveData.h"
 #include <LittleFS.h>
 #include <time.h>
+#include <ESPAsyncWebServer.h>
+#include <freertos/semphr.h>
+#include <memory>
+#include <new>
 
 namespace {
 constexpr int SLOTS = 288;           // 24 h à 5 min
@@ -42,6 +46,11 @@ int32_t sumPv = 0, sumBat = 0, sumGrid = 0, sumHouse = 0;
 uint32_t sumN = 0;
 uint32_t nextSaveMs = 0;
 bool dirty = false;
+SemaphoreHandle_t lock = nullptr;
+struct Guard {
+  Guard() { if (lock) xSemaphoreTake(lock, portMAX_DELAY); }
+  ~Guard() { if (lock) xSemaphoreGive(lock); }
+};
 
 bool haveData() {
   return gLive.dataOrigin == DataOrigin::Native || gLive.dataOrigin == DataOrigin::Mqtt ||
@@ -173,6 +182,7 @@ bool timeValid() { return time(nullptr) > 1700000000; }
 void begin() {
   // Mitteleuropa mit Sommerzeit; zweiter Server ist Fallback
   configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.cloudflare.com");
+  if (!lock) lock = xSemaphoreCreateMutex();
   st = static_cast<Store *>(heap_caps_calloc(1, sizeof(Store), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
   if (!st) st = static_cast<Store *>(calloc(1, sizeof(Store)));
   if (!st) return;
@@ -187,6 +197,7 @@ void begin() {
 
 void loop() {
   if (!st) return;
+  Guard guard;
   const uint32_t ms = millis();
   if (ms - lastIntegrateMs < 10000) return;
   const uint32_t dtMs = lastIntegrateMs ? min<uint32_t>(ms - lastIntegrateMs, 120000) : 0;
@@ -318,6 +329,91 @@ void bars(const char *unit, int count, JsonDocument &out) {
     heap_caps_free(list);
   }
   out["since"] = st->nDays ? st->days[0].key : st->dayKey;
+}
+
+void downloadCsv(AsyncWebServerRequest *req) {
+  struct Snapshot {
+    Store data{};
+    Bar current{};
+    Sample running{};
+    uint32_t nowSlot = 0;
+    bool haveRunning = false;
+    double pv, imp, exp;
+  };
+  auto snap = std::shared_ptr<Snapshot>(new (std::nothrow) Snapshot);
+  if (!snap) {
+    req->send(503, "text/plain; charset=utf-8", "Nicht genug Speicher für den Download.\n");
+    return;
+  }
+  {
+    Guard guard;
+    if (st) {
+      snap->data = *st;
+      if (st->dayKey) snap->current = today();
+    }
+    if (timeValid()) snap->nowSlot = uint32_t(time(nullptr)) / SLOT_S;
+    snap->haveRunning = sumN && curSlot == snap->nowSlot;
+    if (snap->haveRunning) {
+      snap->running = Sample{clamp16(sumPv / int32_t(sumN)), clamp16(sumBat / int32_t(sumN)),
+                             clamp16(sumGrid / int32_t(sumN)), clamp16(sumHouse / int32_t(sumN))};
+    }
+    snap->pv = gLive.energyPvKwh;
+    snap->imp = gLive.energyImpKwh;
+    snap->exp = gLive.energyExpKwh;
+  }
+  auto *response = req->beginChunkedResponse("text/csv; charset=utf-8",
+      [snap](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        size_t written = 0;
+        const Store &s = snap->data;
+        const size_t dayCount = s.nDays + (snap->current.key ? 1 : 0);
+        const bool extraMonth = snap->current.key &&
+            (!s.nMonths || s.months[s.nMonths - 1].key != snap->current.key / 100);
+        const size_t monthCount = s.nMonths + (extraMonth ? 1 : 0);
+        const size_t slotCount = snap->nowSlot ? SLOTS : 0;
+        char line[256];
+        for (size_t row = 0; row < 2 + slotCount + dayCount + monthCount && written < maxLen; row++) {
+          if (!row) {
+            strlcpy(line, "Typ,Zeit,PV_W,Akku_W,Netz_W,Haus_W,PV_kWh,Bezug_kWh,Einspeisung_kWh,Ladung_kWh,Entladung_kWh,Haus_kWh\r\n", sizeof(line));
+          } else if (row <= slotCount) {
+            const uint32_t stamp = snap->nowSlot - (SLOTS - row);
+            const size_t i = stamp % SLOTS;
+            const bool running = stamp == snap->nowSlot && snap->haveRunning;
+            if (!running && s.slotStamp[i] != stamp) continue;
+            const Sample &v = running ? snap->running : s.slots[i];
+            snprintf(line, sizeof(line), "Leistung,%lu,%d,%d,%d,%d,,,,,,\r\n",
+                     (unsigned long)(stamp * SLOT_S), v.pv, v.bat, v.grid, v.house);
+          } else if (row <= slotCount + dayCount + monthCount) {
+            const size_t i = row - slotCount - 1;
+            const bool month = i >= dayCount;
+            Bar b;
+            if (!month) b = i < s.nDays ? s.days[i] : snap->current;
+            else {
+              const size_t m = i - dayCount;
+              b = m < s.nMonths ? s.months[m] : Bar{snap->current.key / 100, 0, 0, 0, 0, 0, 0};
+              if (snap->current.key && b.key == snap->current.key / 100) {
+                b.pv += snap->current.pv; b.imp += snap->current.imp; b.exp += snap->current.exp;
+                b.chg += snap->current.chg; b.dis += snap->current.dis; b.house += snap->current.house;
+              }
+            }
+            char label[16];
+            keyToStr(b.key, month, label, sizeof(label));
+            snprintf(line, sizeof(line), "%s,%s,,,,,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\r\n",
+                     month ? "Monat" : "Tag", label, b.pv, b.imp, b.exp, b.chg, b.dis, b.house);
+          } else {
+            snprintf(line, sizeof(line), "Zaehler,Gesamt,,,,,%.3f,%.3f,%.3f,,,\r\n", snap->pv, snap->imp, snap->exp);
+          }
+          const size_t len = strlen(line);
+          if (index >= len) { index -= len; continue; }
+          const size_t n = min(len - index, maxLen - written);
+          memcpy(buffer + written, line + index, n);
+          written += n;
+          index = 0;
+        }
+        return written;
+      });
+  response->addHeader("Content-Disposition", "attachment; filename=\"hit-proxy-verlauf.csv\"");
+  response->addHeader("Cache-Control", "no-store");
+  req->send(response);
 }
 
 } // namespace History
