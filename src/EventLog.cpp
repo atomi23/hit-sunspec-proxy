@@ -52,6 +52,14 @@ void clear() {
 }
 
 size_t count() { return used; }
+size_t copyTo(SysEvt *out, size_t capacity) {
+  portENTER_CRITICAL(&mux);
+  const size_t n = used < capacity ? used : capacity;
+  const size_t start = (head + N - used) % N;
+  for (size_t i = 0; i < n; i++) out[i] = buf[(start + i) % N];
+  portEXIT_CRITICAL(&mux);
+  return n;
+}
 uint32_t warnings() { return warnCount; }
 
 String toJson(size_t maxN) {

@@ -1,4 +1,5 @@
 #include "HttpsServer.h"
+#include "HttpChunked.h"
 #include "EventLog.h"
 #include "LiveData.h"
 #include <LittleFS.h>
@@ -414,6 +415,7 @@ esp_err_t proxyInner(httpd_req_t *r) {
   String type = "text/html";
   String passVal[PASS_COUNT];
   long bodyLen = -1; // ohne Länge bis zum Verbindungsende lesen
+  bool chunked = false;
   while (true) {
     String line = up.readStringUntil('\n');
     line.trim();
@@ -425,6 +427,10 @@ esp_err_t proxyInner(httpd_req_t *r) {
     v.trim();
     if (name.equalsIgnoreCase("Content-Type")) type = v;
     if (name.equalsIgnoreCase("Content-Length")) bodyLen = v.toInt();
+    if (name.equalsIgnoreCase("Transfer-Encoding")) {
+      v.toLowerCase();
+      chunked = v == "chunked" || v.endsWith(", chunked") || v.endsWith(",chunked");
+    }
     for (size_t i = 0; i < PASS_COUNT; i++)
       if (name.equalsIgnoreCase(PASS_HEADERS[i])) passVal[i] = v;
   }
@@ -434,6 +440,22 @@ esp_err_t proxyInner(httpd_req_t *r) {
     if (passVal[i].length()) httpd_resp_set_hdr(r, PASS_HEADERS[i], passVal[i].c_str());
 
   uint32_t idleSince = millis();
+  if (chunked) {
+    const bool ok = decodeHttpChunks(
+        [&](uint8_t *data, size_t size) -> int {
+          while (up.connected() || up.available()) {
+            const int n = up.read(data, size);
+            if (n > 0) { idleSince = millis(); return n; }
+            if (millis() - idleSince > 15000) return -1;
+            delay(2);
+          }
+          return -1;
+        },
+        [&](const char *data, size_t size) {
+          return httpd_resp_send_chunk(r, data, size) == ESP_OK;
+        }, buf, sizeof(buf));
+    return ok ? httpd_resp_send_chunk(r, nullptr, 0) : ESP_FAIL;
+  }
   long got = 0;
   while ((bodyLen < 0 || got < bodyLen) && (up.connected() || up.available())) {
     size_t want = sizeof(buf);
