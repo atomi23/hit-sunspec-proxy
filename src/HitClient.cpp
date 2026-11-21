@@ -4,6 +4,10 @@
 #include "EventLog.h"
 #include "BatteryData.h"
 #include "BatteryLogic.h"
+#include <WiFi.h>
+#if defined(ETH_PHY_TYPE) || defined(BOARD_T_CONNECT_PRO) || defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01) || defined(BOARD_P4_POE_ETH)
+#include <ETH.h>
+#endif
 #include <math.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -195,12 +199,24 @@ void pollBattery() {
   BatteryData::updatePacks(packs, got);
 }
 
+bool networkReady() {
+  if (local.demoMode || local.hitMode == HitLinkMode::RtuRs485) return true;
+#if defined(ETH_PHY_TYPE) || defined(BOARD_T_CONNECT_PRO) || defined(BOARD_T_POE_PRO) || defined(BOARD_WT32_ETH01) || defined(BOARD_P4_POE_ETH)
+  if (local.useEthernet && ETH.linkUp() && uint32_t(ETH.localIP()) != 0) return true;
+#endif
+  const wifi_mode_t mode = WiFi.getMode();
+  return (mode == WIFI_STA || mode == WIFI_AP_STA) && WiFi.status() == WL_CONNECTED &&
+         uint32_t(WiFi.localIP()) != 0;
+}
+
 // HIT-Poll dauert mit Timeouts leicht mehrere Sekunden — eigene Task, sonst
 // verhungern SunSpec (Consolinno) und die Weboberfläche.
 void taskMain(void *) {
   for (;;) {
     takeConfig();
-    if (started && (forcePoll || int32_t(millis() - nextPoll) >= 0)) {
+    if (started && !networkReady()) {
+      nextPoll = millis();
+    } else if (started && (forcePoll || int32_t(millis() - nextPoll) >= 0)) {
       forcePoll = false;
       nextPoll = millis() + max<uint32_t>(5000, local.hitPollMs);
       pollOnce();

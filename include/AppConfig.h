@@ -62,7 +62,7 @@ struct AppConfig {
   char hitHost[64] = "192.0.2.50"; // Beispiel-IP (RFC 5737), keine echte Anlage
   uint16_t hitPort = 502;
   uint8_t hitUnitId = 1;
-  uint32_t hitPollMs = 25000;
+  uint32_t hitPollMs = 30000;
   uint32_t hitRtuBaud = 9600;
   // Demo: Fake-Live-Daten, kein HIT-Poll, keine Writes an HIT (Web/Display/SunSpec lokal testen)
   bool demoMode = false;
