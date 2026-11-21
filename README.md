@@ -15,7 +15,7 @@ Aktuelle Firmware: **v0.5.16** — [Release mit Firmware für jedes Board](https
 ### Neu in v0.5.16
 - **Protokolle und Verlauf:** Ereignis- und Debug-Protokoll als Textdatei, Verlaufsdaten als CSV herunterladen.
 - **Display am T-Connect-Pro:** Wochenplan mit eigenen An- und Aus-Zeiten pro Wochentag. Ein optionales KNX-Objekt (DPT 1.001) schaltet die Beleuchtung ein oder aus.
-- **Firmware und Reset:** Einstellungen als JSON sichern und wiederherstellen. Zugangsdaten sind in der Sicherung standardmäßig nicht enthalten.
+- **Firmware und Reset:** Einstellungen als JSON sichern und wiederherstellen. Passwörter und Zugangscode lassen sich beim Export abwählen.
 
 ### v0.5.15
 - **HIT-Abfragen:** Starten erst, wenn Netzwerk und IP-Adresse bereit sind. Dadurch landen keine netzwerkbedingten Fehlversuche beim Boot mehr in der Statistik. RS485 und Demo bleiben unverändert.
