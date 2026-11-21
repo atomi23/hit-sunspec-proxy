@@ -257,6 +257,15 @@ textarea:focus{border-color:var(--acc);outline:none}
 .display-week{width:auto;margin-top:10px;border-collapse:collapse}
 .display-week th,.display-week td{padding:4px 6px;text-align:left}
 .display-week input[type=time]{width:auto;padding:5px;color-scheme:light dark}
+.display-week .week-time-label{display:none}
+@media(max-width:520px){
+  .display-week,.display-week tbody{display:block;width:100%}
+  .display-week thead{display:none}
+  .display-week tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-bottom:1px solid var(--rule)}
+  .display-week td:nth-child(2){text-align:right}
+  .display-week .week-time-label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+  .display-week input[type=time]{width:100%;min-width:0}
+}
 .knx-tbl{min-width:560px;max-width:860px;border-collapse:separate;border-spacing:0;font-size:14px}
 .knx-tbl th{position:sticky;top:0;z-index:1;background:var(--plate);padding:8px 10px;border-bottom:1px solid var(--rule2)}
 .knx-tbl td{padding:4px 10px;border-bottom:1px solid var(--rule);vertical-align:middle}
@@ -1572,8 +1581,8 @@ function renderDisplayWeek(days){
   document.getElementById('displayDays').innerHTML=days.map((d,i)=>{
     const label=uiText(de[i],en[i]);
     return `<tr><th scope="row">${label}</th><td><input type="checkbox" aria-label="${label} ${uiText('aktiv','active')}" ${d.enabled?'checked':''}></td>
-      <td><input type="time" aria-label="${label} ${uiText('an ab','on from')}" value="${hhmm(d.start)}" required></td>
-      <td><input type="time" aria-label="${label} ${uiText('aus ab','off from')}" value="${hhmm(d.end)}" required></td></tr>`;
+      <td><span class="week-time-label" aria-hidden="true">${uiText('An ab','On from')}</span><input type="time" aria-label="${label} ${uiText('an ab','on from')}" value="${hhmm(d.start)}" required></td>
+      <td><span class="week-time-label" aria-hidden="true">${uiText('Aus ab','Off from')}</span><input type="time" aria-label="${label} ${uiText('aus ab','off from')}" value="${hhmm(d.end)}" required></td></tr>`;
   }).join('');
   showDisplayWeek();
 }
