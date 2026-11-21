@@ -315,6 +315,21 @@ textarea:focus{border-color:var(--acc);outline:none}
 .knx-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:18px 0 6px}
 .knx-tools button{padding:7px 14px;font-size:13px}
 .knx-wrap{overflow-x:auto}
+.display-week{width:auto;margin-top:10px;border-collapse:collapse}
+.display-week th,.display-week td{padding:4px 6px;text-align:left}
+.display-week input[type=time]{width:auto;padding:5px;color-scheme:light dark}
+.display-week .week-time-label{display:none}
+@media(max-width:520px){
+  .display-week,.display-week tbody{display:block;width:100%}
+  .display-week thead{display:none}
+  .display-week tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-bottom:1px solid var(--rule)}
+  .display-week td:nth-child(2){text-align:right}
+  .display-week .week-time-label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+  .display-week input[type=time]{width:100%;min-width:0}
+}
+@media(max-width:360px){
+  .display-week td:nth-child(n+3){grid-column:1/-1}
+}
 .knx-tbl{min-width:560px;max-width:860px;border-collapse:separate;border-spacing:0;font-size:14px}
 .knx-tbl th{position:sticky;top:0;z-index:1;background:var(--plate);padding:8px 10px;border-bottom:1px solid var(--rule2)}
 .knx-tbl td{padding:4px 10px;border-bottom:1px solid var(--rule);vertical-align:middle}
@@ -1227,7 +1242,16 @@ und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 <label data-en="Page interval (seconds)">Seitenwechsel alle (Sekunden)</label><input name="displayPageS" type="number" min="3" max="600"/>
 <p class="hint" data-en="When off, the live page stays visible. Tap to change pages; after 30 seconds without a touch, the display returns to the live page.">Aus: Die Live-Seite bleibt stehen. Antippen blättert, nach 30 Sekunden ohne Berührung geht es zurück zur Live-Seite.</p>
 <label data-en="Turn off after (seconds without a touch; 0 = always on)">Ausschalten nach (Sekunden ohne Berührung, 0 = immer an)</label><input name="displayTimeoutS" type="number" min="0" max="36000"/>
-<p class="hint" data-en="Tap to turn the display back on. It turns on automatically if the HIT stops responding.">Antippen schaltet das Display wieder ein. Bei einer Störung (HIT antwortet nicht) geht es von selbst an.</p>
+<p class="hint" data-en="In automatic mode, a tap or an unresponsive HIT wakes the display.">Im Automatikmodus weckt ein Antippen oder eine HIT-Störung das Display.</p>
+<label><input name="displayScheduleEnabled" type="checkbox"/> <span data-en="Use weekly display schedule">Display nach Wochenplan schalten</span></label>
+<div id="displayWeek" hidden>
+<p class="hint" data-en="The backlight stays on during the selected hours and off outside them. After time sync, the schedule replaces the inactivity timeout. Times use Central European local time, including daylight saving.">Die Beleuchtung bleibt zu den gewählten Zeiten an, sonst aus. Nach dem Zeitabgleich ersetzt der Wochenplan den Inaktivitäts-Timer. Es gilt mitteleuropäische Ortszeit mit Sommerzeit.</p>
+<p class="hint" data-en="An earlier end time means the following day. Identical times mean all day.">Eine frühere Aus-Zeit gilt am Folgetag. Gleiche Zeiten bedeuten ganztägig an.</p>
+<table class="display-week">
+<thead><tr><th data-en="Day">Tag</th><th data-en="Active">Aktiv</th><th data-en="On from">An ab</th><th data-en="Off from">Aus ab</th></tr></thead>
+<tbody id="displayDays"></tbody>
+</table>
+</div>
 <label><input name="setupComplete" type="checkbox"/> <span data-en="Setup complete (hide the QR code page)">Einrichtung abgeschlossen (QR-Code-Seite ausblenden)</span></label>
 <p class="hint" data-en="Pages: Live, Strings and Grid, System.">Seiten: Live, Strings und Netz, System.</p>
 </div>
@@ -1304,7 +1328,7 @@ tragen statt des HIT die IP des ESP mit diesem Port ein; Register und Unit-ID bl
 <p class="hint" data-en="Reads are always allowed. The ESP only forwards writes if “Allow writes to the HIT” is enabled under Battery control. Otherwise, the client gets a Modbus error. All writes appear in the log.">Lesen geht immer. Schreiben reicht der ESP nur durch, wenn unter Akku-Steuerung „Schreiben an HIT erlauben“ aktiv ist,
 sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht im Protokoll.</p>
 </div>
-<div class="card" id="knx" data-sub="Messwerte als Gruppentelegramme über KNXnet/IP Routing." data-en-sub="Send measurements as group telegrams over KNXnet/IP routing."><strong>KNX</strong>
+<div class="card" id="knx" data-sub="Gruppentelegramme über KNXnet/IP Routing." data-en-sub="Group telegrams over KNXnet/IP routing."><strong>KNX</strong>
 <label><input name="knxEnabled" type="checkbox"/> <span data-en="Enabled (KNXnet/IP routing multicast 224.0.23.12:3671)">aktiv (KNXnet/IP Routing Multicast 224.0.23.12:3671)</span></label>
 <label data-en="Physical source address (in the telegram)">Physische Sendeadresse (Quelle im Telegramm)</label>
 <input name="knxPa" placeholder="15.15.250" inputmode="decimal" autocomplete="off"/>
@@ -1312,6 +1336,7 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <label data-en="Interval (ms)">Intervall (ms)</label><input name="knxPublishMs" type="number"/>
 <label><input name="knxOnlyOnChange" type="checkbox"/> <span data-en="Only when the value changes">nur bei Änderung</span></label>
 <label data-en="Min. power change (W)">Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
+<p class="hint" id="knxDisplayHint" hidden data-en="Display switch (receive): assign a separate group address. Group writes of 1 (on) or 0 (off) override the backlight until the next schedule transition, or until another command or restart without a schedule.">Display schalten (Empfang): eigene Gruppenadresse zuweisen. Gruppenschreibwerte 1 (an) und 0 (aus) übersteuern die Beleuchtung bis zum nächsten Wechsel im Wochenplan. Ohne Plan gilt der Befehl bis zum nächsten Schaltbefehl oder Neustart.</p>
 <p class="hint"><span data-en="For each row, tick the box and enter a three-level group address">Pro Zeile: Haken setzen, Gruppenadresse dreistufig</span> <code data-en="main/middle/sub">H/M/U</code> (<span data-en="e.g.">z.B.</span> <code>1/2/10</code><span data-en="), then adjust the datapoint type if needed. Red means invalid or duplicated.">), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</span></p>
 <div id="knxRows">
 <div class="knx-tools">
@@ -1321,7 +1346,7 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <input type="file" id="knxFile" accept=".xml,.csv,.txt" hidden onchange="knxImport(this)"/>
 <span class="meta" id="knxMsg"></span>
 </div>
-<div class="knx-wrap"><table class="knx-tbl"><thead><tr><th title="senden" data-en-title="Send" data-en="On">An</th><th data-en="Measurement">Messwert</th><th data-en="Group address">Gruppenadresse</th><th data-en="Datapoint type">Datenpunkttyp</th></tr></thead>
+<div class="knx-wrap"><table class="knx-tbl"><thead><tr><th data-en="Active">Aktiv</th><th data-en="Object">Objekt</th><th data-en="Group address">Gruppenadresse</th><th data-en="Datapoint type">Datenpunkttyp</th></tr></thead>
 <tbody id="knxBody"></tbody></table></div>
 <p class="hint"><span data-en="Export includes active rows with valid addresses. To import, select ETS → Group Addresses → Export (XML or CSV). Entries are matched by the description">Export: aktive Zeilen mit gültiger Adresse. Import: ETS → Gruppenadressen → Export (XML oder CSV).
 Zugeordnet wird über die Beschreibung</span> <code>hit-sunspec-proxy:&lt;id&gt;</code> <span data-en="(included in each export), or by name if there is no match. Click Save to apply.">(steht in jedem Export), sonst über den Namen.
@@ -1364,6 +1389,7 @@ async function saveUiPrefs(){
 <script>
 const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[13013,'13.013 kWh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']],Temp:[[9001,'9.001 °C'],[14068,'14.068 °C']],MilliVolt:[[9020,'9.020 mV']],Count:[[12001,'12.001']],Flag:[[1005,'1.005 Alarm']]};
 let KNX_META=[];
+KNX_DPT.Switch=[[1001,'1.001']];
 function dptOpts(kind,cur){
   return (KNX_DPT[kind]||KNX_DPT.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
 }
@@ -1374,6 +1400,7 @@ function knxGrp(id){
   if(/^(grid|v\d|i\d|freq)/.test(id))return uiText('Netz','Grid');
   if(/^e/.test(id))return uiText('Energie HIT','HIT energy');
   if(/^tas/.test(id))return uiText('Tasmota-Zähler','Tasmota meter');
+  if(id==='display_switch')return 'Display';
   return 'Consolinno';
 }
 function knxLabel(m){return uiText(m.label,m.labelEn||m.label);}
@@ -1384,6 +1411,7 @@ const gaStr=n=>`${n>>11}/${(n>>8)&7}/${n&255}`;
 function knxEl(k,i){return document.querySelector(`#knxBody [data-knx=${k}][data-i="${i}"]`);}
 function renderKnx(meta,ch){
   KNX_META=meta;
+  document.getElementById('knxDisplayHint').hidden=!meta.some(m=>m.kind==='Switch');
   const body=document.getElementById('knxBody'); if(!body)return;
   let html='',last='',alt=false;
   meta.forEach((m,i)=>{
@@ -1392,7 +1420,7 @@ function renderKnx(meta,ch){
     const c=(ch&&ch[i])||{};
     const label=knxEsc(knxLabel(m));
     html+=`<tr data-row="${i}" class="${c.ena?'on':''}${alt?' alt':''}">
-      <td><input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} aria-label="${uiText(label+' senden','Send '+label)}"/></td>
+      <td><input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} aria-label="${uiText(label+' aktivieren','Enable '+label)}"/></td>
       <td class="knx-l">${label}<small>${knxEsc(m.id)}</small></td>
       <td><input data-knx="g" data-i="${i}" type="text" autocomplete="off" spellcheck="false" placeholder="${uiText('z.B.','e.g.')} 1/2/${10+i}" value="${knxEsc(c.ga)}" aria-label="${uiText('Gruppenadresse','Group address')} ${label}"/></td>
       <td><select data-knx="d" data-i="${i}" aria-label="${uiText('Datenpunkttyp','Datapoint type')} ${label}">${dptOpts(m.kind,c.dpt||m.dpt)}</select></td></tr>`;
@@ -1412,6 +1440,7 @@ function knxCheck(){
     r.classList.toggle('on',e.checked);
     let msg='';
     if(v&&n<0)msg=uiText('Ungültig, Format H/M/U (0-31/0-7/0-255)','Invalid. Use main/middle/sub (0-31/0-7/0-255).');
+    else if(n===0&&KNX_META[r.dataset.row].kind==='Switch')msg=uiText('0/0/0 ist für Broadcast reserviert.','0/0/0 is reserved for broadcasts.');
     else if(e.checked&&!v)msg=uiText('Aktiv, aber ohne Gruppenadresse','Enabled without a group address');
     else if(e.checked&&seen[n]>1)msg=uiText('Adresse mehrfach vergeben','Duplicate address');
     g.classList.toggle('bad-ga',!!msg);g.title=msg||uiText('Gruppenadresse H/M/U','Group address main/middle/sub');
@@ -1441,7 +1470,7 @@ const KNX_TAG='hit-sunspec-proxy:';
 // Export im Format von ETS "Gruppenadressen exportieren" (XML ga-export/01 bzw. CSV 1/1)
 function knxExport(fmt){
   const rows=collectKnx().map((c,i)=>({m:KNX_META[i],ena:c.ena,n:gaParse(c.ga),dpt:c.dpt}))
-    .filter(r=>r.ena&&r.n>=0).sort((a,b)=>a.n-b.n);
+    .filter(r=>r.ena&&r.n>=0&&(r.n!==0||r.m.kind!=='Switch')).sort((a,b)=>a.n-b.n);
   if(!rows.length){knxMsg(uiText('Keine aktive Zeile mit gültiger Gruppenadresse','No enabled row with a valid group address'),false);return;}
   const tree=new Map();
   rows.forEach(r=>{const h=r.n>>11,mi=(r.n>>8)&7;if(!tree.has(h))tree.set(h,new Map());
@@ -1543,15 +1572,15 @@ async function knxImport(inp){
     if(i===undefined)i=byName.get(norm(g.name));
     if(i===undefined)i=byId.get(g.name.trim().toLowerCase());
     const n=gaParse(g.addr);
-    if(i===undefined||n<0){miss++;return;}
+    if(i===undefined||n<0||(n===0&&KNX_META[i].kind==='Switch')){miss++;return;}
     knxEl('g',i).value=gaStr(n);knxEl('e',i).checked=true;
     const d=knxPickDpt(KNX_META[i].kind,g.dpt);if(d)knxEl('d',i).value=String(d);
     done.add(i);
   });
   done.forEach(i=>{const r=knxEl('e',i).closest('tr');r.classList.remove('imp');void r.offsetWidth;r.classList.add('imp');});
   knxCheck();
-  if(!done.size){knxMsg(uiText(`Keine der ${list.length} Adressen passt zu einem Messwert`,`None of the ${list.length} addresses match a measurement`),false);return;}
-  knxMsg(uiText(`${done.size} Messwerte zugeordnet`,`Matched ${done.size} measurements`)+(miss?uiText(`, ${miss} Adressen ohne Zuordnung`,`, ${miss} unmatched addresses`):'')+uiText('. Zum Übernehmen Speichern.','. Click Save to apply.'),true);
+  if(!done.size){knxMsg(uiText(`Keine der ${list.length} Adressen passt zu einem Objekt`,`None of the ${list.length} addresses match an object`),false);return;}
+  knxMsg(uiText(`${done.size} Objekte zugeordnet`,`Matched ${done.size} objects`)+(miss?uiText(`, ${miss} Adressen ohne Zuordnung`,`, ${miss} unmatched addresses`):'')+uiText('. Zum Übernehmen Speichern.','. Click Save to apply.'),true);
 }
 // Funktionen: Spiegel der "aktiv"-Schalter der einzelnen Dienste; das Menü folgt dem Formular
 window.NAV_FROM_FORM=true;
@@ -1606,12 +1635,36 @@ setInterval(drawScreen,2000);
 window.addEventListener('hashchange',drawScreen);
 document.getElementById('scr').addEventListener('click',async()=>{
   await fetch('/api/display/tap',{method:'POST'});setTimeout(drawScreen,400);});
+const scheduleToggle=document.getElementById('f').elements.namedItem('displayScheduleEnabled');
+const displayWeek=document.getElementById('displayWeek');
+function showDisplayWeek(){displayWeek.hidden=!scheduleToggle.checked;}
+scheduleToggle.addEventListener('change',showDisplayWeek);
+function renderDisplayWeek(days){
+  const de=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+  const en=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const hhmm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  document.getElementById('displayDays').innerHTML=days.map((d,i)=>{
+    const label=uiText(de[i],en[i]);
+    return `<tr><th scope="row">${label}</th><td><input type="checkbox" aria-label="${label} ${uiText('aktiv','active')}" ${d.enabled?'checked':''}></td>
+      <td><span class="week-time-label" aria-hidden="true">${uiText('An ab','On from')}</span><input type="time" aria-label="${label} ${uiText('an ab','on from')}" value="${hhmm(d.start)}" required></td>
+      <td><span class="week-time-label" aria-hidden="true">${uiText('Aus ab','Off from')}</span><input type="time" aria-label="${label} ${uiText('aus ab','off from')}" value="${hhmm(d.end)}" required></td></tr>`;
+  }).join('');
+  showDisplayWeek();
+}
+function collectDisplayWeek(){
+  const minutes=input=>{const [h,m]=input.value.split(':').map(Number);return h*60+m;};
+  return [...document.querySelectorAll('#displayDays tr')].map(row=>{
+    const [enabled,start,end]=row.querySelectorAll('input');
+    return {enabled:enabled.checked,start:minutes(start),end:minutes(end)};
+  });
+}
 async function load(){
   const [c,meta]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/knx/meta').then(r=>r.json())]);
   const f=document.getElementById('f');
   for(const[k,v] of Object.entries(c)){if(k==='knxCh')continue;const el=f.elements.namedItem(k);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v;}
   document.querySelectorAll('.has-code').forEach(e=>e.classList.toggle('hide',!!c.ownPassOnly));
   document.querySelectorAll('.own-only').forEach(e=>e.classList.toggle('hide',!c.ownPassOnly));
+  renderDisplayWeek(c.displayWeek||[]);
   renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls(); batBox();
 }
 async function batBox(){
@@ -1677,8 +1730,15 @@ async function tlsSelf(){
   if(r&&r.ok){tlsMsg(uiText('Wird erzeugt, HTTPS startet neu…',"Generating certificate. Restarting HTTPS…"),true);setTimeout(()=>location.reload(),5000);}else tlsMsg(uiText('Fehler',"Error"),false);
 }
 async function save(){const f=document.getElementById('f');const body={};
+if(scheduleToggle.checked){
+  for(const row of document.querySelectorAll('#displayDays tr')){
+    const [day,start,end]=row.querySelectorAll('input');
+    if(day.checked&&(!start.reportValidity()||!end.reportValidity()))return;
+  }
+}
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
 body.knxCh=collectKnx();
+body.displayWeek=collectDisplayWeek();
 const m=document.getElementById('saved');
 let ok=false;try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});ok=r.ok;}catch(e){}
 m.textContent=ok?uiText('Gespeichert',"Saved"):uiText('Speichern fehlgeschlagen',"Could not save settings");m.style.color=ok?'var(--acc)':'var(--fault)';
@@ -2533,6 +2593,17 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
   if (!o["displayAutoPage"].isNull()) c.displayAutoPage = o["displayAutoPage"];
   if (!o["displayPageS"].isNull()) c.displayPageMs = constrain(o["displayPageS"].as<uint32_t>(), 3u, 600u) * 1000;
   if (!o["displayTimeoutS"].isNull()) c.displayTimeoutS = constrain(o["displayTimeoutS"].as<uint32_t>(), 0u, 36000u);
+  if (o["displayScheduleEnabled"].is<bool>()) c.displayScheduleEnabled = o["displayScheduleEnabled"].as<bool>();
+  if (o["displayWeek"].is<JsonArrayConst>()) {
+    const auto days = o["displayWeek"].as<JsonArrayConst>();
+    for (size_t i = 0; i < DisplaySchedule::DAYS && i < days.size(); ++i) {
+      auto &d = c.displayWeek[i];
+      if (days[i]["enabled"].is<bool>()) d.enabled = days[i]["enabled"].as<bool>();
+      const int start = days[i]["start"] | -1, end = days[i]["end"] | -1;
+      if (start >= 0 && start < DisplaySchedule::MINUTES_PER_DAY) d.start = start;
+      if (end >= 0 && end < DisplaySchedule::MINUTES_PER_DAY) d.end = end;
+    }
+  }
   if (!o["tasmotaEnabled"].isNull()) c.tasmotaEnabled = o["tasmotaEnabled"];
   if (!o["tasmotaLiveGrid"].isNull()) c.tasmotaLiveGrid = o["tasmotaLiveGrid"];
   if (!o["tasmotaMeterSpoof"].isNull()) c.tasmotaMeterSpoof = o["tasmotaMeterSpoof"];
@@ -2587,7 +2658,8 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
     for (size_t i = 0; i < KNX_CH_COUNT && i < a.size(); i++) {
       if (!a[i]["ena"].isNull()) c.knxCh[i].ena = a[i]["ena"];
       if (a[i]["ga"].is<const char *>()) strlcpy(c.knxCh[i].ga, a[i]["ga"], sizeof(c.knxCh[i].ga));
-      if (!a[i]["dpt"].isNull()) c.knxCh[i].dpt = a[i]["dpt"];
+      if (i == KNX_DISPLAY_SWITCH) c.knxCh[i].dpt = knxMeta(i).defaultDpt;
+      else if (!a[i]["dpt"].isNull()) c.knxCh[i].dpt = a[i]["dpt"];
     }
   }
   if (o["deviceName"].is<const char *>()) strlcpy(c.deviceName, o["deviceName"], sizeof(c.deviceName));
@@ -2969,6 +3041,14 @@ void begin() {
     doc["displayPageS"] = c.displayPageMs / 1000;
     doc["displayAutoPage"] = c.displayAutoPage;
     doc["displayTimeoutS"] = c.displayTimeoutS;
+    doc["displayScheduleEnabled"] = c.displayScheduleEnabled;
+    JsonArray displayWeek = doc["displayWeek"].to<JsonArray>();
+    for (const auto &d : c.displayWeek) {
+      JsonObject day = displayWeek.add<JsonObject>();
+      day["enabled"] = d.enabled;
+      day["start"] = d.start;
+      day["end"] = d.end;
+    }
     doc["tasmotaEnabled"] = c.tasmotaEnabled;
     doc["tasmotaLiveGrid"] = c.tasmotaLiveGrid;
     doc["tasmotaMeterSpoof"] = c.tasmotaMeterSpoof;
@@ -3019,7 +3099,7 @@ void begin() {
       JsonObject o = ch.add<JsonObject>();
       o["ena"] = c.knxCh[i].ena;
       o["ga"] = c.knxCh[i].ga;
-      o["dpt"] = c.knxCh[i].dpt ? c.knxCh[i].dpt : knxMeta(i).defaultDpt;
+      o["dpt"] = i != KNX_DISPLAY_SWITCH && c.knxCh[i].dpt ? c.knxCh[i].dpt : knxMeta(i).defaultDpt;
     }
     doc["deviceName"] = c.deviceName;
     doc["uiLang"] = uiLangCode(c.uiLang);
@@ -3033,15 +3113,16 @@ void begin() {
     JsonDocument doc;
     JsonArray pts = doc["points"].to<JsonArray>();
     static const char *kinds[] = {"PowerW", "Percent", "Volt", "Amp", "Hz", "EnergyKwh", "RatioPct",
-                                   "Temp", "MilliVolt", "Count", "Flag"};
+                                   "Temp", "MilliVolt", "Count", "Flag", "Switch"};
     for (size_t i = 0; i < KNX_CH_COUNT; i++) {
+      if (i == KNX_DISPLAY_SWITCH && !HAS_DISPLAY) continue;
       const auto &m = knxMeta(i);
       JsonObject o = pts.add<JsonObject>();
       o["id"] = m.id;
       o["label"] = m.label;
       o["labelEn"] = m.labelEn;
       o["dpt"] = m.defaultDpt;
-      o["kind"] = kinds[uint8_t(m.kind) < 11 ? uint8_t(m.kind) : 0];
+      o["kind"] = kinds[uint8_t(m.kind)];
     }
     String out; serializeJson(doc, out);
     req->send(200, "application/json", out);

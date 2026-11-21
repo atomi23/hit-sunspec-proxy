@@ -4,6 +4,8 @@
 #include "LgfxBoard.h"
 #include "DebugLog.h"
 #include "DispFonts.h"
+#include "History.h"
+#include <time.h>
 static LgfxBoard panel;
 static LGFX_Sprite canvas(&panel);
 static lgfx::LovyanGFX *gfx = &panel; // canvas, falls Puffer allokiert
@@ -14,13 +16,14 @@ static constexpr uint8_t PAGES = 3;
 static uint32_t nextPage = 0;
 static uint32_t nextDraw = 0;
 static uint32_t lastActivity = 0;
-static bool asleep = false;
+static bool asleep = true;
 static volatile bool tapRequested = false;
 // fertige Bilder für die Web-Ansicht; der Zeichenpuffer selbst ist mitten im Neuzeichnen unvollständig
 static uint8_t *snap = nullptr;
 static size_t snapLen = 0;
 static volatile uint32_t snapLockedAt = 0; // während einer Übertragung nicht überschreiben
 static AppConfig local;
+static DisplaySchedule::Control backlight;
 
 static lgfx::PointerWrapper wHero, wVal, wLbl, wSm;
 static lgfx::VLWfont fHero, fVal, fLbl, fSm;
@@ -421,48 +424,73 @@ static void allocCanvas() {
                                           : "ohne Puffer");
 }
 
-namespace StatusDisplay {
+using DisplayMode = DisplaySchedule::Mode;
 
-void begin(const AppConfig &cfg) {
-  local = cfg;
-  applyThemeColors();
-  gLive.setupScreen = !cfg.setupComplete;
-  if (!cfg.displayEnabled) return;
+static void initPanel() {
   ready = panel.init();
   if (!ready) return;
   panel.setRotation(3);
-  panel.setBrightness(cfg.displayBrightness);
+  panel.setBrightness(0);
   panel.fillScreen(P.bg);
   loadFonts();
   allocCanvas();
-  redraw();
-  nextPage = millis() + cfg.displayPageMs;
-  nextDraw = millis() + 1000;
-  lastActivity = millis();
 }
 
-void setBrightness(uint8_t level) {
-  if (ready && !asleep) panel.setBrightness(level);
+static DisplayMode scheduledMode() {
+  if (!local.displayScheduleEnabled || !History::timeValid()) return DisplayMode::Automatic;
+  const time_t now = time(nullptr);
+  tm lt;
+  if (!localtime_r(&now, &lt)) return DisplayMode::Automatic;
+  return DisplaySchedule::isOn(local.displayWeek, (lt.tm_wday + 6) % 7, lt.tm_hour * 60 + lt.tm_min)
+             ? DisplayMode::On : DisplayMode::Off;
 }
 
-static void wake() {
-  lastActivity = millis();
-  if (!asleep) return;
-  asleep = false;
-  redraw();
-  panel.setBrightness(local.displayBrightness);
+static bool lightOn(DisplayMode mode, uint32_t now) {
+  if (!local.displayEnabled) return false;
+  if (!local.setupComplete) return true;
+  if (mode != DisplayMode::Automatic) return mode == DisplayMode::On;
+  if (!local.demoMode && !gLive.hitOk) lastActivity = now;
+  return !local.displayTimeoutS || now - lastActivity <= local.displayTimeoutS * 1000UL;
 }
+
+static void setBacklight(bool on) {
+  asleep = !on;
+  panel.setBrightness(on ? local.displayBrightness : 0);
+}
+
+namespace StatusDisplay {
+
+void begin(const AppConfig &cfg) { applyConfig(cfg); }
 
 void applyConfig(const AppConfig &cfg) {
+  bool scheduleChanged = cfg.displayEnabled != local.displayEnabled ||
+                         cfg.setupComplete != local.setupComplete ||
+                         cfg.displayScheduleEnabled != local.displayScheduleEnabled;
+  for (int i = 0; i < DisplaySchedule::DAYS && !scheduleChanged; ++i) {
+    scheduleChanged = !(cfg.displayWeek[i] == local.displayWeek[i]);
+  }
+  if (scheduleChanged) backlight = {};
   local = cfg;
   applyThemeColors();
   gLive.setupScreen = !cfg.setupComplete;
+  if (!ready && local.displayEnabled) initPanel();
   if (!ready) return;
-  wake();
-  setBrightness(cfg.displayBrightness);
-  nextPage = millis() + cfg.displayPageMs;
+  lastActivity = millis();
+  nextPage = lastActivity + local.displayPageMs;
+  nextDraw = lastActivity + 1000;
+  const bool on = lightOn(backlight.update(scheduledMode()), lastActivity);
+  if (!on) setBacklight(false);
   redraw();
+  if (on) setBacklight(true);
 }
+
+void setKnxSwitch(bool on) {
+  if (!local.displayEnabled || !local.setupComplete) return;
+  backlight.update(scheduledMode());
+  backlight.setOverride(on);
+}
+
+void clearKnxSwitch() { backlight.clearOverride(); }
 
 const uint8_t *frame(size_t &len, int &w, int &h) {
   if (!ready || !snap) return nullptr;
@@ -479,53 +507,36 @@ void requestTap() { tapRequested = true; }
 
 void loop() {
   if (!ready) return;
+  const uint32_t now = millis();
+  const auto mode = backlight.update(scheduledMode());
 
-  if (!local.setupComplete) {
-    wake();
-    if (int32_t(millis() - nextDraw) >= 0) {
-      nextDraw = millis() + 1500;
-      redraw();
-    }
-    return;
-  }
-
-  // Seitenwechsel nur beim Antippen, nicht solange der Finger liegt
   static bool touchDown = false;
   int32_t x, y;
-  bool touched = panel.getTouch(&x, &y);
+  const bool touched = local.setupComplete && local.displayEnabled && panel.getTouch(&x, &y);
   const bool webTap = tapRequested;
   tapRequested = false;
-  if ((touched && !touchDown) || webTap) {
-    if (asleep) {
-      wake(); // erstes Antippen weckt nur
-    } else {
-      lastActivity = millis();
-      page = (page + 1) % PAGES;
-      nextPage = millis() + local.displayPageMs;
-      redraw();
-    }
-  }
+  const bool tap = (touched && !touchDown) || webTap;
   touchDown = touched;
+  const bool pageTap = local.setupComplete && tap && (!asleep || (webTap && mode == DisplayMode::Off));
+  if (local.setupComplete && tap) lastActivity = now;
 
-  // Störung hält das Display an, damit man sie im Schaltschrank sieht
-  if (!local.demoMode && !gLive.hitOk) wake();
-  if (local.displayTimeoutS && !asleep && millis() - lastActivity > local.displayTimeoutS * 1000UL) {
-    asleep = true;
-    panel.setBrightness(0);
-  }
+  const bool on = lightOn(mode, now);
+  const bool wake = on && asleep;
+  if (!on && !asleep) setBacklight(false);
+
   // auch mit ausgeschaltetem Licht weiterzeichnen: die Web-Live-Ansicht liest den Puffer
-
-  if (local.displayAutoPage && int32_t(millis() - nextPage) >= 0) {
-    nextPage = millis() + local.displayPageMs;
+  if (local.setupComplete && (pageTap || (local.displayAutoPage && int32_t(now - nextPage) >= 0))) {
+    nextPage = now + local.displayPageMs;
     page = (page + 1) % PAGES;
     redraw();
-  } else if (!local.displayAutoPage && page != 0 && int32_t(millis() - lastActivity) > 30000) {
+  } else if (local.setupComplete && !local.displayAutoPage && page != 0 && now - lastActivity > 30000) {
     page = 0; // ohne Automatik nach dem Blättern zurück zur Live-Seite
     redraw();
-  } else if (int32_t(millis() - nextDraw) >= 0) {
-    nextDraw = millis() + 1000;
+  } else if (wake || int32_t(now - nextDraw) >= 0) {
+    nextDraw = now + (local.setupComplete ? 1000 : 1500);
     redraw();
   }
+  if (wake) setBacklight(true);
 }
 
 } // namespace StatusDisplay
@@ -535,8 +546,9 @@ void loop() {
 namespace StatusDisplay {
 void begin(const AppConfig &) {}
 void loop() {}
-void setBrightness(uint8_t) {}
 void applyConfig(const AppConfig &) {}
+void setKnxSwitch(bool) {}
+void clearKnxSwitch() {}
 const uint8_t *frame(size_t &, int &, int &) { return nullptr; }
 void frameDone() {}
 void requestTap() {}

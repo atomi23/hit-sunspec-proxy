@@ -180,6 +180,8 @@ namespace History {
 bool timeValid() { return time(nullptr) > 1700000000; }
 
 void begin() {
+  // Mitteleuropa mit Sommerzeit; zweiter Server ist Fallback
+  configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.cloudflare.com");
   if (!lock) lock = xSemaphoreCreateMutex();
   st = static_cast<Store *>(heap_caps_calloc(1, sizeof(Store), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
   if (!st) st = static_cast<Store *>(calloc(1, sizeof(Store)));
@@ -190,8 +192,6 @@ void begin() {
     st->magic = MAGIC;
     st->version = VERSION;
   }
-  // Mitteleuropa mit Sommerzeit; zweiter Server ist Fallback
-  configTzTime("CET-1CEST,M3.5.0,M10.5.0/3", "pool.ntp.org", "time.cloudflare.com");
   Serial.printf("Verlauf: %s, %u Tage, %u Monate\n", fsOk ? "LittleFS ok" : "ohne Speicher", st->nDays, st->nMonths);
 }
 

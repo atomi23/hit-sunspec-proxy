@@ -106,6 +106,18 @@ Aktuelle Firmware: **v0.5.15** — [Release mit Firmware für jedes Board](https
 
 Die drei Seiten auf dem T-Connect-Pro: Live, Strings und Netz, System. Demo-Daten.
 
+Unter **Einstellungen → Display** lässt sich optional ein Wochenplan mit einem Zeitfenster pro Wochentag
+einrichten. Eine frühere Aus-Zeit gilt am Folgetag, gleiche Zeiten bedeuten ganztägig an. Sobald die Uhr
+synchronisiert ist (mitteleuropäische Ortszeit inkl. Sommerzeit), ersetzt der Plan den Inaktivitäts-Timer
+und die automatische Beleuchtung bei HIT-Störungen. Die Web-Live-Ansicht läuft auch bei ausgeschalteter
+Beleuchtung weiter.
+
+Unter **Einstellungen → KNX** kann man dem Empfangsobjekt **Display schalten** eine eigene Gruppenadresse
+zuweisen. Ein GroupValueWrite mit DPT **1.001** schaltet bei `1` ein und bei `0` aus. Ein KNX-Befehl
+übersteuert den Wochenplan bis zum nächsten Wechsel zwischen An und Aus; ohne Plan gilt der letzte
+Befehl bis zum nächsten Schaltbefehl oder Neustart. Die Einrichtung mit QR-Code wird bei aktiviertem
+Display weiterhin beleuchtet.
+
 ![Live](docs/screenshots/device-live.jpg)
 ![Strings und Netz](docs/screenshots/device-strings.jpg)
 ![System](docs/screenshots/device-system.jpg)

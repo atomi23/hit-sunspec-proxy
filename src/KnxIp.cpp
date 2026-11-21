@@ -1,6 +1,8 @@
 #include "KnxIp.h"
 #include "LiveData.h"
 #include "KnxPoints.h"
+#include "KnxDisplayTelegram.h"
+#include "StatusDisplay.h"
 #include "BatteryData.h"
 #include "BatteryLogic.h"
 #include <WiFi.h>
@@ -12,6 +14,11 @@ AppConfig local;
 WiFiUDP udp;
 bool started = false;
 bool sockOk = false;
+bool multicastJoined = false;
+uint16_t displayGa = 0;
+uint16_t ownPa = 0xFFFE;
+uint32_t nextJoin = 0;
+char displayRxIp[sizeof(gLive.ipShown)] = "";
 uint32_t nextPub = 0;
 float lastVal[KNX_CH_COUNT];
 bool lastInit[KNX_CH_COUNT];
@@ -21,7 +28,8 @@ bool batOn = false;
 bool parseGa(const char *s, uint16_t &out) {
   if (!s || !s[0]) return false;
   int a = -1, b = -1, c = -1;
-  if (sscanf(s, "%d/%d/%d", &a, &b, &c) != 3) return false;
+  int end = 0;
+  if (sscanf(s, "%2d/%1d/%3d%n", &a, &b, &c, &end) != 3 || !end || s[end]) return false;
   if (a < 0 || a > 31 || b < 0 || b > 7 || c < 0 || c > 255) return false;
   out = uint16_t((a << 11) | (b << 8) | c);
   return true;
@@ -83,8 +91,6 @@ void encodeDpt9(uint8_t *out, float value) {
 
 bool sendGroupWrite(uint16_t ga, const uint8_t *data, uint8_t dataLen) {
   if (!sockOk || dataLen > 14) return false;
-  uint16_t srcPa = 0xFFFE;
-  parsePa(local.knxPa, srcPa);
 
   uint8_t cemi[32];
   uint8_t n = 0;
@@ -92,7 +98,7 @@ bool sendGroupWrite(uint16_t ga, const uint8_t *data, uint8_t dataLen) {
   cemi[n++] = 0x00;
   cemi[n++] = 0xBC;
   cemi[n++] = 0xE0;
-  putF16be(cemi + n, srcPa);
+  putF16be(cemi + n, ownPa);
   n += 2;
   putF16be(cemi + n, ga);
   n += 2;
@@ -237,11 +243,37 @@ bool significantChange(uint8_t id, float now) {
 
 bool ensureSock() {
   if (sockOk) return true;
-  if (udp.beginMulticast(IPAddress(224, 0, 23, 12), 3671) || udp.begin(3671)) {
-    sockOk = true;
-    return true;
+  multicastJoined = udp.beginMulticast(IPAddress(224, 0, 23, 12), 3671);
+  sockOk = multicastJoined || udp.begin(3671);
+  return sockOk;
+}
+
+void readDisplaySwitch(uint32_t now) {
+  if (strcmp(displayRxIp, gLive.ipShown) != 0) {
+    strlcpy(displayRxIp, gLive.ipShown, sizeof(displayRxIp));
+    multicastJoined = false;
+    nextJoin = now;
   }
-  return false;
+  if (!multicastJoined && int32_t(now - nextJoin) >= 0) {
+    nextJoin = now + 2000;
+    sockOk = false;
+    ensureSock();
+  }
+  if (!multicastJoined) return;
+
+  // Die Hauptschleife auch bei vielen Telegrammen nicht blockieren.
+  uint8_t packet[KnxDisplayTelegram::MAX_SIZE];
+  for (int i = 0; i < 8; ++i) {
+    const int len = udp.parsePacket();
+    if (len <= 0) break;
+    bool on;
+    if (len <= int(sizeof(packet)) && udp.read(packet, len) == len &&
+        KnxDisplayTelegram::readSwitch(packet, len, displayGa, ownPa, on)) {
+      StatusDisplay::setKnxSwitch(on);
+      gLive.lastKnxMs = now;
+    }
+    udp.clear();
+  }
 }
 
 void publish() {
@@ -260,7 +292,7 @@ void publish() {
     bat = mergeBattery(BatteryData::snapshot(), millis(), iv);
   }
   bool any = false;
-  for (uint8_t i = 0; i < KNX_CH_COUNT; i++) {
+  for (uint8_t i = 0; i < KNX_DISPLAY_SWITCH; i++) {
     const KnxCh &ch = local.knxCh[i];
     if (!ch.ena) continue;
     if ((i == KNX_TAS_W || i == KNX_TAS_IN || i == KNX_TAS_OUT) && !gLive.tasmotaOk) continue;
@@ -290,18 +322,23 @@ void publish() {
 namespace KnxIp {
 
 void begin(const AppConfig &cfg) {
-  local = cfg;
   started = true;
-  sockOk = false;
-  nextPub = 0;
-  for (int i = 0; i < KNX_CH_COUNT; i++) lastInit[i] = false;
+  applyConfig(cfg);
 }
 
 void applyConfig(const AppConfig &cfg) {
   udp.stop();
   sockOk = false;
+  multicastJoined = false;
   local = cfg;
-  nextPub = 0;
+  ownPa = 0xFFFE;
+  parsePa(cfg.knxPa, ownPa);
+  uint16_t ga = 0;
+  if (HAS_DISPLAY && cfg.knxEnabled && cfg.knxCh[KNX_DISPLAY_SWITCH].ena)
+    parseGa(cfg.knxCh[KNX_DISPLAY_SWITCH].ga, ga);
+  if (ga != displayGa) StatusDisplay::clearKnxSwitch();
+  displayGa = ga;
+  nextJoin = nextPub = millis();
   gLive.knxOk = false;
   for (int i = 0; i < KNX_CH_COUNT; i++) lastInit[i] = false;
 }
@@ -314,8 +351,10 @@ void loop() {
     gLive.knxOk = false;
     return;
   }
-  if (int32_t(millis() - nextPub) < 0) return;
-  nextPub = millis() + max<uint32_t>(2000, local.knxPublishMs);
+  const uint32_t now = millis();
+  if (displayGa) readDisplaySwitch(now);
+  if (int32_t(now - nextPub) < 0) return;
+  nextPub = now + max<uint32_t>(2000, local.knxPublishMs);
   publish();
 }
 
