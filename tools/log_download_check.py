@@ -128,3 +128,60 @@ with tempfile.TemporaryDirectory() as directory:
 route = source.split('server.on("/api/history/download"', 1)[1].split("\n  });", 1)[0]
 assert route.index("if (!requireAuth(req)) return;") < route.index("History::downloadCsv(req)")
 print("PASS: history CSV route requires authentication")
+
+chunk_program = r'''
+#include "HttpChunked.h"
+#include <algorithm>
+#include <cassert>
+#include <cstring>
+#include <iostream>
+#include <string>
+bool decode(const std::string &wire, std::string &out, size_t fragment = 4096,
+            bool writeOk = true) {
+  size_t position = 0;
+  char buffer[13];
+  return decodeHttpChunks([&](uint8_t *data, size_t size) -> int {
+    size_t n = std::min({size, fragment, wire.size() - position});
+    std::memcpy(data, wire.data() + position, n);
+    position += n;
+    return int(n);
+  }, [&](const char *data, size_t size) {
+    assert(size <= sizeof(buffer));
+    out.append(data, size);
+    return writeOk;
+  }, buffer, sizeof(buffer));
+}
+int main() {
+  for (size_t fragment : {1, 2, 7, 4096}) {
+    std::string out;
+    assert(decode("4;name=value\r\nWiki\r\n5\r\npedia\r\n0\r\nX-Trailer: ignored\r\n\r\n", out, fragment));
+    assert(out == "Wikipedia");
+    out.clear();
+    assert(decode("0\r\n\r\n", out, fragment));
+    assert(out.empty());
+    out.clear();
+    std::string payload(4096, '\0');
+    assert(decode("1000\r\n" + payload + "\r\n0\r\n\r\n", out, fragment));
+    assert(out == payload);
+    out.clear();
+    assert(decode("A\r\n0123456789\r\n0;end=yes\r\n\r\n", out, fragment));
+    assert(out == "0123456789");
+  }
+  for (const char *bad : {"", "\r\n", "z\r\n", "1\r\n", "2\r\na",
+       "1\r\naX\r\n0\r\n\r\n", "0\r\n", "0\r\nTrailer: truncated",
+       "1\na\r\n0\r\n\r\n", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\r\n"}) {
+    std::string out;
+    assert(!decode(bad, out));
+  }
+  std::string out;
+  assert(!decode("1\r\na\r\n0\r\n\r\n", out, 1, false));
+  std::cout << "PASS: HTTPS de-chunking, extensions, trailers, fragmented/binary payloads and malformed/truncated/error paths\n";
+}
+'''
+with tempfile.TemporaryDirectory() as directory:
+    path = pathlib.Path(directory)
+    (path / "check.cpp").write_text(chunk_program)
+    subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+                    "-I", str(ROOT / "include"), str(path / "check.cpp"),
+                    "-o", str(path / "check")], check=True)
+    subprocess.run([str(path / "check")], check=True)
