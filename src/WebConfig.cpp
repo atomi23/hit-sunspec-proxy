@@ -278,7 +278,8 @@ textarea:focus{border-color:var(--acc);outline:none}
   .app{flex-direction:column}
   .side{width:100%;height:auto;position:relative;padding:14px 10px 8px}
   .side nav{flex-direction:row;flex-wrap:wrap;gap:4px}.side nav a{padding:6px 10px}
-  .side .nav-grp{display:none}.side .foot{display:none}.logo{padding:0 8px 10px}
+  .side .nav-grp,.side .foot .online,.side .foot .meta{display:none}
+  .side .foot{padding:0 8px 6px}.logo{padding:0 8px 10px}
   .main{padding:20px 16px 40px}.grid,.grid2,.cards,.cards.two{grid-template-columns:1fr}
   .flow{overflow-x:auto}.flow svg{min-width:640px}
 }
@@ -344,11 +345,29 @@ textarea:focus{border-color:var(--acc);outline:none}
 }
 )CSS";
 
-// Design Blaupause: Menüleiste oben und Energieband auf der Live-Seite (alle Seiten laden /b.js)
+// Gemeinsame Übersetzungen und Design Blaupause (alle Hauptseiten laden /b.js)
 const char UI_JS[] PROGMEM = R"JS(
 (()=>{
 const base=window.applyThemeLang;let built=false;
 const en=()=>document.documentElement.lang==='en';
+window.uiText=(de,english)=>en()?english:de;
+let renderedLang='de';
+const german=new WeakMap();
+const translatedAttrs=['placeholder','title','aria-label'];
+function translate(){
+  const lang=document.documentElement.lang;
+  if(renderedLang===lang)return;
+  renderedLang=lang;
+  document.querySelectorAll('[data-en],[data-en-placeholder],[data-en-title],[data-en-aria-label]').forEach(el=>{
+    if(!german.has(el))german.set(el,{text:el.textContent,attrs:translatedAttrs.map(a=>el.getAttribute(a))});
+    const original=german.get(el);
+    if(el.hasAttribute('data-en'))el.textContent=en()?el.getAttribute('data-en'):original.text;
+    translatedAttrs.forEach((attr,i)=>{
+      const english=el.getAttribute('data-en-'+attr);
+      if(english!==null)el.setAttribute(attr,en()?english:original.attrs[i]);
+    });
+  });
+}
 function build(){
   built=true;
   const side=document.querySelector('.side'),nav=side&&side.querySelector('nav');if(!nav)return;
@@ -404,7 +423,7 @@ function menu(){
   const b=document.querySelector('.bp-btn span');if(b)b.textContent=en()?'Settings':'Einstellungen';
   return true;
 }
-window.applyThemeLang=s=>{base(s);if(menu())live(s);};
+window.applyThemeLang=s=>{base(s);translate();if(menu())live(s);};
 menu();
 })();
 )JS";
@@ -418,43 +437,43 @@ const char DASH_HTML[] PROGMEM = R"HTML(
 <link rel="stylesheet" href="/a.css"/>
 </head><body><div class="app">
 <aside class="side">
-  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
   <nav>
     <a class="on" aria-current="page" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
-    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> Verlauf</a>
-    <div class="nav-grp">Datenquellen</div>
-    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
-    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
-    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
-    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
-    <div class="nav-grp">Ausgänge</div>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
-    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
-    <div class="nav-grp">Gerät</div>
-    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
-    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
-    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
-    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
-    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
     <div class="meta" id="sideVer">—</div>
     <div class="prefs">
-      <select id="uiLang" onchange="saveUiPrefs()">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
         <option value="de">Deutsch</option>
         <option value="en">English</option>
       </select>
-      <select id="uiTheme" onchange="saveUiPrefs()">
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
-        <option value="light">Hell</option>
-        <option value="steel">Stahl</option>
-        <option value="blueprint">Blaupause</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -709,7 +728,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="color-scheme" content="dark"/><title>Verlauf · HIT Proxy</title>
+<meta name="color-scheme" content="dark"/><title data-en="History · HIT Proxy">Verlauf · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
 <style>
 .main:has(.hist){height:100vh;overflow:auto;padding-bottom:16px}
@@ -741,43 +760,43 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
 </style>
 </head><body><div class="app">
 <aside class="side">
-  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
   <nav>
     <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
-    <a class="on" aria-current="page" href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> Verlauf</a>
-    <div class="nav-grp">Datenquellen</div>
-    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
-    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
-    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
-    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
-    <div class="nav-grp">Ausgänge</div>
+    <a class="on" aria-current="page" href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
-    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
-    <div class="nav-grp">Gerät</div>
-    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
-    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
-    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
-    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
-    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
     <div class="meta" id="sideVer">—</div>
     <div class="prefs">
-      <select id="uiLang" onchange="saveUiPrefs()">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
         <option value="de">Deutsch</option>
         <option value="en">English</option>
       </select>
-      <select id="uiTheme" onchange="saveUiPrefs()">
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
-        <option value="light">Hell</option>
-        <option value="steel">Stahl</option>
-        <option value="blueprint">Blaupause</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -1004,43 +1023,43 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <link rel="stylesheet" href="/a.css"/>
 </head><body><div class="app">
 <aside class="side">
-  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
   <nav>
     <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
-    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> Verlauf</a>
-    <div class="nav-grp">Datenquellen</div>
-    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
-    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
-    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
-    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
-    <div class="nav-grp">Ausgänge</div>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
-    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
-    <div class="nav-grp">Gerät</div>
-    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
-    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
-    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
-    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
-    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
     <div class="meta" id="sideVer">—</div>
     <div class="prefs">
-      <select id="uiLang" onchange="saveUiPrefs()">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
         <option value="de">Deutsch</option>
         <option value="en">English</option>
       </select>
-      <select id="uiTheme" onchange="saveUiPrefs()">
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
-        <option value="light">Hell</option>
-        <option value="steel">Stahl</option>
-        <option value="blueprint">Blaupause</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -1054,214 +1073,204 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
   <div class="chips" id="chips"></div>
 </div>
 <form id="f" class="cfg">
-<div class="card" id="hit" data-sub="Pflicht. Von hier kommen alle Messwerte."><strong>HIT-Wechselrichter</strong>
-<label>Wechselrichter</label>
+<div class="card" id="hit" data-sub="Pflicht. Von hier kommen alle Messwerte." data-en-sub="Required. All measurements come from here."><strong data-en="HIT inverter">HIT-Wechselrichter</strong>
+<label data-en="Inverter">Wechselrichter</label>
 <select name="inverterType"><option value="0">Hoymiles HIT</option></select>
-<p class="hint">Weitere Hersteller sind vorbereitet und folgen.</p>
-<label>Verbindung</label>
-<select name="hitMode"><option value="0">TCP (Modbus TCP)</option><option value="1">Kabel RS485 (RTU)</option></select>
+<p class="hint" data-en="Support for more manufacturers is planned.">Weitere Hersteller sind vorbereitet und folgen.</p>
+<label data-en="Connection">Verbindung</label>
+<select name="hitMode"><option value="0">TCP (Modbus TCP)</option><option value="1" data-en="RS485 cable (RTU)">Kabel RS485 (RTU)</option></select>
 <label>HIT IP / Host</label><input name="hitHost" placeholder="192.0.2.50"/>
 <label>HIT Port</label><input name="hitPort" type="number"/>
-<label>Unit-ID</label><input name="hitUnitId" type="number"/>
+<label data-en="Unit ID">Unit-ID</label><input name="hitUnitId" type="number"/>
 <label>Poll (ms)</label><input name="hitPollMs" type="number"/>
-<label>RS485-Baudrate (nur bei Kabel)</label><input name="hitRtuBaud" type="number"/>
-<p class="hint">TCP: IP des HIT, Port 502. Der HIT erlaubt nur eine Verbindung; solange ein anderes Programm mit ihm verbunden ist, bekommt der ESP keine Antwort.</p>
-<p class="hint">RS485: Anschluss am HIT meist PARA2, RJ45 Pin 8 = A, Pin 7 = B, 8N1, Unit-ID 1. Am HIT eingestellte Baudrate übernehmen (Werk oft 115200, häufig auf 9600 gestellt).</p>
-<label><input name="demoMode" type="checkbox"/> <b>Demo-Modus</b> (Fake-Daten, kein HIT-Schreiben)</label>
-<p class="hint">Für Board-/Web-/Display-Test ohne Hoymiles. SunSpec :1502 lokal ansprechbar; Consolinno nicht nötig.</p>
-<button class="sec" type="button" onclick="poll()" style="margin-top:16px">HIT jetzt abfragen</button>
+<label data-en="RS485 baud rate (wired only)">RS485-Baudrate (nur bei Kabel)</label><input name="hitRtuBaud" type="number"/>
+<p class="hint" data-en="TCP: Use the HIT IP address and port 502. The HIT allows only one connection. If another program is connected, the ESP gets no response.">TCP: IP des HIT, Port 502. Der HIT erlaubt nur eine Verbindung; solange ein anderes Programm mit ihm verbunden ist, bekommt der ESP keine Antwort.</p>
+<p class="hint" data-en="RS485: The HIT usually uses PARA2, RJ45 pin 8 = A, pin 7 = B, 8N1, Unit ID 1. Match the baud rate configured on the HIT (often 115200 by default, commonly changed to 9600).">RS485: Anschluss am HIT meist PARA2, RJ45 Pin 8 = A, Pin 7 = B, 8N1, Unit-ID 1. Am HIT eingestellte Baudrate übernehmen (Werk oft 115200, häufig auf 9600 gestellt).</p>
+<label><input name="demoMode" type="checkbox"/> <b data-en="Demo mode">Demo-Modus</b> <span data-en="(Simulated data; no writes to the HIT)">(Fake-Daten, kein HIT-Schreiben)</span></label>
+<p class="hint" data-en="Test the board, web UI and display without a Hoymiles inverter. SunSpec is available locally on port 1502; Consolinno is not required.">Für Board-/Web-/Display-Test ohne Hoymiles. SunSpec :1502 lokal ansprechbar; Consolinno nicht nötig.</p>
+<button class="sec" type="button" onclick="poll()" style="margin-top:16px" data-en="Poll HIT now">HIT jetzt abfragen</button>
 </div>
-<div class="card" id="sunspec" data-sub="Consolinno liest den Proxy als SunSpec-Wechselrichter über Modbus TCP."><strong>Consolinno</strong>
-<label><input name="sunspecEnabled" type="checkbox"/> aktiv (SunSpec-Server für das HEMS)</label>
-<label>Modbus-Port</label><input name="sunspecPort" type="number"/>
-<label>Unit-ID</label><input name="sunspecUnitId" type="number"/>
-<label><input name="invertPowerSign" type="checkbox"/> Vorzeichen der Leistung umkehren</label>
-<p class="hint">In Consolinno als SunSpec-Gerät eintragen: IP vom Display, Port 1502, Unit-ID 1. Die Registerkarte liegt ab Adresse 0, 40000 und 50000.</p>
+<div class="card" id="sunspec" data-sub="Consolinno liest den Proxy als SunSpec-Wechselrichter über Modbus TCP." data-en-sub="Consolinno reads the proxy as a SunSpec inverter over Modbus TCP."><strong>Consolinno</strong>
+<label><input name="sunspecEnabled" type="checkbox"/> <span data-en="Enabled (SunSpec server for the HEMS)">aktiv (SunSpec-Server für das HEMS)</span></label>
+<label data-en="Modbus port">Modbus-Port</label><input name="sunspecPort" type="number"/>
+<label data-en="Unit ID">Unit-ID</label><input name="sunspecUnitId" type="number"/>
+<label><input name="invertPowerSign" type="checkbox"/> <span data-en="Invert the power sign">Vorzeichen der Leistung umkehren</span></label>
+<p class="hint" data-en="Add a SunSpec device in Consolinno using the IP address on the display, port 1502 and Unit ID 1. The register map starts at addresses 0, 40000 and 50000.">In Consolinno als SunSpec-Gerät eintragen: IP vom Display, Port 1502, Unit-ID 1. Die Registerkarte liegt ab Adresse 0, 40000 und 50000.</p>
 </div>
-<div class="card" id="features" data-sub="Welche Dienste das Gerät anbietet. Abgewählte bleiben aus und verschwinden aus dem Menü."><strong>Funktionen</strong>
+<div class="card" id="features" data-sub="Welche Dienste das Gerät anbietet. Abgewählte bleiben aus und verschwinden aus dem Menü." data-en-sub="Choose which services the device runs. Disabled services stay off and disappear from the menu."><strong data-en="Features">Funktionen</strong>
 <p class="hint" id="featBoard" style="margin-top:0"></p>
-<label><input type="checkbox" data-feat="sunspecEnabled"/> <span><b>Consolinno / SunSpec</b>: HIT als SunSpec-Wechselrichter fürs HEMS</span></label>
-<label><input type="checkbox" data-feat="gatewayEnabled"/> <span><b>Modbus-Gateway</b>: andere Programme lesen den HIT über den ESP</span></label>
-<label><input type="checkbox" data-feat="mqttEnabled"/> <span><b>Home Assistant</b>: Messwerte per MQTT mit Discovery</span></label>
-<label><input type="checkbox" data-feat="knxEnabled"/> <span><b>KNX</b>: Messwerte als Gruppentelegramme</span></label>
-<label><input type="checkbox" data-feat="tasmotaEnabled"/> <span><b>Tasmota-Zähler</b>: Netzzähler mit Lesekopf</span></label>
-<label><input type="checkbox" data-feat="cloudEnabled"/> <span><b>Hoymiles-Cloud</b>: Ersatzquelle, wenn der HIT ausfällt</span></label>
-<label><input type="checkbox" data-feat="batEnabled"/> <span><b>Akkudaten</b>: Temperaturen, Zellspannungen und Grenzwerte vom HIT, optional aus der Akku-Cloud</span></label>
-<p class="hint">Die Einstellungen eines Dienstes stehen in seinem Menüpunkt. Speichern übernimmt die Auswahl ohne Neustart.</p>
+<label><input type="checkbox" data-feat="sunspecEnabled"/> <span><b>Consolinno / SunSpec</b><span data-en=": HIT as a SunSpec inverter for the HEMS">: HIT als SunSpec-Wechselrichter fürs HEMS</span></span></label>
+<label><input type="checkbox" data-feat="gatewayEnabled"/> <span><b data-en="Modbus gateway">Modbus-Gateway</b><span data-en=": Other programs read the HIT through the ESP">: andere Programme lesen den HIT über den ESP</span></span></label>
+<label><input type="checkbox" data-feat="mqttEnabled"/> <span><b>Home Assistant</b><span data-en=": Measurements over MQTT with discovery">: Messwerte per MQTT mit Discovery</span></span></label>
+<label><input type="checkbox" data-feat="knxEnabled"/> <span><b>KNX</b><span data-en=": Measurements as group telegrams">: Messwerte als Gruppentelegramme</span></span></label>
+<label><input type="checkbox" data-feat="tasmotaEnabled"/> <span><b data-en="Tasmota meter">Tasmota-Zähler</b><span data-en=": Grid meter with an optical reader">: Netzzähler mit Lesekopf</span></span></label>
+<label><input type="checkbox" data-feat="cloudEnabled"/> <span><b data-en="Hoymiles Cloud">Hoymiles-Cloud</b><span data-en=": Fallback source when the HIT is unavailable">: Ersatzquelle, wenn der HIT ausfällt</span></span></label>
+<label><input type="checkbox" data-feat="batEnabled"/> <span><b data-en="Battery data">Akkudaten</b><span data-en=": Temperature, cell voltage and limits from the HIT, optionally supplemented by the battery cloud">: Temperaturen, Zellspannungen und Grenzwerte vom HIT, optional aus der Akku-Cloud</span></span></label>
+<p class="hint" data-en="Open a service&#x27;s menu entry to configure it. Saving applies the selection without restarting.">Die Einstellungen eines Dienstes stehen in seinem Menüpunkt. Speichern übernimmt die Auswahl ohne Neustart.</p>
 </div>
-<div class="card" id="netz" data-sub="Verbindung ins Heimnetz und Anmeldung an dieser Oberfläche."><strong>Netzwerk und Zugang</strong>
-<label>Gerätename</label><input name="deviceName"/>
-<label><input name="useEthernet" type="checkbox"/> Ethernet verwenden</label>
-<label><input name="wifiEnabled" type="checkbox"/> WLAN verwenden</label>
-<label>Heim-WLAN: Name (SSID)</label><input name="staSsid" autocomplete="off" placeholder="leer = kein Heim-WLAN"/>
-<label>Heim-WLAN: Passwort</label><input name="staPass" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert"/>
-<p class="hint">Mit Heim-WLAN ist der ESP auch ohne Kabel im Netz und hat Internet, zum Beispiel für die Hoymiles-Cloud.
+<div class="card" id="netz" data-sub="Verbindung ins Heimnetz und Anmeldung an dieser Oberfläche." data-en-sub="Connect to your home network and sign in to this interface."><strong data-en="Network and access">Netzwerk und Zugang</strong>
+<label data-en="Device name">Gerätename</label><input name="deviceName"/>
+<label><input name="useEthernet" type="checkbox"/> <span data-en="Use Ethernet">Ethernet verwenden</span></label>
+<label><input name="wifiEnabled" type="checkbox"/> <span data-en="Use Wi-Fi">WLAN verwenden</span></label>
+<label data-en="Home Wi-Fi: Name (SSID)">Heim-WLAN: Name (SSID)</label><input name="staSsid" autocomplete="off" placeholder="leer = kein Heim-WLAN" data-en-placeholder="Blank = no home Wi-Fi"/>
+<label data-en="Home Wi-Fi: Password">Heim-WLAN: Passwort</label><input name="staPass" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert" data-en-placeholder="Leave blank to keep the current value"/>
+<p class="hint" data-en="Home Wi-Fi gives the ESP network and internet access without a cable, for example for Hoymiles Cloud. The new address appears on the System page of the display.">Mit Heim-WLAN ist der ESP auch ohne Kabel im Netz und hat Internet, zum Beispiel für die Hoymiles-Cloud.
 Die neue Adresse steht danach auf dem Display (Seite System).</p>
-<label><input name="wifiApMode" type="checkbox"/> Geräte-WLAN zusätzlich anlassen (Notzugang)</label>
-<label>Name des Geräte-WLANs</label><input name="wifiSsid"/>
-<label class="has-code">Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input class="has-code" name="wifiPass" readonly/>
-<p class="hint own-only hide">Das Passwort des Geräte-WLANs ist dein eigenes Web-Passwort (mindestens 8 Zeichen). Das Standard-Passwort gilt seit der Einrichtung nicht mehr.</p>
-<p class="hint">Ist der Schalter aus, läuft das Geräte-WLAN nur als Notzugang: ohne Heim-WLAN und wenn das Gerät am Kabel seit einer Minute keine Adresse hat. Ohne WLAN bleibt mehr Speicher frei.</p>
-<button class="sec has-code" type="button" onclick="newCode()" style="margin-top:12px">Neuen Zugangscode erzeugen</button>
-<p class="hint has-code">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
+<label><input name="wifiApMode" type="checkbox"/> <span data-en="Keep the device&#x27;s Wi-Fi network enabled (emergency access)">Geräte-WLAN zusätzlich anlassen (Notzugang)</span></label>
+<label data-en="Device Wi-Fi network name">Name des Geräte-WLANs</label><input name="wifiSsid"/>
+<label class="has-code" data-en="Access code (the device Wi-Fi password, shown on the display)">Zugangscode (Passwort des Geräte-WLANs, steht auf dem Display)</label><input class="has-code" name="wifiPass" readonly/>
+<p class="hint own-only hide" data-en="The device Wi-Fi password is your own web password (at least 8 characters). The default password no longer works after setup.">Das Passwort des Geräte-WLANs ist dein eigenes Web-Passwort (mindestens 8 Zeichen). Das Standard-Passwort gilt seit der Einrichtung nicht mehr.</p>
+<p class="hint" data-en="With this switch off, the device Wi-Fi network is only available for emergency access if home Wi-Fi is unavailable and the wired network has not provided an address for one minute. Turning off Wi-Fi frees memory.">Ist der Schalter aus, läuft das Geräte-WLAN nur als Notzugang: ohne Heim-WLAN und wenn das Gerät am Kabel seit einer Minute keine Adresse hat. Ohne WLAN bleibt mehr Speicher frei.</p>
+<button class="sec has-code" type="button" onclick="newCode()" style="margin-top:12px" data-en="Generate a new access code">Neuen Zugangscode erzeugen</button>
+<p class="hint has-code" data-en="The code survives restarts and updates. A new code immediately applies to sign-in and device Wi-Fi and appears on the display. Anyone using the old code must sign in again. Your own web password remains valid.">Der Code bleibt über Neustarts und Updates erhalten. Ein neuer Code gilt sofort für die Anmeldung und das Geräte-WLAN
 und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich neu anmelden. Das eigene Web-Passwort bleibt gültig.</p>
-<label>Benutzername</label><input name="webUser"/>
-<label>Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer = unverändert / nur Zugangscode"/>
-<p class="hint has-code">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
+<label data-en="Username">Benutzername</label><input name="webUser"/>
+<label data-en="Custom web password">Eigenes Web-Passwort</label><input name="webPass" type="password" placeholder="leer = unverändert / nur Zugangscode" data-en-placeholder="Blank = unchanged / access code only"/>
+<p class="hint has-code" data-en="Sign in with your username and either your own password or the access code shown on the display.">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 <label><input name="httpsEnabled" type="checkbox"/> HTTPS (Port 443)</label>
-<label><input name="httpsRedirect" type="checkbox"/> Aufrufe über HTTP auf HTTPS umleiten</label>
-<p class="hint">Der ESP erzeugt sein Zertifikat selbst. Der Browser warnt deshalb beim ersten Aufruf; vergleiche den Fingerabdruck
+<label><input name="httpsRedirect" type="checkbox"/> <span data-en="Redirect HTTP requests to HTTPS">Aufrufe über HTTP auf HTTPS umleiten</span></label>
+<p class="hint" data-en="The ESP generates its own certificate, so the browser warns you on the first visit. Compare the fingerprint below with the one shown by the browser before accepting it. HTTP remains available during setup or when HTTPS cannot start.">Der ESP erzeugt sein Zertifikat selbst. Der Browser warnt deshalb beim ersten Aufruf; vergleiche den Fingerabdruck
 unten mit dem im Browser und bestätige dann. Während der Einrichtung und falls HTTPS nicht startet, bleibt HTTP erreichbar.</p>
 <div id="tlsBox">
-<label>HTTPS-Zertifikat</label>
-<table><tbody id="tlsInfo"><tr><td class="muted">Lade…</td></tr></tbody></table>
-<label>Eigenes Zertifikat (PEM, Zwischenzertifikate dahinter)</label>
+<label data-en="HTTPS certificate">HTTPS-Zertifikat</label>
+<table><tbody id="tlsInfo"><tr><td class="muted" data-en="Loading…">Lade…</td></tr></tbody></table>
+<label data-en="Custom certificate (PEM, followed by intermediate certificates)">Eigenes Zertifikat (PEM, Zwischenzertifikate dahinter)</label>
 <textarea id="tlsCrt" rows="5" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
 <input type="file" id="tlsCrtFile" accept=".pem,.crt,.cer,.txt" onchange="tlsFile(this,'tlsCrt')"/>
-<label>Privater Schlüssel (PEM, ohne Passwort)</label>
+<label data-en="Private key (PEM, no password)">Privater Schlüssel (PEM, ohne Passwort)</label>
 <textarea id="tlsKey" rows="4" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
 <input type="file" id="tlsKeyFile" accept=".pem,.key,.txt" onchange="tlsFile(this,'tlsKey')"/>
 <div class="row">
-<button class="sec" type="button" onclick="tlsUpload()">Eigenes Zertifikat übernehmen</button>
-<button class="sec" type="button" onclick="tlsSelf()">Selbst signiertes neu erzeugen</button>
+<button class="sec" type="button" onclick="tlsUpload()" data-en="Apply custom certificate">Eigenes Zertifikat übernehmen</button>
+<button class="sec" type="button" onclick="tlsSelf()" data-en="Generate a new self-signed certificate">Selbst signiertes neu erzeugen</button>
 <span id="tlsMsg" class="hint" style="margin:0"></span>
 </div>
-<p class="hint">Ein eigenes Zertifikat, etwa von der Hausnetz-CA oder Let's Encrypt über DNS-Prüfung, erspart die Warnung. Der ESP prüft,
+<p class="hint" data-en="A custom certificate from your local CA or Let&#x27;s Encrypt with DNS validation avoids the warning. The ESP checks that the key and certificate match, then restarts HTTPS. Generating a new self-signed certificate deletes the custom certificate and includes the current IP address.">Ein eigenes Zertifikat, etwa von der Hausnetz-CA oder Let's Encrypt über DNS-Prüfung, erspart die Warnung. Der ESP prüft,
 ob Schlüssel und Zertifikat zusammenpassen, und startet HTTPS danach neu. „Selbst signiertes neu erzeugen“ löscht das eigene Zertifikat
 und nimmt die aktuelle IP-Adresse ins neue auf.</p>
 </div>
 </div>
-<div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite."><strong>Display</strong>
-<label>Live-Ansicht</label>
-<canvas id="scr" width="480" height="222" title="Klicken = nächste Seite"
+<div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite." data-en-sub="On-device display. Tap to change pages."><strong>Display</strong>
+<label data-en="Live view">Live-Ansicht</label>
+<canvas id="scr" width="480" height="222" title="Klicken = nächste Seite" data-en-title="Click to go to the next page"
  style="display:block;width:100%;max-width:480px;aspect-ratio:480/222;border-radius:14px;background:#000;cursor:pointer"></canvas>
-<p class="hint">Zeigt das Bild des Displays, alle 2 Sekunden neu, auch wenn das Licht am Gerät aus ist. Ein Klick wirkt wie Antippen.</p>
-<label><input name="displayEnabled" type="checkbox"/> Display eingeschaltet</label>
-<label>Helligkeit (0 bis 255)</label><input name="displayBrightness" type="number" min="0" max="255"/>
-<label><input name="displayAutoPage" type="checkbox"/> Seiten automatisch wechseln</label>
-<label>Seitenwechsel alle (Sekunden)</label><input name="displayPageS" type="number" min="3" max="600"/>
-<p class="hint">Aus: Die Live-Seite bleibt stehen. Antippen blättert, nach 30 Sekunden ohne Berührung geht es zurück zur Live-Seite.</p>
-<label>Ausschalten nach (Sekunden ohne Berührung, 0 = immer an)</label><input name="displayTimeoutS" type="number" min="0" max="36000"/>
-<p class="hint">Antippen schaltet das Display wieder ein. Bei einer Störung (HIT antwortet nicht) geht es von selbst an.</p>
-<label><input name="setupComplete" type="checkbox"/> Einrichtung abgeschlossen (QR-Code-Seite ausblenden)</label>
-<p class="hint">Seiten: Live, Strings und Netz, System.</p>
+<p class="hint" data-en="Shows the display and refreshes every 2 seconds, even when the backlight is off. Click to simulate a tap.">Zeigt das Bild des Displays, alle 2 Sekunden neu, auch wenn das Licht am Gerät aus ist. Ein Klick wirkt wie Antippen.</p>
+<label><input name="displayEnabled" type="checkbox"/> <span data-en="Display enabled">Display eingeschaltet</span></label>
+<label data-en="Brightness (0 to 255)">Helligkeit (0 bis 255)</label><input name="displayBrightness" type="number" min="0" max="255"/>
+<label><input name="displayAutoPage" type="checkbox"/> <span data-en="Cycle through pages automatically">Seiten automatisch wechseln</span></label>
+<label data-en="Page interval (seconds)">Seitenwechsel alle (Sekunden)</label><input name="displayPageS" type="number" min="3" max="600"/>
+<p class="hint" data-en="When off, the live page stays visible. Tap to change pages; after 30 seconds without a touch, the display returns to the live page.">Aus: Die Live-Seite bleibt stehen. Antippen blättert, nach 30 Sekunden ohne Berührung geht es zurück zur Live-Seite.</p>
+<label data-en="Turn off after (seconds without a touch; 0 = always on)">Ausschalten nach (Sekunden ohne Berührung, 0 = immer an)</label><input name="displayTimeoutS" type="number" min="0" max="36000"/>
+<p class="hint" data-en="Tap to turn the display back on. It turns on automatically if the HIT stops responding.">Antippen schaltet das Display wieder ein. Bei einer Störung (HIT antwortet nicht) geht es von selbst an.</p>
+<label><input name="setupComplete" type="checkbox"/> <span data-en="Setup complete (hide the QR code page)">Einrichtung abgeschlossen (QR-Code-Seite ausblenden)</span></label>
+<p class="hint" data-en="Pages: Live, Strings and Grid, System.">Seiten: Live, Strings und Netz, System.</p>
 </div>
-<div class="card" id="ctrl" data-sub="Schreibt Grenzwerte an den HIT. Standardmäßig aus."><strong>Akku-Steuerung</strong>
-<label><input name="hitWriteEnabled" type="checkbox"/> Schreiben an HIT erlauben</label>
-<label><input name="sunspecWriteToHit" type="checkbox"/> Consolinno Model-123 → HIT weiterleiten</label>
-<label>Max. Ladeleistung in % (Reg. 306)</label><input name="batMaxChargePct" type="number" min="10" max="100"/>
-<label>Max. Entladeleistung in % (Reg. 307)</label><input name="batMaxDischargePct" type="number" min="10" max="100"/>
-<label>Max. Ladestand in % (Reg. 308)</label><input name="batMaxSoc" type="number" min="10" max="100"/>
-<label>Min. Ladestand in % (Reg. 309)</label><input name="batMinSoc" type="number" min="10" max="90"/>
-<label><input name="apcEnabled" type="checkbox"/> Wirkleistungsbegrenzung APC (Reg. 279)</label>
-<label>APC-Grenze in 0,1 % (Reg. 280, 1000 = 100 %)</label><input name="apcPwrLmtPct10" type="number" min="0" max="1000"/>
-<p class="hint">Alles standardmäßig aus. 279/280 liegen im Netzschutz-Bereich 101 bis 299: Der ESP schreibt dort nur mit FC16, weil ein FC6-Befehl laut Hoymiles alle Netzschutz-Werte auf Werkseinstellung setzt. Eine Consolinno-Begrenzung (Model 123) geht nur auf APC, nicht auf den Akku.</p>
-<button class="sec" type="button" onclick="applyCtrl()">Jetzt an HIT schreiben</button>
+<div class="card" id="ctrl" data-sub="Schreibt Grenzwerte an den HIT. Standardmäßig aus." data-en-sub="Writes limits to the HIT. Off by default."><strong data-en="Battery control">Akku-Steuerung</strong>
+<label><input name="hitWriteEnabled" type="checkbox"/> <span data-en="Allow writes to the HIT">Schreiben an HIT erlauben</span></label>
+<label><input name="sunspecWriteToHit" type="checkbox"/> <span data-en="Forward Consolinno Model 123 writes to the HIT">Consolinno Model-123 → HIT weiterleiten</span></label>
+<label data-en="Max. charge power in % (reg. 306)">Max. Ladeleistung in % (Reg. 306)</label><input name="batMaxChargePct" type="number" min="10" max="100"/>
+<label data-en="Max. discharge power in % (reg. 307)">Max. Entladeleistung in % (Reg. 307)</label><input name="batMaxDischargePct" type="number" min="10" max="100"/>
+<label data-en="Max. state of charge in % (reg. 308)">Max. Ladestand in % (Reg. 308)</label><input name="batMaxSoc" type="number" min="10" max="100"/>
+<label data-en="Min. state of charge in % (reg. 309)">Min. Ladestand in % (Reg. 309)</label><input name="batMinSoc" type="number" min="10" max="90"/>
+<label><input name="apcEnabled" type="checkbox"/> <span data-en="Active power control (APC, reg. 279)">Wirkleistungsbegrenzung APC (Reg. 279)</span></label>
+<label data-en="APC limit in 0.1% (reg. 280, 1000 = 100%)">APC-Grenze in 0,1 % (Reg. 280, 1000 = 100 %)</label><input name="apcPwrLmtPct10" type="number" min="0" max="1000"/>
+<p class="hint" data-en="Everything is off by default. Registers 279/280 are in the grid protection range (101 to 299). The ESP uses only FC16 in this range because, according to Hoymiles, FC6 resets all grid protection values to their factory defaults. A Consolinno limit (Model 123) affects APC only, not the battery.">Alles standardmäßig aus. 279/280 liegen im Netzschutz-Bereich 101 bis 299: Der ESP schreibt dort nur mit FC16, weil ein FC6-Befehl laut Hoymiles alle Netzschutz-Werte auf Werkseinstellung setzt. Eine Consolinno-Begrenzung (Model 123) geht nur auf APC, nicht auf den Akku.</p>
+<button class="sec" type="button" onclick="applyCtrl()" data-en="Write to the HIT now">Jetzt an HIT schreiben</button>
 </div>
-<div class="card" id="tasmota" data-sub="Optionaler Netzzähler mit Tasmota-Lesekopf."><strong>Tasmota-Zähler</strong>
-<label><input name="tasmotaEnabled" type="checkbox"/> aktiv</label>
-<label><input name="tasmotaLiveGrid" type="checkbox"/> Im Live-View als Netzzähler (sonst HIT)</label>
-<label><input name="tasmotaMeterSpoof" type="checkbox"/> Meter-Spoof für Consolinno (optional)</label>
+<div class="card" id="tasmota" data-sub="Optionaler Netzzähler mit Tasmota-Lesekopf." data-en-sub="Optional grid meter with a Tasmota optical reader."><strong data-en="Tasmota meter">Tasmota-Zähler</strong>
+<label><input name="tasmotaEnabled" type="checkbox"/> <span data-en="Enabled">aktiv</span></label>
+<label><input name="tasmotaLiveGrid" type="checkbox"/> <span data-en="Use as the grid meter in Live (otherwise use the HIT)">Im Live-View als Netzzähler (sonst HIT)</span></label>
+<label><input name="tasmotaMeterSpoof" type="checkbox"/> <span data-en="Emulate a meter for Consolinno (optional)">Meter-Spoof für Consolinno (optional)</span></label>
 <label>Tasmota IP</label><input name="tasmotaHost" placeholder="192.0.2.60"/>
 <label>Port</label><input name="tasmotaPort" type="number"/>
 <label>Poll (ms)</label><input name="tasmotaPollMs" type="number"/>
-<label>User (optional)</label><input name="tasmotaUser"/>
-<label>Passwort (optional)</label><input name="tasmotaPass" type="password" placeholder="leer = unverändert"/>
-<p class="hint">E320 liefert nur die Summe (Power / E_in / E_out), keine Phasen.
+<label data-en="Username (optional)">User (optional)</label><input name="tasmotaUser"/>
+<label data-en="Password (optional)">Passwort (optional)</label><input name="tasmotaPass" type="password" placeholder="leer = unverändert" data-en-placeholder="Blank = unchanged"/>
+<p class="hint" data-en="The E320 reports totals only (power / E_in / E_out), not individual phases. Meter emulation adds three-phase SunSpec Model 203. Power per phase is approximately one third of the total; voltages come from the HIT.">E320 liefert nur die Summe (Power / E_in / E_out), keine Phasen.
 Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spannungen vom HIT.</p>
-<button class="sec" type="button" onclick="probeTas()" style="margin-top:10px">One-Click: Tasmota auslesen</button>
+<button class="sec" type="button" onclick="probeTas()" style="margin-top:10px" data-en="Read Tasmota now">One-Click: Tasmota auslesen</button>
 <div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
 </div>
-<div class="card" id="mqtt" data-sub="Messwerte per MQTT an Home Assistant, optional auch als Datenquelle."><strong>Home Assistant</strong>
-<label><input name="mqttEnabled" type="checkbox"/> Publish aktiv</label>
+<div class="card" id="mqtt" data-sub="Messwerte per MQTT an Home Assistant, optional auch als Datenquelle." data-en-sub="Send measurements to Home Assistant over MQTT, optionally also using it as a data source."><strong>Home Assistant</strong>
+<label><input name="mqttEnabled" type="checkbox"/> <span data-en="Enable publishing">Publish aktiv</span></label>
 <label><input name="mqttDiscovery" type="checkbox"/> HA Discovery</label>
 <label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
 <label>Port</label><input name="mqttPort" type="number"/>
-<label>User</label><input name="mqttUser"/>
-<label>Passwort</label><input name="mqttPass" type="password" placeholder="leer = unverändert"/>
-<label>Topic-Basis</label><input name="mqttBase" placeholder="hitproxy"/>
+<label data-en="Username">User</label><input name="mqttUser"/>
+<label data-en="Password">Passwort</label><input name="mqttPass" type="password" placeholder="leer = unverändert" data-en-placeholder="Blank = unchanged"/>
+<label data-en="Base topic">Topic-Basis</label><input name="mqttBase" placeholder="hitproxy"/>
 <label>Publish (ms)</label><input name="mqttPublishMs" type="number"/>
-<p class="hint">State: &lt;basis&gt;/state · inkl. data_origin</p>
-<label><input name="mqttIngestEnabled" type="checkbox"/> <b>Ingest-Fallback</b> (wenn HIT tot)</label>
-<label>Ingest-Topic (JSON)</label><input name="mqttIngestTopic" placeholder="hitproxy/in"/>
-<label>Max Alter (ms)</label><input name="mqttIngestMaxAgeMs" type="number"/>
-<p class="hint">JSON-Keys: pv_w, bat_w, grid_w, soc, energy_pv_kwh, … Priorität: NATIVE → MQTT → CLOUD</p>
+<p class="hint">State: &lt;<span data-en="base">basis</span>&gt;<span data-en="/state · includes data_origin">/state · inkl. data_origin</span></p>
+<label><input name="mqttIngestEnabled" type="checkbox"/> <b data-en="MQTT input fallback">Ingest-Fallback</b> <span data-en="(if the HIT is unavailable)">(wenn HIT tot)</span></label>
+<label data-en="Ingest topic (JSON)">Ingest-Topic (JSON)</label><input name="mqttIngestTopic" placeholder="hitproxy/in"/>
+<label data-en="Max. age (ms)">Max Alter (ms)</label><input name="mqttIngestMaxAgeMs" type="number"/>
+<p class="hint" data-en="JSON keys: pv_w, bat_w, grid_w, soc, energy_pv_kwh, … Priority: NATIVE → MQTT → CLOUD">JSON-Keys: pv_w, bat_w, grid_w, soc, energy_pv_kwh, … Priorität: NATIVE → MQTT → CLOUD</p>
 </div>
-<div class="card" id="cloud" data-sub="Ersatzquelle, wenn HIT und MQTT-Eingang ausfallen. Nur lesen."><strong>Hoymiles-Cloud</strong>
-<label><input name="cloudEnabled" type="checkbox"/> aktiv (wenn HIT &amp; MQTT-in tot)</label>
+<div class="card" id="cloud" data-sub="Ersatzquelle, wenn HIT und MQTT-Eingang ausfallen. Nur lesen." data-en-sub="Read-only fallback when both the HIT and MQTT input are unavailable."><strong data-en="Hoymiles Cloud">Hoymiles-Cloud</strong>
+<label><input name="cloudEnabled" type="checkbox"/> <span data-en="Enabled (when both the HIT and MQTT input are unavailable)">aktiv (wenn HIT &amp; MQTT-in tot)</span></label>
 <label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
-<label>Cloud User / E-Mail</label><input name="cloudUser"/>
-<label>Passwort</label><input name="cloudPass" type="password" placeholder="leer = unverändert"/>
-<label>Station / Plant ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567"/>
+<label data-en="Cloud username / email">Cloud User / E-Mail</label><input name="cloudUser"/>
+<label data-en="Password">Passwort</label><input name="cloudPass" type="password" placeholder="leer = unverändert" data-en-placeholder="Blank = unchanged"/>
+<label data-en="Station / plant ID (sid)">Station / Plant ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567" data-en-placeholder="e.g. 1234567"/>
 <label>Poll (ms)</label><input name="cloudPollMs" type="number"/>
-<label>Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
-<p class="hint">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
+<label data-en="Max. age (ms)">Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
+<p class="hint" data-en="Unofficial S-Miles API, read-only. §14a writes are supported only over HIT Modbus.">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
-<div class="card" id="akku" data-sub="Zusätzliche Akkuwerte vom HIT und aus der Cloud des Akku-Herstellers. Nur lesen."><strong>Akku</strong>
-<label><input name="batEnabled" type="checkbox"/> aktiv</label>
-<label><input name="batHitEnabled" type="checkbox"/> Werte vom HIT lesen (jeder Hersteller, soweit das BMS sie liefert)</label>
-<label>HIT-Abfrage alle (s)</label><input name="batHitPollS" type="number" min="30" max="3600"/>
-<label>Akku-Cloud</label>
-<select name="batCloud"><option value="0">keine</option><option value="1">Dyness</option></select>
+<div class="card" id="akku" data-sub="Zusätzliche Akkuwerte vom HIT und aus der Cloud des Akku-Herstellers. Nur lesen." data-en-sub="Additional read-only battery data from the HIT and the battery manufacturer&#x27;s cloud."><strong data-en="Battery">Akku</strong>
+<label><input name="batEnabled" type="checkbox"/> <span data-en="Enabled">aktiv</span></label>
+<label><input name="batHitEnabled" type="checkbox"/> <span data-en="Read values from the HIT (any manufacturer, when the BMS supplies them)">Werte vom HIT lesen (jeder Hersteller, soweit das BMS sie liefert)</span></label>
+<label data-en="Poll HIT every (s)">HIT-Abfrage alle (s)</label><input name="batHitPollS" type="number" min="30" max="3600"/>
+<label data-en="Battery cloud">Akku-Cloud</label>
+<select name="batCloud"><option value="0" data-en="None">keine</option><option value="1">Dyness</option></select>
 <label>API Host</label><input name="batCloudHost" placeholder="open-api.dyness.com"/>
-<label>App-ID</label><input name="batCloudAppId" autocomplete="off"/>
-<label>App-Secret</label><input name="batCloudSecret" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert"/>
-<label>Seriennummer</label><input name="batCloudSn" autocomplete="off" placeholder="leer = automatisch das erste Gerät"/>
-<label>Cloud-Abfrage alle (s)</label><input name="batCloudPollS" type="number" min="300" max="3600"/>
-<p class="hint">App-ID und Secret legt man im Dyness-Portal ems.dyness.com unter Entwicklerzentrum, API-Verwaltung an. Das Secret wird dort nur einmal angezeigt. Nutzt ein anderes Programm (z. B. die Home-Assistant-Integration) dieselbe App-ID, teilen sich beide die Abrufgrenze von Dyness.</p>
+<label data-en="App ID">App-ID</label><input name="batCloudAppId" autocomplete="off"/>
+<label data-en="App secret">App-Secret</label><input name="batCloudSecret" type="password" autocomplete="new-password" placeholder="leer lassen = unverändert" data-en-placeholder="Leave blank to keep the current value"/>
+<label data-en="Serial number">Seriennummer</label><input name="batCloudSn" autocomplete="off" placeholder="leer = automatisch das erste Gerät" data-en-placeholder="Blank = use the first device automatically"/>
+<label data-en="Poll cloud every (s)">Cloud-Abfrage alle (s)</label><input name="batCloudPollS" type="number" min="300" max="3600"/>
+<p class="hint" data-en="Create the app ID and secret in the Dyness portal at ems.dyness.com under Developer Center, API Management. The secret is shown only once. Programs (for example the Home Assistant integration) using the same app ID share the Dyness rate limit.">App-ID und Secret legt man im Dyness-Portal ems.dyness.com unter Entwicklerzentrum, API-Verwaltung an. Das Secret wird dort nur einmal angezeigt. Nutzt ein anderes Programm (z. B. die Home-Assistant-Integration) dieselbe App-ID, teilen sich beide die Abrufgrenze von Dyness.</p>
 <div id="batBox"></div>
 </div>
-<div class="card" id="gateway" data-sub="Andere Programme lesen den HIT über den ESP, statt selbst eine Verbindung aufzubauen."><strong>Modbus-Gateway</strong>
-<label><input name="gatewayEnabled" type="checkbox"/> Gateway einschalten</label>
+<div class="card" id="gateway" data-sub="Andere Programme lesen den HIT über den ESP, statt selbst eine Verbindung aufzubauen." data-en-sub="Other programs read the HIT through the ESP instead of opening their own connection."><strong data-en="Modbus gateway">Modbus-Gateway</strong>
+<label><input name="gatewayEnabled" type="checkbox"/> <span data-en="Enable gateway">Gateway einschalten</span></label>
 <label>Port</label><input name="gatewayPort" type="number" min="1" max="65535"/>
-<p class="hint">Der HIT erlaubt nur eine Verbindung, und die hält der ESP. Home Assistant oder andere Modbus-Programme
+<p class="hint" data-en="The HIT allows only one connection, which the ESP holds. In Home Assistant or another Modbus client, enter the ESP IP address and this port instead of the HIT address. Registers and Unit ID stay the same.">Der HIT erlaubt nur eine Verbindung, und die hält der ESP. Home Assistant oder andere Modbus-Programme
 tragen statt des HIT die IP des ESP mit diesem Port ein; Register und Unit-ID bleiben gleich.</p>
-<p class="hint">Lesen geht immer. Schreiben reicht der ESP nur durch, wenn unter Akku-Steuerung „Schreiben an HIT erlauben“ aktiv ist,
+<p class="hint" data-en="Reads are always allowed. The ESP only forwards writes if “Allow writes to the HIT” is enabled under Battery control. Otherwise, the client gets a Modbus error. All writes appear in the log.">Lesen geht immer. Schreiben reicht der ESP nur durch, wenn unter Akku-Steuerung „Schreiben an HIT erlauben“ aktiv ist,
 sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht im Protokoll.</p>
 </div>
-<div class="card" id="knx" data-sub="Messwerte als Gruppentelegramme über KNXnet/IP Routing."><strong>KNX</strong>
-<label><input name="knxEnabled" type="checkbox"/> aktiv (KNXnet/IP Routing Multicast 224.0.23.12:3671)</label>
-<label>Physische Sendeadresse (Quelle im Telegramm)</label>
+<div class="card" id="knx" data-sub="Messwerte als Gruppentelegramme über KNXnet/IP Routing." data-en-sub="Send measurements as group telegrams over KNXnet/IP routing."><strong>KNX</strong>
+<label><input name="knxEnabled" type="checkbox"/> <span data-en="Enabled (KNXnet/IP routing multicast 224.0.23.12:3671)">aktiv (KNXnet/IP Routing Multicast 224.0.23.12:3671)</span></label>
+<label data-en="Physical source address (in the telegram)">Physische Sendeadresse (Quelle im Telegramm)</label>
 <input name="knxPa" placeholder="15.15.250" inputmode="decimal" autocomplete="off"/>
-<p class="hint">Frei wählbar, z.B. <code>1.1.240</code> — erscheint als Absender-PA auf dem Bus (ETS/Monitor).</p>
-<label>Intervall (ms)</label><input name="knxPublishMs" type="number"/>
-<label><input name="knxOnlyOnChange" type="checkbox"/> nur bei Änderung</label>
-<label>Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
-<p class="hint">Pro Zeile: Haken setzen, Gruppenadresse dreistufig <code>H/M/U</code> (z.B. <code>1/2/10</code>), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</p>
+<p class="hint"><span data-en="Choose any valid address, e.g.">Frei wählbar, z.B.</span> <code>1.1.240</code> <span data-en="— shown as the sender address on the bus (ETS/monitor).">— erscheint als Absender-PA auf dem Bus (ETS/Monitor).</span></p>
+<label data-en="Interval (ms)">Intervall (ms)</label><input name="knxPublishMs" type="number"/>
+<label><input name="knxOnlyOnChange" type="checkbox"/> <span data-en="Only when the value changes">nur bei Änderung</span></label>
+<label data-en="Min. power change (W)">Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
+<p class="hint"><span data-en="For each row, tick the box and enter a three-level group address">Pro Zeile: Haken setzen, Gruppenadresse dreistufig</span> <code data-en="main/middle/sub">H/M/U</code> (<span data-en="e.g.">z.B.</span> <code>1/2/10</code><span data-en="), then adjust the datapoint type if needed. Red means invalid or duplicated.">), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</span></p>
 <div id="knxRows">
 <div class="knx-tools">
-<button type="button" class="sec" onclick="knxExport('xml')" title="Gruppenadressen-Export im ETS-Format, in ETS 5/6 importierbar">Export ETS (XML)</button>
-<button type="button" class="sec" onclick="knxExport('csv')" title="ETS-CSV (1/1, Semikolon)">Export CSV</button>
-<button type="button" class="sec" onclick="document.getElementById('knxFile').click()" title="ETS-Gruppenadressen-Export (XML oder CSV)">Import XML/CSV</button>
+<button type="button" class="sec" onclick="knxExport('xml')" title="Gruppenadressen-Export im ETS-Format, in ETS 5/6 importierbar" data-en-title="Export group addresses in a format ETS 5/6 can import">Export ETS (XML)</button>
+<button type="button" class="sec" onclick="knxExport('csv')" title="ETS-CSV (1/1, Semikolon)" data-en-title="ETS CSV (1/1, semicolon delimited)">Export CSV</button>
+<button type="button" class="sec" onclick="document.getElementById('knxFile').click()" title="ETS-Gruppenadressen-Export (XML oder CSV)" data-en-title="ETS group address export (XML or CSV)">Import XML/CSV</button>
 <input type="file" id="knxFile" accept=".xml,.csv,.txt" hidden onchange="knxImport(this)"/>
 <span class="meta" id="knxMsg"></span>
 </div>
-<div class="knx-wrap"><table class="knx-tbl"><thead><tr><th title="senden">An</th><th>Messwert</th><th>Gruppenadresse</th><th>Datenpunkttyp</th></tr></thead>
+<div class="knx-wrap"><table class="knx-tbl"><thead><tr><th title="senden" data-en-title="Send" data-en="On">An</th><th data-en="Measurement">Messwert</th><th data-en="Group address">Gruppenadresse</th><th data-en="Datapoint type">Datenpunkttyp</th></tr></thead>
 <tbody id="knxBody"></tbody></table></div>
-<p class="hint">Export: aktive Zeilen mit gültiger Adresse. Import: ETS → Gruppenadressen → Export (XML oder CSV).
-Zugeordnet wird über die Beschreibung <code>hit-sunspec-proxy:&lt;id&gt;</code> (steht in jedem Export), sonst über den Namen.
-Danach Speichern.</p>
+<p class="hint"><span data-en="Export includes active rows with valid addresses. To import, select ETS → Group Addresses → Export (XML or CSV). Entries are matched by the description">Export: aktive Zeilen mit gültiger Adresse. Import: ETS → Gruppenadressen → Export (XML oder CSV).
+Zugeordnet wird über die Beschreibung</span> <code>hit-sunspec-proxy:&lt;id&gt;</code> <span data-en="(included in each export), or by name if there is no match. Click Save to apply.">(steht in jedem Export), sonst über den Namen.
+Danach Speichern.</span></p>
 </div>
 </div>
 </form>
 <div class="row">
-<button type="button" onclick="save()">Speichern</button>
-<button class="sec" type="button" onclick="load()">Änderungen verwerfen</button>
+<button type="button" onclick="save()" data-en="Save">Speichern</button>
+<button class="sec" type="button" onclick="load()" data-en="Discard changes">Änderungen verwerfen</button>
 <span class="meta" id="saved"></span>
 </div>
 </main></div>
 
 <script>
-const I18N={
- de:{live:'Live',settings:'Einstellungen',proto:'Protokoll',energy:'Energiefluss',batSoc:'Batterie SoC',poll:'Jetzt pollen',
-     pv:'PV',bat:'Batterie',grid:'Netz',soc:'SoC',enHit:'Energie HIT',yield:'PV Ertrag',imp:'Bezug',exp:'Einspeisung',
-     lpp:'Consolinno LPP',limit:'Limit',on:'aktiv',off:'aus',hems:'HEMS',conn:'verbunden',wait:'wartet',tas:'Tasmota',
-     online:'online',offline:'offline',ph:'Phasen Netz',freq:'Frequenz',sys:'System'},
- en:{live:'Live',settings:'Settings',proto:'Log',energy:'Energy flow',batSoc:'Battery SoC',poll:'Poll now',
-     pv:'PV',bat:'Battery',grid:'Grid',soc:'SoC',enHit:'HIT Energy',yield:'PV yield',imp:'Import',exp:'Export',
-     lpp:'Consolinno LPP',limit:'Limit',on:'on',off:'off',hems:'HEMS',conn:'connected',wait:'waiting',tas:'Tasmota',
-     online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
-};
 let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
@@ -1270,7 +1279,6 @@ function navFeat(F,disp){
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
-function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
   document.documentElement.lang=LANG;
@@ -1295,13 +1303,14 @@ function dptOpts(kind,cur){
 }
 function knxGrp(id){
   if(/^pv/.test(id))return 'PV';
-  if(/^akku/.test(id))return 'Akku-Details';
-  if(/^(bat|soc|soh)/.test(id))return 'Batterie';
-  if(/^(grid|v\d|i\d|freq)/.test(id))return 'Netz';
-  if(/^e/.test(id))return 'Energie HIT';
-  if(/^tas/.test(id))return 'Tasmota-Zähler';
+  if(/^akku/.test(id))return uiText('Akku-Details','Battery details');
+  if(/^(bat|soc|soh)/.test(id))return uiText('Batterie','Battery');
+  if(/^(grid|v\d|i\d|freq)/.test(id))return uiText('Netz','Grid');
+  if(/^e/.test(id))return uiText('Energie HIT','HIT energy');
+  if(/^tas/.test(id))return uiText('Tasmota-Zähler','Tasmota meter');
   return 'Consolinno';
 }
+function knxLabel(m){return uiText(m.label,m.labelEn||m.label);}
 const knxEsc=s=>String(s??'').replace(/[&<>"']/g,x=>'&#'+x.charCodeAt(0)+';');
 function gaParse(s){const m=/^\s*(\d{1,2})\/(\d)\/(\d{1,3})\s*$/.exec(String(s||''));if(!m)return -1;
   const a=+m[1],b=+m[2],c=+m[3];return(a>31||b>7||c>255)?-1:(a<<11)|(b<<8)|c;}
@@ -1315,11 +1324,12 @@ function renderKnx(meta,ch){
     const g=knxGrp(m.id);
     if(g!==last){html+=`<tr class="grp"><td colspan="4">${knxEsc(g)}<span></span></td></tr>`;last=g;alt=false;}
     const c=(ch&&ch[i])||{};
+    const label=knxEsc(knxLabel(m));
     html+=`<tr data-row="${i}" class="${c.ena?'on':''}${alt?' alt':''}">
-      <td><input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} aria-label="${knxEsc(m.label)} senden"/></td>
-      <td class="knx-l">${knxEsc(m.label)}<small>${knxEsc(m.id)}</small></td>
-      <td><input data-knx="g" data-i="${i}" type="text" autocomplete="off" spellcheck="false" placeholder="z.B. 1/2/${10+i}" value="${knxEsc(c.ga)}" aria-label="Gruppenadresse ${knxEsc(m.label)}"/></td>
-      <td><select data-knx="d" data-i="${i}" aria-label="Datenpunkttyp ${knxEsc(m.label)}">${dptOpts(m.kind,c.dpt||m.dpt)}</select></td></tr>`;
+      <td><input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} aria-label="${uiText(label+' senden','Send '+label)}"/></td>
+      <td class="knx-l">${label}<small>${knxEsc(m.id)}</small></td>
+      <td><input data-knx="g" data-i="${i}" type="text" autocomplete="off" spellcheck="false" placeholder="${uiText('z.B.','e.g.')} 1/2/${10+i}" value="${knxEsc(c.ga)}" aria-label="${uiText('Gruppenadresse','Group address')} ${label}"/></td>
+      <td><select data-knx="d" data-i="${i}" aria-label="${uiText('Datenpunkttyp','Datapoint type')} ${label}">${dptOpts(m.kind,c.dpt||m.dpt)}</select></td></tr>`;
     alt=!alt;
   });
   body.innerHTML=html;
@@ -1335,15 +1345,15 @@ function knxCheck(){
     const e=r.querySelector('[data-knx=e]'),g=r.querySelector('[data-knx=g]');const v=g.value.trim(),n=gaParse(v);
     r.classList.toggle('on',e.checked);
     let msg='';
-    if(v&&n<0)msg='Ungültig, Format H/M/U (0-31/0-7/0-255)';
-    else if(e.checked&&!v)msg='Aktiv, aber ohne Gruppenadresse';
-    else if(e.checked&&seen[n]>1)msg='Adresse mehrfach vergeben';
-    g.classList.toggle('bad-ga',!!msg);g.title=msg||'Gruppenadresse H/M/U';
+    if(v&&n<0)msg=uiText('Ungültig, Format H/M/U (0-31/0-7/0-255)','Invalid. Use main/middle/sub (0-31/0-7/0-255).');
+    else if(e.checked&&!v)msg=uiText('Aktiv, aber ohne Gruppenadresse','Enabled without a group address');
+    else if(e.checked&&seen[n]>1)msg=uiText('Adresse mehrfach vergeben','Duplicate address');
+    g.classList.toggle('bad-ga',!!msg);g.title=msg||uiText('Gruppenadresse H/M/U','Group address main/middle/sub');
   });
   document.querySelectorAll('#knxBody tr.grp').forEach(gr=>{
     let on=0,all=0;
     for(let r=gr.nextElementSibling;r&&!r.classList.contains('grp');r=r.nextElementSibling){all++;if(r.classList.contains('on'))on++;}
-    gr.querySelector('span').textContent=`${on} von ${all} aktiv`;
+    gr.querySelector('span').textContent=uiText(`${on} von ${all} aktiv`,`${on} of ${all} enabled`);
   });
 }
 {const kb=document.getElementById('knxBody');
@@ -1366,11 +1376,11 @@ const KNX_TAG='hit-sunspec-proxy:';
 function knxExport(fmt){
   const rows=collectKnx().map((c,i)=>({m:KNX_META[i],ena:c.ena,n:gaParse(c.ga),dpt:c.dpt}))
     .filter(r=>r.ena&&r.n>=0).sort((a,b)=>a.n-b.n);
-  if(!rows.length){knxMsg('Keine aktive Zeile mit gültiger Gruppenadresse',false);return;}
+  if(!rows.length){knxMsg(uiText('Keine aktive Zeile mit gültiger Gruppenadresse','No enabled row with a valid group address'),false);return;}
   const tree=new Map();
   rows.forEach(r=>{const h=r.n>>11,mi=(r.n>>8)&7;if(!tree.has(h))tree.set(h,new Map());
     const t=tree.get(h);if(!t.has(mi))t.set(mi,[]);t.get(mi).push(r);});
-  const midName=list=>{const g=new Set(list.map(r=>knxGrp(r.m.id)));return g.size===1?[...g][0]:'Messwerte';};
+  const midName=list=>{const g=new Set(list.map(r=>knxGrp(r.m.id)));return g.size===1?[...g][0]:uiText('Messwerte','Measurements');};
   let out;
   if(fmt==='xml'){
     const x=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
@@ -1379,7 +1389,7 @@ function knxExport(fmt){
       out+=`  <GroupRange Name="HIT-Proxy" RangeStart="${h<<11}" RangeEnd="${(h<<11)+2047}">\n`;
       mids.forEach((list,mi)=>{const s=(h<<11)|(mi<<8);
         out+=`    <GroupRange Name="${x(midName(list))}" RangeStart="${s}" RangeEnd="${s+255}">\n`;
-        list.forEach(r=>{out+=`      <GroupAddress Name="${x(r.m.label)}" Address="${gaStr(r.n)}" Description="${x(KNX_TAG+r.m.id)}" DPTs="${dptEts(r.m.kind,r.dpt)}" />\n`;});
+        list.forEach(r=>{out+=`      <GroupAddress Name="${x(knxLabel(r.m))}" Address="${gaStr(r.n)}" Description="${x(KNX_TAG+r.m.id)}" DPTs="${dptEts(r.m.kind,r.dpt)}" />\n`;});
         out+='    </GroupRange>\n';});
       out+='  </GroupRange>\n';});
     out+='</GroupAddress-Export>\n';
@@ -1389,10 +1399,10 @@ function knxExport(fmt){
     out='\ufeff'+line(['Group name','Address','Central','Unfiltered','Description','DatapointType','Security']);
     tree.forEach((mids,h)=>{out+=line(['HIT-Proxy',`${h}/-/-`,'','','','','Auto']);
       mids.forEach((list,mi)=>{out+=line([midName(list),`${h}/${mi}/-`,'','','','','Auto']);
-        list.forEach(r=>{out+=line([r.m.label,gaStr(r.n),'','',KNX_TAG+r.m.id,dptEts(r.m.kind,r.dpt),'Auto']);});});});
+        list.forEach(r=>{out+=line([knxLabel(r.m),gaStr(r.n),'','',KNX_TAG+r.m.id,dptEts(r.m.kind,r.dpt),'Auto']);});});});
     knxDownload('hit-proxy-knx.csv',out,'text/csv');
   }
-  knxMsg(rows.length+' Adressen exportiert',true);
+  knxMsg(uiText(`${rows.length} Adressen exportiert`,`Exported ${rows.length} addresses`),true);
 }
 function knxDecode(buf){
   const u=new Uint8Array(buf);
@@ -1402,7 +1412,7 @@ function knxDecode(buf){
 }
 function knxParseXml(t){
   const d=new DOMParser().parseFromString(t,'application/xml');
-  if(d.getElementsByTagName('parsererror').length)throw new Error('kein gültiges XML');
+  if(d.getElementsByTagName('parsererror').length)throw new Error(uiText('kein gültiges XML','invalid XML'));
   return [...d.getElementsByTagName('GroupAddress')].map(g=>{
     let a=g.getAttribute('Address')||'';
     if(/^\d+$/.test(a))a=gaStr(+a&0xFFFF); // .knxproj speichert die Adresse als Zahl
@@ -1455,10 +1465,11 @@ async function knxImport(inp){
   const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
   let list;
   try{const t=knxDecode(await f.arrayBuffer());list=/^\s*</.test(t)?knxParseXml(t):knxParseCsv(t);}
-  catch(e){knxMsg('Datei nicht lesbar: '+e.message,false);return;}
-  if(!list.length){knxMsg('Keine Gruppenadressen in der Datei gefunden',false);return;}
+  catch(e){knxMsg(uiText('Datei nicht lesbar: ','Could not read file: ')+e.message,false);return;}
+  if(!list.length){knxMsg(uiText('Keine Gruppenadressen in der Datei gefunden','No group addresses found in the file'),false);return;}
   const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9äöüß%]+/g,'');
-  const byId=new Map(KNX_META.map((m,i)=>[m.id,i])),byName=new Map(KNX_META.map((m,i)=>[norm(m.label),i]));
+  const byId=new Map(KNX_META.map((m,i)=>[m.id,i])),byName=new Map();
+  KNX_META.forEach((m,i)=>{byName.set(norm(m.label),i);if(m.labelEn)byName.set(norm(m.labelEn),i);});
   const done=new Set();let miss=0;
   list.forEach(g=>{
     const tm=/hit-sunspec-proxy:([a-z0-9_]+)/i.exec(g.desc);
@@ -1473,8 +1484,8 @@ async function knxImport(inp){
   });
   done.forEach(i=>{const r=knxEl('e',i).closest('tr');r.classList.remove('imp');void r.offsetWidth;r.classList.add('imp');});
   knxCheck();
-  if(!done.size){knxMsg(`Keine der ${list.length} Adressen passt zu einem Messwert`,false);return;}
-  knxMsg(`${done.size} Messwerte zugeordnet`+(miss?`, ${miss} Adressen ohne Zuordnung`:'')+'. Zum Übernehmen Speichern.',true);
+  if(!done.size){knxMsg(uiText(`Keine der ${list.length} Adressen passt zu einem Messwert`,`None of the ${list.length} addresses match a measurement`),false);return;}
+  knxMsg(uiText(`${done.size} Messwerte zugeordnet`,`Matched ${done.size} measurements`)+(miss?uiText(`, ${miss} Adressen ohne Zuordnung`,`, ${miss} unmatched addresses`):'')+uiText('. Zum Übernehmen Speichern.','. Click Save to apply.'),true);
 }
 // Funktionen: Spiegel der "aktiv"-Schalter der einzelnen Dienste; das Menü folgt dem Formular
 window.NAV_FROM_FORM=true;
@@ -1503,7 +1514,8 @@ function route(){
   const cur=cards.find(c=>c.id===id)||cards[0];
   cards.forEach(c=>c.classList.toggle('show',c===cur));
   document.getElementById('cfgTitle').textContent=cur.querySelector('strong').textContent;
-  document.getElementById('cfgSub').textContent=cur.dataset.sub||'';
+  const sub=cur.dataset.sub||'';
+  document.getElementById('cfgSub').textContent=uiText(sub,cur.dataset.enSub||sub);
   document.title=cur.querySelector('strong').textContent+' · HIT Proxy';
   document.querySelectorAll('.side nav a').forEach(a=>{const on=a.getAttribute('href')==='/config#'+cur.id;
     a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
@@ -1541,75 +1553,75 @@ async function batBox(){
   const d=await fetch('/api/battery').then(r=>r.json()).catch(()=>null);if(!d)return;
   const esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
   const v=(x,u)=>x===undefined?'-':esc(x)+(u?' '+u:'');
-  const age=s=>s===undefined?'':(s<90?s+' s':Math.round(s/60)+' min')+' alt';
+  const age=s=>s===undefined?'':(s<90?s+' s':Math.round(s/60)+' min')+uiText(' alt',' ago');
   const row=(k,x)=>`<tr><td>${k}</td><td>${x}</td></tr>`;
   const h=d.hit||{},c=d.cloudData||{};
   let hit;
-  if(!d.hitEnabled)hit=row('Status','aus');
-  else if(h.valid)hit=row('Stand',age(h.ageS))+row('Zelltemperatur max / min',v(h.cellTempMax,'°C')+' / '+v(h.cellTempMin,'°C'))+
-    row('Modultemperatur max / min',v(h.modTempMax,'°C')+' / '+v(h.modTempMin,'°C'))+
-    row('Zellspannung max / min',v(h.cellVMax,'V')+' / '+v(h.cellVMin,'V'))+row('Modulspannung max / min',v(h.modVMax,'V')+' / '+v(h.modVMin,'V'))+
-    row('Max. Lade- / Entladestrom',v(h.maxChargeA,'A')+' / '+v(h.maxDischargeA,'A'))+row('Lade- / Entladeschluss',v(h.chargeCutV,'V')+' / '+v(h.dischargeCutV,'V'));
-  else hit=row('Status',h.missing?'<span class="bad">vom HIT nicht geliefert</span>':'noch keine Abfrage');
+  if(!d.hitEnabled)hit=row('Status',uiText('aus',"Off"));
+  else if(h.valid)hit=row(uiText('Stand',"Age"),age(h.ageS))+row(uiText('Zelltemperatur max / min',"Cell temperature max / min"),v(h.cellTempMax,'°C')+' / '+v(h.cellTempMin,'°C'))+
+    row(uiText('Modultemperatur max / min',"Module temperature max / min"),v(h.modTempMax,'°C')+' / '+v(h.modTempMin,'°C'))+
+    row(uiText('Zellspannung max / min',"Cell voltage max / min"),v(h.cellVMax,'V')+' / '+v(h.cellVMin,'V'))+row(uiText('Modulspannung max / min',"Module voltage max / min"),v(h.modVMax,'V')+' / '+v(h.modVMin,'V'))+
+    row(uiText('Max. Lade- / Entladestrom',"Max. charge / discharge current"),v(h.maxChargeA,'A')+' / '+v(h.maxDischargeA,'A'))+row(uiText('Lade- / Entladeschluss',"Charge / discharge cutoff"),v(h.chargeCutV,'V')+' / '+v(h.dischargeCutV,'V'));
+  else hit=row('Status',h.missing?uiText('<span class="bad">vom HIT nicht geliefert</span>',"<span class=\"bad\">Not provided by the HIT</span>"):uiText('noch keine Abfrage',"Not polled yet"));
   let cl;
-  if(!d.cloud)cl=row('Status','keine Akku-Cloud gewählt');
-  else{cl=(c.error?row('Fehler','<span class="bad">'+esc(c.error)+'</span>'):'')+(c.sn?row('Gerät',esc(c.sn)+(c.model?' ('+esc(c.model)+')':'')):'');
-    if(c.valid)cl+=row('Stand',age(c.ageS))+row('SoC / SoH',v(c.soc,'%')+' / '+v(c.soh,'%'))+row('Leistung',v(c.powerW,'W'))+
-      row('Spannung / Strom',v(c.voltV,'V')+' / '+v(c.currA,'A'))+row('Temperatur max / min',v(c.tempMax,'°C')+' / '+v(c.tempMin,'°C'))+
-      row('Zellspannung max / min',v(c.cellVMax,'V')+' / '+v(c.cellVMin,'V'))+row('Spreizung',v(c.cellDiffMv,'mV'))+
-      row('Ladezyklen',v(c.cycles))+row('Kapazität / Restenergie',v(c.capKwh,'kWh')+' / '+v(c.remainKwh,'kWh'))+
-      row('Alarm',c.alarm===undefined?'-':(c.alarm?'<span class="bad">ja</span>':'nein'));
-    else if(!c.error)cl+=row('Status','noch keine Daten');}
+  if(!d.cloud)cl=row('Status',uiText('keine Akku-Cloud gewählt',"No battery cloud selected"));
+  else{cl=(c.error?row(uiText('Fehler',"Error"),'<span class="bad">'+esc(c.error)+'</span>'):'')+(c.sn?row(uiText('Gerät',"Device"),esc(c.sn)+(c.model?' ('+esc(c.model)+')':'')):'');
+    if(c.valid)cl+=row(uiText('Stand',"Age"),age(c.ageS))+row('SoC / SoH',v(c.soc,'%')+' / '+v(c.soh,'%'))+row(uiText('Leistung',"Power"),v(c.powerW,'W'))+
+      row(uiText('Spannung / Strom',"Voltage / current"),v(c.voltV,'V')+' / '+v(c.currA,'A'))+row(uiText('Temperatur max / min',"Temperature max / min"),v(c.tempMax,'°C')+' / '+v(c.tempMin,'°C'))+
+      row(uiText('Zellspannung max / min',"Cell voltage max / min"),v(c.cellVMax,'V')+' / '+v(c.cellVMin,'V'))+row(uiText('Spreizung',"Spread"),v(c.cellDiffMv,'mV'))+
+      row(uiText('Ladezyklen',"Charge cycles"),v(c.cycles))+row(uiText('Kapazität / Restenergie',"Capacity / remaining energy"),v(c.capKwh,'kWh')+' / '+v(c.remainKwh,'kWh'))+
+      row('Alarm',c.alarm===undefined?'-':(c.alarm?uiText('<span class="bad">ja</span>',"<span class=\"bad\">Yes</span>"):uiText('nein',"No")));
+    else if(!c.error)cl+=row('Status',uiText('noch keine Daten',"No data yet"));}
   let packs='';
-  if((d.packs||[]).length)packs='<h3 style="margin:18px 0 6px">Packs (vom HIT)</h3><table class="tbl"><tr><th>Seriennummer</th><th>BMS-Firmware</th><th>Nennkapazität (roh)</th></tr>'+
+  if((d.packs||[]).length)packs=`<h3 style="margin:18px 0 6px">${uiText('Packs (vom HIT)','Packs (from the HIT)')}</h3><table class="tbl"><tr><th>${uiText('Seriennummer','Serial number')}</th><th>${uiText('BMS-Firmware','BMS firmware')}</th><th>${uiText('Nennkapazität (roh)','Rated capacity (raw)')}</th></tr>`+
     d.packs.map(p=>`<tr><td>${esc(p.sn)||'-'}</td><td>${esc(p.bmsFw)}</td><td>${esc(p.ratedCap)}</td></tr>`).join('')+'</table>';
   let cells='';
   if((c.cells||[]).length){const xs=c.cells.map(Number),lo=Math.min(...xs),hi=Math.max(...xs),span=Math.max(hi-lo,0.005);
-    cells='<h3 style="margin:18px 0 6px">Zellspannungen (Cloud)</h3><div style="display:flex;gap:4px;align-items:flex-end;height:90px">'+
-      xs.map((x,i)=>`<div title="Zelle ${i+1}: ${x.toFixed(3)} V" style="flex:1;background:var(--acc);border-radius:3px;height:${20+70*(x-lo)/span}px"></div>`).join('')+
-      `</div><p class="hint">${lo.toFixed(3)} bis ${hi.toFixed(3)} V, Spreizung ${Math.round((hi-lo)*1000)} mV</p>`;}
-  box.innerHTML='<div class="cards two" style="margin-top:18px"><div class="panel"><h2>Vom HIT</h2><table class="tbl">'+hit+'</table></div>'+
-    '<div class="panel"><h2>Akku-Cloud</h2><table class="tbl">'+cl+'</table></div></div>'+packs+cells;
+    cells=`<h3 style="margin:18px 0 6px">${uiText('Zellspannungen (Cloud)','Cell voltages (cloud)')}</h3><div style="display:flex;gap:4px;align-items:flex-end;height:90px">`+
+      xs.map((x,i)=>`<div title="${uiText('Zelle','Cell')} ${i+1}: ${x.toFixed(3)} V" style="flex:1;background:var(--acc);border-radius:3px;height:${20+70*(x-lo)/span}px"></div>`).join('')+
+      `</div><p class="hint">${lo.toFixed(3)} ${uiText('bis','to')} ${hi.toFixed(3)} V, ${uiText('Spreizung','spread')} ${Math.round((hi-lo)*1000)} mV</p>`;}
+  box.innerHTML='<div class="cards two" style="margin-top:18px"><div class="panel"><h2>'+uiText('Vom HIT','From the HIT')+'</h2><table class="tbl">'+hit+'</table></div>'+
+    '<div class="panel"><h2>'+uiText('Akku-Cloud','Battery cloud')+'</h2><table class="tbl">'+cl+'</table></div></div>'+packs+cells;
 }
 setInterval(()=>{if(!document.hidden)batBox();},10000);window.addEventListener('hashchange',batBox);
 async function loadTls(){
   const t=await fetch('/api/tls').then(r=>r.json()).catch(()=>null);const tb=document.getElementById('tlsInfo');if(!tb)return;
-  if(!t){tb.innerHTML='<tr><td>Nicht abrufbar</td></tr>';return;}
+  if(!t){tb.innerHTML=`<tr><td>${uiText('Nicht abrufbar','Unavailable')}</td></tr>`;return;}
   const esc=s=>String(s||'–').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
-  tb.innerHTML=row('Status',!t.enabled?'aus':t.running?'<span class="ok">läuft</span>':t.lowRam?'<span class="bad">zu wenig Speicher auf diesem Board, die Oberfläche läuft über HTTP</span>':'<span class="bad">nicht gestartet</span>')+
-    row('Zertifikat',t.source==='own'?'eigenes'+(t.chain>1?' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')':''):'selbst signiert')+
-    row('Ausgestellt für',esc(t.subject))+(t.source==='own'?row('Aussteller',esc(t.issuer)):'')+
-    row('Gültig bis',esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`);
+  tb.innerHTML=row('Status',!t.enabled?uiText('aus',"Off"):t.running?uiText('<span class="ok">läuft</span>',"<span class=\"ok\">Running</span>"):t.lowRam?uiText('<span class="bad">zu wenig Speicher auf diesem Board, die Oberfläche läuft über HTTP</span>',"<span class=\"bad\">Not enough memory on this board; the interface uses HTTP</span>"):uiText('<span class="bad">nicht gestartet</span>',"<span class=\"bad\">Not started</span>"))+
+    row(uiText('Zertifikat',"Certificate"),t.source==='own'?uiText('eigenes',"Custom")+(t.chain>1?uiText(' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')',' (with '+(t.chain-1)+' intermediate certificate'+(t.chain>2?'s':'')+')'):''):uiText('selbst signiert',"Self-signed"))+
+    row(uiText('Ausgestellt für',"Issued to"),esc(t.subject))+(t.source==='own'?row(uiText('Aussteller',"Issuer"),esc(t.issuer)):'')+
+    row(uiText('Gültig bis',"Valid until"),esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`);
 }
 function tlsFile(inp,id){const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{document.getElementById(id).value=r.result;};r.readAsText(f);}
 function tlsMsg(t,ok){const m=document.getElementById('tlsMsg');m.textContent=t;m.style.color=ok?'var(--acc)':'var(--fault)';}
 async function tlsUpload(){
   const cert=document.getElementById('tlsCrt').value.trim(),key=document.getElementById('tlsKey').value.trim();
-  if(!cert||!key){tlsMsg('Zertifikat und Schlüssel einfügen oder Dateien wählen',false);return;}
+  if(!cert||!key){tlsMsg(uiText('Zertifikat und Schlüssel einfügen oder Dateien wählen',"Paste the certificate and key or select files"),false);return;}
   const r=await fetch('/api/tls/cert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cert,key})}).catch(()=>null);
   const j=r?await r.json().catch(()=>({})):{};
-  if(r&&r.ok){document.getElementById('tlsKey').value='';tlsMsg('Übernommen, HTTPS startet neu…',true);setTimeout(()=>location.reload(),4000);}
-  else tlsMsg(j.error||'Fehler beim Hochladen',false);
+  if(r&&r.ok){document.getElementById('tlsKey').value='';tlsMsg(uiText('Übernommen, HTTPS startet neu…',"Saved. Restarting HTTPS…"),true);setTimeout(()=>location.reload(),4000);}
+  else tlsMsg(j.error||uiText('Fehler beim Hochladen',"Upload failed"),false);
 }
 async function tlsSelf(){
-  if(!confirm('Neues selbst signiertes Zertifikat erzeugen? Ein eigenes Zertifikat wird dabei gelöscht, der Browser warnt danach erneut.'))return;
+  if(!confirm(uiText('Neues selbst signiertes Zertifikat erzeugen? Ein eigenes Zertifikat wird dabei gelöscht, der Browser warnt danach erneut.',"Generate a new self-signed certificate? This removes the custom certificate and the browser will warn you again.")))return;
   const r=await fetch('/api/tls/self',{method:'POST'}).catch(()=>null);
-  if(r&&r.ok){tlsMsg('Wird erzeugt, HTTPS startet neu…',true);setTimeout(()=>location.reload(),5000);}else tlsMsg('Fehler',false);
+  if(r&&r.ok){tlsMsg(uiText('Wird erzeugt, HTTPS startet neu…',"Generating certificate. Restarting HTTPS…"),true);setTimeout(()=>location.reload(),5000);}else tlsMsg(uiText('Fehler',"Error"),false);
 }
 async function save(){const f=document.getElementById('f');const body={};
 [...f.elements].forEach(el=>{if(!el.name||el.dataset.knx)return;if(el.type==='checkbox')body[el.name]=el.checked;else if(el.type==='number')body[el.name]=Number(el.value);else body[el.name]=el.value;});
 body.knxCh=collectKnx();
 const m=document.getElementById('saved');
 let ok=false;try{const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});ok=r.ok;}catch(e){}
-m.textContent=ok?'Gespeichert':'Speichern fehlgeschlagen';m.style.color=ok?'var(--acc)':'var(--fault)';
+m.textContent=ok?uiText('Gespeichert',"Saved"):uiText('Speichern fehlgeschlagen',"Could not save settings");m.style.color=ok?'var(--acc)':'var(--fault)';
 if(ok){setTimeout(()=>m.textContent='',2500);load();}}
 async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
 async function newCode(){
-  if(!confirm('Neuen Zugangscode erzeugen? Der alte Code gilt dann nicht mehr. Der neue steht auf dem Display.'))return;
+  if(!confirm(uiText('Neuen Zugangscode erzeugen? Der alte Code gilt dann nicht mehr. Der neue steht auf dem Display.',"Generate a new access code? The old code will stop working. Read the new code from the display.")))return;
   const r=await fetch('/api/access/new-code',{method:'POST'}).catch(()=>null);
-  alert(r&&r.ok?'Neuer Code ist aktiv. Bitte vom Display ablesen; gegebenenfalls neu anmelden.':'Fehler');
+  alert(r&&r.ok?uiText('Neuer Code ist aktiv. Bitte vom Display ablesen; gegebenenfalls neu anmelden.',"The new code is active. Read it from the display and sign in again if needed."):uiText('Fehler',"Error"));
   if(r&&r.ok)location.reload();
 }
 async function applyCtrl(){
@@ -1617,34 +1629,35 @@ async function applyCtrl(){
   const start=await(await fetch('/api/control/apply',{method:'POST'})).json();
   let r=start;
   for(let i=0;i<40&&(r.pending||!r.done);i++){await new Promise(x=>setTimeout(x,250));r=await(await fetch('/api/control/result')).json();}
-  alert(r.ok?'An HIT geschrieben':('Fehler: '+(r.error||'timeout')));
+  alert(r.ok?uiText('An HIT geschrieben',"Written to the HIT"):(uiText('Fehler: ',"Error: ")+(r.error||'timeout')));
 }
 async function probeTas(){
   const f=document.getElementById('f');
   const body={tasmotaHost:f.tasmotaHost.value,tasmotaPort:Number(f.tasmotaPort.value),
     tasmotaUser:f.tasmotaUser.value,tasmotaPass:f.tasmotaPass.value};
   document.getElementById('probeBox').style.display='block';
-  document.getElementById('probeSum').textContent='lese…';
+  document.getElementById('probeSum').textContent=uiText('lese…',"Reading…");
   document.getElementById('probeSum').style.color='var(--dim)';
   document.getElementById('probeRaw').textContent='';
   const start=await(await fetch('/api/tasmota/probe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json();
-  if(!start.pending&&!start.ok){document.getElementById('probeSum').textContent=start.summary||'Fehler';document.getElementById('probeSum').style.color='var(--fault)';return;}
+  if(!start.pending&&!start.ok){document.getElementById('probeSum').textContent=start.summary||uiText('Fehler',"Error");document.getElementById('probeSum').style.color='var(--fault)';return;}
   let r=start;
   for(let i=0;i<40&&r.pending;i++){await new Promise(x=>setTimeout(x,250));r=await(await fetch('/api/tasmota/probe/result')).json();}
-  document.getElementById('probeSum').textContent=r.summary||(r.ok?'OK':'Fehler');
+  document.getElementById('probeSum').textContent=r.summary||(r.ok?'OK':uiText('Fehler',"Error"));
   document.getElementById('probeSum').style.color=r.ok?'var(--acc)':'var(--fault)';
   document.getElementById('probeRaw').textContent=r.raw||'';
   if(r.ok){f.tasmotaEnabled.checked=true;refresh();}
 }
-async function refresh(){const s=await(await fetch('/api/status')).json();
+async function refresh(){const s=await(await fetch('/api/status')).json(),previousLang=LANG;
 applyThemeLang(s);
+if(CFG_LOADED&&LANG!==previousLang)route();
 HAS_DISPLAY=s.hasDisplay!==false;
-const fb=document.getElementById('featBoard');if(fb)fb.textContent='Board: '+(s.board||'-')+', Wechselrichter: Hoymiles HIT';
+const fb=document.getElementById('featBoard');if(fb)fb.textContent='Board: '+(s.board||'-')+uiText(', Wechselrichter: Hoymiles HIT',", inverter: Hoymiles HIT");
 if(CFG_LOADED)syncFeat();
 const chip=(st,l)=>`<span class="chip ${st}"><span class="dot"></span>${l}</span>`;
 document.getElementById('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+((s.features||{}).sunspec===false?'':chip(s.sunspecClient?'on':'idle','Consolinno'))+
   chip((s.ethOk||s.wifiOk)?'on':'off',s.ipShown||'-')+(s.demoMode?'<span class="tag" style="margin:0;vertical-align:0">Demo</span>':'');}
-async function boot(){const s=await(await fetch('/api/status')).json();if(s.setupComplete===false)location.href='/setup';else load();}
+async function boot(){const s=await(await fetch('/api/status')).json();if(s.setupComplete===false)location.href='/setup';else{applyThemeLang(s);load();}}
 boot();setInterval(()=>{if(document.hidden)return;refresh();},5000);
 </script></body></html>
 )HTML";
@@ -2005,7 +2018,7 @@ async function cloudTest(kind){
   const b=kind==='akku'?{kind,batCloud:1,batCloudAppId:val('batCloudAppId'),batCloudSecret:$('batCloudSecret').value,batCloudSn:val('batCloudSn')}
     :{kind,cloudUser:val('cloudUser'),cloudPass:$('cloudPass').value,cloudStationId:MODE==='pro'?val('cloudStationId'):''};
   msg.textContent=T('cRun');
-  await post('/api/cloud/test',b);
+  await post('/api/cloud/test',Object.assign(b,{uiLang:LANG}));
   let r={pending:true};
   for(let i=0;i<90&&r.pending;i++){await sleep(500);r=await fetch('/api/cloud/test/result').then(x=>x.json()).catch(()=>({pending:true}));}
   if(r.pending){msg.innerHTML='<span class="bad">'+T('cTime')+'</span>';return;}
@@ -2056,48 +2069,48 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 <!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="color-scheme" content="dark"/><title>Protokoll · HIT Proxy</title>
+<meta name="color-scheme" content="dark"/><title data-en="Log · HIT Proxy">Protokoll · HIT Proxy</title>
 <link rel="stylesheet" href="/a.css"/>
 <style>.card{margin-bottom:12px}</style>
 </head><body><div class="app">
 <aside class="side">
-  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span>SunSpec für Consolinno</span></div></div>
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
   <nav>
     <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
-    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> Verlauf</a>
-    <div class="nav-grp">Datenquellen</div>
-    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> HIT-Wechselrichter</a>
-    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> Tasmota-Zähler</a>
-    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> Hoymiles-Cloud</a>
-    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> Akku</a>
-    <div class="nav-grp">Ausgänge</div>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
     <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
     <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
-    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> Modbus-Gateway</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
-    <div class="nav-grp">Gerät</div>
-    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> Funktionen</a>
-    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> Netzwerk und Zugang</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
-    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> Akku-Steuerung</a>
-    <a class="on" aria-current="page" href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> Protokoll</a>
-    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> Firmware und Reset</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a class="on" aria-current="page" href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
     <div class="meta" id="sideVer">—</div>
     <div class="prefs">
-      <select id="uiLang" onchange="saveUiPrefs()">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
         <option value="de">Deutsch</option>
         <option value="en">English</option>
       </select>
-      <select id="uiTheme" onchange="saveUiPrefs()">
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
         <option value="mint">Mint</option>
         <option value="ocean">Ocean</option>
         <option value="ember">Ember</option>
-        <option value="light">Hell</option>
-        <option value="steel">Stahl</option>
-        <option value="blueprint">Blaupause</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
       </select>
     </div>
   </div>
@@ -2113,51 +2126,41 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 </style>
 <div class="page-head">
   <div>
-    <h1>Protokoll</h1>
-    <p class="sub" id="psub">Verbindungen, Fehler und Neustarts seit dem letzten Start.</p>
+    <h1 data-en="Log">Protokoll</h1>
+    <p class="sub" id="psub"></p>
   </div>
 </div>
 <div class="ltabs">
   <button type="button" id="tSys" class="on" onclick="tab('sys')">System</button>
-  <button type="button" id="tW" onclick="tab('w')">§14a-Writes</button>
+  <button type="button" id="tW" onclick="tab('w')" data-en="§14a writes">§14a-Writes</button>
 </div>
 
 <div id="pSys">
-<div class="card" id="sysSum">Lade…</div>
+<div class="card" id="sysSum"><span data-en="Loading…">Lade…</span></div>
 <div class="card" style="margin-top:12px">
 <div class="row" style="margin-top:0;margin-bottom:12px">
-<button class="sec" type="button" onclick="refresh()">Aktualisieren</button>
-<button class="sec" type="button" onclick="clrSys()">Protokoll leeren</button>
+<button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
+<button class="sec" type="button" onclick="clrSys()" data-en="Clear log">Protokoll leeren</button>
 </div>
-<table><thead><tr><th>Zeit</th><th>Quelle</th><th>Meldung</th></tr></thead>
+<table><thead><tr><th data-en="Time">Zeit</th><th data-en="Source">Quelle</th><th data-en="Message">Meldung</th></tr></thead>
 <tbody id="sys"></tbody></table>
 </div>
 </div>
 
 <div id="pW" class="hide">
-<div class="card" id="sum">Lade…</div>
+<div class="card" id="sum"><span data-en="Loading…">Lade…</span></div>
 <div class="card" style="margin-top:12px">
 <div class="row" style="margin-top:0;margin-bottom:12px">
-<button class="sec" type="button" onclick="refresh()">Aktualisieren</button>
-<button class="sec" type="button" onclick="clr()">Log leeren</button>
+<button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
+<button class="sec" type="button" onclick="clr()" data-en="Clear log">Log leeren</button>
 </div>
-<table><thead><tr><th>Alter</th><th>FC</th><th>Addr</th><th>Wert</th><th>Hinweis</th></tr></thead>
+<table><thead><tr><th data-en="Age">Alter</th><th>FC</th><th data-en="Address">Addr</th><th data-en="Value">Wert</th><th data-en="Note">Hinweis</th></tr></thead>
 <tbody id="tb"></tbody></table>
 </div>
 </div>
 </main></div>
 
 <script>
-const I18N={
- de:{live:'Live',settings:'Einstellungen',proto:'Protokoll',energy:'Energiefluss',batSoc:'Batterie SoC',poll:'Jetzt pollen',
-     pv:'PV',bat:'Batterie',grid:'Netz',soc:'SoC',enHit:'Energie HIT',yield:'PV Ertrag',imp:'Bezug',exp:'Einspeisung',
-     lpp:'Consolinno LPP',limit:'Limit',on:'aktiv',off:'aus',hems:'HEMS',conn:'verbunden',wait:'wartet',tas:'Tasmota',
-     online:'online',offline:'offline',ph:'Phasen Netz',freq:'Frequenz',sys:'System'},
- en:{live:'Live',settings:'Settings',proto:'Log',energy:'Energy flow',batSoc:'Battery SoC',poll:'Poll now',
-     pv:'PV',bat:'Battery',grid:'Grid',soc:'SoC',enHit:'HIT Energy',yield:'PV yield',imp:'Import',exp:'Export',
-     lpp:'Consolinno LPP',limit:'Limit',on:'on',off:'off',hems:'HEMS',conn:'connected',wait:'waiting',tas:'Tasmota',
-     online:'online',offline:'offline',ph:'Grid phases',freq:'Frequency',sys:'System'}
-};
 let LANG='de';
 // Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
 function navFeat(F,disp){
@@ -2166,7 +2169,6 @@ function navFeat(F,disp){
   document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
     if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
 }
-function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
 function applyThemeLang(s){
   LANG=(s.uiLang==='en')?'en':'de';
   document.documentElement.lang=LANG;
@@ -2188,38 +2190,43 @@ function age(ms){const s=Math.floor((Date.now()-window._boot-ms)/1000);if(s<0)re
 let TAB=location.hash==='#writes'?'w':'sys';
 function tab(k){TAB=k;$('tSys').classList.toggle('on',k==='sys');$('tW').classList.toggle('on',k==='w');
   $('pSys').classList.toggle('hide',k!=='sys');$('pW').classList.toggle('hide',k!=='w');
-  $('psub').textContent=k==='sys'?'Verbindungen, Fehler und Neustarts seit dem letzten Start.':'SunSpec Model 123: Writes von Consolinno auf Port 1502.';
   history.replaceState(null,'',location.pathname+location.search+(k==='w'?'#writes':''));refresh();}
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 function when(e,boot){
   const d=e.ts?new Date(e.ts*1000):new Date(boot+e.t);
   const today=new Date().toDateString()===d.toDateString();
-  return (today?'':d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' ')+d.toLocaleTimeString('de-DE');
+  const locale=uiText('de-DE','en-GB');
+  return (today?'':d.toLocaleDateString(locale,{day:'2-digit',month:'2-digit'})+' ')+d.toLocaleTimeString(locale);
 }
 async function refreshSys(){
   const d=await(await fetch('/api/events')).json();
   const boot=Date.now()-d.uptimeMs;
   const rate=d.hitPolls?(100*d.hitFails/d.hitPolls):0;
-  $('sysSum').innerHTML=`<div class="big" style="color:${d.hitFails?(rate>5?'var(--fault)':'var(--warn)'):'var(--acc)'}">HIT: ${d.hitFails} von ${d.hitPolls} Abfragen fehlgeschlagen</div>
-    <div class="muted">${d.hitPolls?rate.toFixed(1)+' % seit Start · ':''}läuft seit ${Math.floor(d.uptimeMs/3600000)} h ${Math.floor(d.uptimeMs/60000)%60} min${d.hitErr?' · letzte Ursache: '+esc(d.hitErr):''}</div>`;
+  $('sysSum').innerHTML=`<div class="big" style="color:${d.hitFails?(rate>5?'var(--fault)':'var(--warn)'):'var(--acc)'}">${uiText(
+    `HIT: ${d.hitFails} von ${d.hitPolls} Abfragen fehlgeschlagen`,`HIT: ${d.hitFails} of ${d.hitPolls} polls failed`)}</div>
+    <div class="muted">${d.hitPolls?rate.toFixed(1)+uiText(' % seit Start · ','% since startup · '):''}${uiText('läuft seit','Uptime:')} ${Math.floor(d.uptimeMs/3600000)} h ${Math.floor(d.uptimeMs/60000)%60} min${d.hitErr?uiText(' · letzte Ursache: ',' · last error: ')+esc(d.hitErr):''}</div>`;
   const tb=$('sys');
   tb.innerHTML=(d.events||[]).slice().reverse().map(e=>`<tr><td>${when(e,boot)}</td><td><span class="lv ${e.lv}"></span>${esc(e.src)}</td><td>${esc(e.msg)}</td></tr>`).join('')
-    ||'<tr><td colspan="3" class="muted">Noch keine Einträge.</td></tr>';
+    ||`<tr><td colspan="3" class="muted">${uiText('Noch keine Einträge.','No entries yet.')}</td></tr>`;
 }
 async function clrSys(){await fetch('/api/events/clear',{method:'POST'});refresh();}
 async function refresh(){
   const s=await(await fetch('/api/status')).json(); applyThemeLang(s);
+  $('psub').textContent=TAB==='sys'
+    ?uiText('Verbindungen, Fehler und Neustarts seit dem letzten Start.','Connections, errors and restarts since startup.')
+    :uiText('SunSpec Model 123: Writes von Consolinno auf Port 1502.','SunSpec Model 123: writes from Consolinno on port 1502.');
   if(TAB==='sys')return refreshSys();
   const d=await(await fetch('/api/debug')).json();
   window._boot=Date.now()-d.uptimeMs;
   const pct=(d.wMaxLimPct/100).toFixed(2);
   const ena=d.wMaxLimEna;
   document.getElementById('sum').innerHTML=`
-    <div class="big">${ena?'BEGRENZT':'Frei'} · ${pct} %</div>
-    <div class="muted">WMaxLimPct_Ena=${ena?1:0} · raw=${d.wMaxLimPct} (SF-2) · HEMS-Client ${d.sunspecClient?'verbunden':'—'} · Writes ${d.count}
-    ${d.lastNote?('<br>Zuletzt: '+esc(d.lastNote)+' (Addr '+d.lastAddr+' = '+d.lastVal+')'):'<br>Noch kein Write empfangen — in Consolinno §14a/LPP testen.'}</div>
-    <div class="muted" style="margin-top:8px">HIT-Weiterleitung: ${d.sunspecWriteToHit?'an':'aus'} · Write-Enable: ${d.hitWriteEnabled?'an':'aus'}</div>`;
+    <div class="big">${ena?uiText('BEGRENZT','LIMITED'):uiText('Frei','Unrestricted')} · ${pct} %</div>
+    <div class="muted">WMaxLimPct_Ena=${ena?1:0} · raw=${d.wMaxLimPct} (SF-2) · ${uiText('HEMS-Client','HEMS client')} ${d.sunspecClient?uiText('verbunden','connected'):'—'} · Writes ${d.count}
+    <br>${d.lastNote?uiText('Zuletzt: ','Last: ')+esc(d.lastNote)+' (Addr '+d.lastAddr+' = '+d.lastVal+')':uiText(
+      'Noch kein Write empfangen — in Consolinno §14a/LPP testen.','No writes received yet. Test §14a/LPP in Consolinno.')}</div>
+    <div class="muted" style="margin-top:8px">${uiText('HIT-Weiterleitung','HIT forwarding')}: ${d.sunspecWriteToHit?uiText('an','on'):uiText('aus','off')} · Write-Enable: ${d.hitWriteEnabled?uiText('an','on'):uiText('aus','off')}</div>`;
   const tb=document.getElementById('tb'); tb.innerHTML='';
   (d.events||[]).slice().reverse().forEach(e=>{
     const tr=document.createElement('tr');
@@ -2358,7 +2365,7 @@ void runDeferredWork() {
     auto &c = ConfigStore::get();
     TasmotaClient::applyConfig(probeReq);
     String raw, summary;
-    probeOk = TasmotaClient::probe(raw, summary);
+    probeOk = TasmotaClient::probe(raw, summary, probeReq.uiLang == UiLang::En);
     strlcpy(probeSummary, summary.c_str(), sizeof(probeSummary));
     strlcpy(probeRaw, raw.c_str(), sizeof(probeRaw));
     TasmotaClient::applyConfig(c);
@@ -2666,7 +2673,8 @@ void begin() {
               }
               String err;
               JsonDocument out;
-              out["ok"] = HttpsServer::installCustom(doc["cert"] | "", doc["key"] | "", err);
+              const bool en = ConfigStore::get().uiLang == UiLang::En;
+              out["ok"] = HttpsServer::installCustom(doc["cert"] | "", doc["key"] | "", err, en);
               if (err.length()) out["error"] = err;
               String s;
               serializeJson(out, s);
@@ -2923,6 +2931,7 @@ void begin() {
       JsonObject o = pts.add<JsonObject>();
       o["id"] = m.id;
       o["label"] = m.label;
+      o["labelEn"] = m.labelEn;
       o["dpt"] = m.defaultDpt;
       o["kind"] = kinds[uint8_t(m.kind) < 11 ? uint8_t(m.kind) : 0];
     }

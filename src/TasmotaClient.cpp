@@ -142,25 +142,27 @@ bool pollNow() {
   return true;
 }
 
-bool probe(String &rawOut, String &summaryOut) {
+bool probe(String &rawOut, String &summaryOut, bool english) {
   rawOut = "";
   summaryOut = "";
   String body;
   if (!fetchStatus8(body)) {
-    summaryOut = "HTTP fehlgeschlagen — IP/Netz/Passwort prüfen";
+    summaryOut = english ? "HTTP request failed. Check the IP address, network and password."
+                         : "HTTP fehlgeschlagen — IP/Netz/Passwort prüfen";
     gLive.tasmotaOk = false;
     return false;
   }
   rawOut = body;
   JsonDocument doc;
   if (deserializeJson(doc, body)) {
-    summaryOut = "JSON ungültig";
+    summaryOut = english ? "Invalid JSON" : "JSON ungültig";
     gLive.tasmotaOk = false;
     return false;
   }
   String key;
   if (!parseEnergy(doc.as<JsonVariantConst>(), &key)) {
-    summaryOut = "Kein Zähler-Block gefunden (Power/E_in/E_out/Total)";
+    summaryOut = english ? "No meter block found (Power/E_in/E_out/Total)"
+                         : "Kein Zähler-Block gefunden (Power/E_in/E_out/Total)";
     gLive.tasmotaOk = false;
     return false;
   }
@@ -168,12 +170,13 @@ bool probe(String &rawOut, String &summaryOut) {
   gLive.lastTasmotaMs = millis();
   char buf[192];
   snprintf(buf, sizeof(buf),
-           "OK · Sensor %s · Power %ld W · Bezug %.3f kWh · Einsp. %.3f kWh%s%s",
+           english ? "OK · Sensor %s · Power %ld W · Import %.3f kWh · Export %.3f kWh%s%s"
+                   : "OK · Sensor %s · Power %ld W · Bezug %.3f kWh · Einsp. %.3f kWh%s%s",
            gLive.tasmotaSensorKey,
            long(gLive.tasmotaPowerW),
            gLive.tasmotaTotalKwh,
            gLive.tasmotaExportKwh,
-           gLive.tasmotaMeterId[0] ? " · Nr " : "",
+           gLive.tasmotaMeterId[0] ? (english ? " · No. " : " · Nr ") : "",
            gLive.tasmotaMeterId[0] ? gLive.tasmotaMeterId : "");
   summaryOut = buf;
   return true;

@@ -62,14 +62,15 @@ void step(const AppConfig &cfg) {
   if (millis() - netUpAt < 5000) return;
   if (nextPoll && int32_t(millis() - nextPoll) < 0) return;
 
+  const bool en = cfg.uiLang == UiLang::En;
   if (!cfg.batCloudAppId[0] || !cfg.batCloudSecret[0]) {
-    fail("App-ID und Secret fehlen");
+    fail(en ? "App ID and secret are missing" : "App-ID und Secret fehlen");
     nextPoll = (millis() + 60000) | 1;
     return;
   }
   // die Signatur enthält die Uhrzeit; ohne NTP lehnt Dyness jede Anfrage ab
   if (time(nullptr) < 1700000000) {
-    BatteryData::setCloudError("wartet auf Uhrzeit (NTP)");
+    BatteryData::setCloudError(en ? "Waiting for time sync (NTP)" : "wartet auf Uhrzeit (NTP)");
     nextPoll = (millis() + 10000) | 1;
     return;
   }
@@ -98,7 +99,8 @@ void step(const AppConfig &cfg) {
     case CloudResult::RateLimited: {
       if (backoff < 16) backoff *= 2;
       char msg[64];
-      snprintf(msg, sizeof(msg), "Abrufgrenze erreicht, nächster Versuch in %lu s",
+      snprintf(msg, sizeof(msg), en ? "Rate limit reached; retrying in %lu s"
+                                    : "Abrufgrenze erreicht, nächster Versuch in %lu s",
                (unsigned long)(intervalMs(cfg) / 1000));
       fail(msg);
       nextPoll = (millis() + intervalMs(cfg)) | 1;
@@ -109,7 +111,7 @@ void step(const AppConfig &cfg) {
       nextPoll = (millis() + 2 * SETUP_GAP_MS) | 1;
       break;
     default:
-      fail(err.length() ? err.c_str() : "Abruf fehlgeschlagen");
+      fail(err.length() ? err.c_str() : (en ? "Request failed" : "Abruf fehlgeschlagen"));
       nextPoll = (millis() + intervalMs(cfg)) | 1;
       break;
   }

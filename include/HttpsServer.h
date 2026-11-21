@@ -14,7 +14,7 @@ bool hasRoom(); // läuft und der interne RAM reicht für eine neue TLS-Sitzung
 String infoJson();
 
 // Prüft Zertifikat (PEM, auch mit Kette) und privaten Schlüssel; bei Erfolg gilt es nach dem nächsten loop()
-bool installCustom(const char *certPem, const char *keyPem, String &err);
+bool installCustom(const char *certPem, const char *keyPem, String &err, bool english);
 void useSelfSigned(); // eigenes Zertifikat löschen, neues selbst signiertes erzeugen
 void forget();        // Werksreset: alles Zertifikatsmaterial löschen
 }
