@@ -1246,7 +1246,7 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <label data-en="Interval (ms)">Intervall (ms)</label><input name="knxPublishMs" type="number"/>
 <label><input name="knxOnlyOnChange" type="checkbox"/> <span data-en="Only when the value changes">nur bei Änderung</span></label>
 <label data-en="Min. power change (W)">Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
-<p class="hint"><span data-en="For each row, tick the box and enter a three-level group address (">Pro Zeile: Haken setzen, Gruppenadresse dreistufig</span> <code>H/M/U</code> (z.B. <code>1/2/10</code><span data-en="), then adjust the datapoint type if needed. Red means invalid or duplicated.">), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</span></p>
+<p class="hint"><span data-en="For each row, tick the box and enter a three-level group address">Pro Zeile: Haken setzen, Gruppenadresse dreistufig</span> <code data-en="main/middle/sub">H/M/U</code> (<span data-en="e.g.">z.B.</span> <code>1/2/10</code><span data-en="), then adjust the datapoint type if needed. Red means invalid or duplicated.">), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</span></p>
 <div id="knxRows">
 <div class="knx-tools">
 <button type="button" class="sec" onclick="knxExport('xml')" title="Gruppenadressen-Export im ETS-Format, in ETS 5/6 importierbar" data-en-title="Export group addresses in a format ETS 5/6 can import">Export ETS (XML)</button>
