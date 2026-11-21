@@ -90,6 +90,20 @@ Ein Hardware-Watchdog startet das Gerät nach 45 s Hänger selbst neu, ein zweit
 <span class="meta" id="smsg"></span></div>
 </div>
 <div class="card">
+<h2 data-en="Backup and restore">Sicherung und Wiederherstellung</h2>
+<p class="hint" style="margin-top:0" data-en="Saves all settings to a JSON file on your computer, for example before a factory reset or to set up a replacement device. The HTTPS certificate, history and logs are not included.">Speichert alle Einstellungen als JSON-Datei auf deinem Rechner, etwa vor einem Werksreset oder für ein Ersatzgerät.
+Nicht enthalten sind das HTTPS-Zertifikat, der Verlauf und die Protokolle.</p>
+<label><input id="bks" type="checkbox" checked/> <span data-en="Include passwords and access code (stored in plain text)">Passwörter und Zugangscode mitsichern (stehen im Klartext in der Datei)</span></label>
+<div class="row"><button type="button" class="sec" onclick="backup()" data-en="Download backup">Sicherung herunterladen</button>
+<span class="meta" id="bmsg"></span></div>
+<label data-en="Backup file (.json)">Sicherungsdatei (.json)</label>
+<input type="file" id="bf" accept=".json,application/json"/>
+<div class="row"><button type="button" class="sec" onclick="restoreCfg()" data-en="Restore">Wiederherstellen</button>
+<span class="meta" id="wmsg"></span></div>
+<p class="hint" data-en="Restoring overwrites the settings contained in the file and then restarts the device. If the file has no passwords, the current ones are kept.">Wiederherstellen überschreibt die Einstellungen aus der Datei und startet das Gerät danach neu.
+Enthält die Datei keine Passwörter, bleiben die aktuellen erhalten.</p>
+</div>
+<div class="card">
 <h2 data-en="Factory settings">Werkseinstellungen</h2>
 <p class="hint" style="margin-top:0" data-en="Deletes all settings: HIT address, Wi-Fi, passwords, MQTT, KNX and control. The device then starts as new, with its own Wi-Fi network and a new access code shown on the display.">Löscht alle Einstellungen: HIT-Adresse, WLAN, Passwörter, MQTT, KNX und Steuerung.
 Danach startet das Gerät wie neu, mit eigenem WLAN und einem neuen Zugangscode auf dem Display.</p>
@@ -152,6 +166,26 @@ async function go(){
     setTimeout(()=>location.reload(),5000);
   }catch(e){msg.textContent=uiText('Fehler: ','Error: ')+e.message; fill.style.width='0%';}
 }
+async function backup(){
+  const m=document.getElementById('bmsg'),sec=document.getElementById('bks').checked;
+  const r=await fetch('/api/backup?secrets='+(sec?1:0),{cache:'no-store'}).catch(()=>null);
+  if(!r||!r.ok){m.textContent=uiText('Fehler','Error')+(r?' '+r.status:'');return;}
+  const url=URL.createObjectURL(await r.blob()),a=document.createElement('a'),d=new Date(),p=n=>String(n).padStart(2,'0');
+  a.href=url;a.download=`hit-proxy-backup-${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}.json`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  m.textContent=sec?uiText('Heruntergeladen. Die Datei enthält Passwörter, bitte sicher aufbewahren.','Downloaded. The file contains passwords; keep it safe.'):uiText('Heruntergeladen.','Downloaded.');
+}
+async function restoreCfg(){
+  const m=document.getElementById('wmsg'),f=document.getElementById('bf').files[0];
+  if(!f){m.textContent=uiText('Bitte Sicherungsdatei wählen.','Select a backup file.');return;}
+  const text=await f.text();let j=null;try{j=JSON.parse(text);}catch(e){}
+  if(!j||j.format!=='hit-sunspec-proxy-config'){m.textContent=uiText('Keine Sicherung des HIT-Proxy.','This is not a HIT-Proxy backup.');return;}
+  if(!confirm(uiText(`Einstellungen aus der Sicherung von „${j.deviceName||'?'}“ (v${j.firmware||'?'}) übernehmen? Das Gerät startet danach neu.`,`Restore the settings from the backup of "${j.deviceName||'?'}" (v${j.firmware||'?'})? The device restarts afterwards.`)))return;
+  const r=await fetch('/api/backup/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:text}).catch(()=>null);
+  const res=r?await r.json().catch(()=>({})):{};
+  if(r&&r.ok){m.textContent=uiText('Übernommen. Das Gerät startet neu, die Seite lädt in 10 s neu.','Restored. The device is restarting; this page reloads in 10 s.');setTimeout(()=>location.reload(),10000);}
+  else m.textContent=uiText('Fehler: ','Error: ')+(res.error||(r?'HTTP '+r.status:uiText('Netzwerkfehler','Network error')));
+}
 async function factory(){
   if(document.getElementById('rc').value.trim()!=='RESET'){document.getElementById('rmsg').textContent=uiText('Bitte RESET eintippen.','Type RESET to confirm.');return;}
   const r=await fetch('/api/factory-reset',{method:'POST',body:new URLSearchParams({confirm:'RESET'})});
@@ -165,6 +199,12 @@ boot();
 namespace OtaUpdate {
 
 bool inProgress() { return busy; }
+
+void restartSoon() {
+  strlcpy(gLive.status, "Neustart", sizeof(gLive.status));
+  rebootAt = millis() + 1000;
+  rebootPending = true;
+}
 const char *lastError() { return errBuf; }
 
 void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRequest *)) {
@@ -175,10 +215,8 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
 
   server.on("/api/restart", HTTP_POST, [requireAuth](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    strlcpy(gLive.status, "Neustart", sizeof(gLive.status));
-    rebootAt = millis() + 1000;
-    rebootPending = true; // loop() startet nach 1 s neu, die Antwort geht vorher raus
     req->send(200, "application/json", "{\"ok\":true}");
+    restartSoon();
   });
 
   server.on("/api/factory-reset", HTTP_POST, [requireAuth](AsyncWebServerRequest *req) {

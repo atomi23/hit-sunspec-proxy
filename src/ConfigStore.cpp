@@ -2,6 +2,7 @@
 #include <Preferences.h>
 #include <ArduinoJson.h>
 #include <esp_system.h>
+#include <nvs.h>
 
 namespace {
 Preferences prefs;
@@ -14,6 +15,60 @@ void randomPass(char *out, size_t n) {
   size_t len = (n > 9) ? 8 : (n - 1);
   for (size_t i = 0; i < len; i++) out[i] = alphabet[esp_random() % alen];
   out[len] = '\0';
+}
+
+// Zugangsdaten; ohne Haken beim Sichern fehlen sie in der Datei und bleiben beim Wiederherstellen unverändert
+const char *const SECRET_KEYS[] = {"wpass", "stapass", "webpass", "dcode", "taspass", "mqpass", "cldpass", "batcsec"};
+
+bool isSecret(const char *key) {
+  for (const char *k : SECRET_KEYS)
+    if (strcmp(k, key) == 0) return true;
+  return false;
+}
+
+enum class EntryType : uint8_t { Bad, U8, I8, U16, I16, U32, I32, U64, I64, Str };
+
+EntryType entryType(const char *t) {
+  static const struct { const char *name; EntryType type; } names[] = {
+      {"u8", EntryType::U8},   {"i8", EntryType::I8},   {"u16", EntryType::U16}, {"i16", EntryType::I16},
+      {"u32", EntryType::U32}, {"i32", EntryType::I32}, {"u64", EntryType::U64}, {"i64", EntryType::I64},
+      {"str", EntryType::Str}};
+  for (const auto &n : names)
+    if (strcmp(n.name, t) == 0) return n.type;
+  return EntryType::Bad;
+}
+
+bool valueFits(EntryType t, JsonVariantConst v) {
+  switch (t) {
+  case EntryType::U8: return v.is<uint8_t>();
+  case EntryType::I8: return v.is<int8_t>();
+  case EntryType::U16: return v.is<uint16_t>();
+  case EntryType::I16: return v.is<int16_t>();
+  case EntryType::U32: return v.is<uint32_t>();
+  case EntryType::I32: return v.is<int32_t>();
+  case EntryType::U64: return v.is<uint64_t>();
+  case EntryType::I64: return v.is<int64_t>();
+  case EntryType::Str: return v.is<const char *>() && strlen(v.as<const char *>()) <= ConfigStore::BACKUP_MAX_STR;
+  default: return false;
+  }
+}
+
+bool writeEntry(const char *k, EntryType t, JsonVariantConst v) {
+  switch (t) {
+  case EntryType::U8: return prefs.putUChar(k, v.as<uint8_t>());
+  case EntryType::I8: return prefs.putChar(k, v.as<int8_t>());
+  case EntryType::U16: return prefs.putUShort(k, v.as<uint16_t>());
+  case EntryType::I16: return prefs.putShort(k, v.as<int16_t>());
+  case EntryType::U32: return prefs.putUInt(k, v.as<uint32_t>());
+  case EntryType::I32: return prefs.putInt(k, v.as<int32_t>());
+  case EntryType::U64: return prefs.putULong64(k, v.as<uint64_t>());
+  case EntryType::I64: return prefs.putLong64(k, v.as<int64_t>());
+  case EntryType::Str: {
+    const char *str = v.as<const char *>();
+    return prefs.putString(k, str) == strlen(str);
+  }
+  default: return false;
+  }
 }
 }
 
@@ -316,6 +371,101 @@ bool save() {
   prefs.putUChar("uitheme", static_cast<uint8_t>(cfg.uiTheme));
 
   prefs.putString("name", cfg.deviceName);
+  return true;
+}
+
+// Sichert den ganzen NVS-Namespace samt Typen; neue Einstellungen kommen so ohne eigene Liste mit
+String exportBackup(bool withSecrets) {
+  JsonDocument d;
+  d["format"] = BACKUP_FORMAT;
+  d["formatVersion"] = BACKUP_FORMAT_VERSION;
+  d["firmware"] = PROXY_VERSION;
+  d["deviceName"] = cfg.deviceName;
+  d["secrets"] = withSecrets;
+  JsonObject s = d["settings"].to<JsonObject>();
+  nvs_iterator_t it = nullptr;
+  esp_err_t r = nvs_entry_find(NVS_DEFAULT_PART_NAME, NS, NVS_TYPE_ANY, &it);
+  while (r == ESP_OK) {
+    nvs_entry_info_t info;
+    nvs_entry_info(it, &info);
+    const char *k = info.key;
+    if (withSecrets || !isSecret(k)) {
+      JsonObject e = s[String(k)].to<JsonObject>();
+      switch (info.type) {
+      case NVS_TYPE_U8: e["t"] = "u8"; e["v"] = prefs.getUChar(k); break;
+      case NVS_TYPE_I8: e["t"] = "i8"; e["v"] = prefs.getChar(k); break;
+      case NVS_TYPE_U16: e["t"] = "u16"; e["v"] = prefs.getUShort(k); break;
+      case NVS_TYPE_I16: e["t"] = "i16"; e["v"] = prefs.getShort(k); break;
+      case NVS_TYPE_U32: e["t"] = "u32"; e["v"] = prefs.getUInt(k); break;
+      case NVS_TYPE_I32: e["t"] = "i32"; e["v"] = prefs.getInt(k); break;
+      case NVS_TYPE_U64: e["t"] = "u64"; e["v"] = prefs.getULong64(k); break;
+      case NVS_TYPE_I64: e["t"] = "i64"; e["v"] = prefs.getLong64(k); break;
+      case NVS_TYPE_STR: e["t"] = "str"; e["v"] = prefs.getString(k); break;
+      default: s.remove(String(k)); break; // Blobs nutzt die Konfiguration nicht
+      }
+    }
+    r = nvs_entry_next(&it);
+  }
+  nvs_release_iterator(it);
+  String out;
+  serializeJsonPretty(d, out);
+  return out;
+}
+
+bool importBackup(const char *json, String &err) {
+  JsonDocument d;
+  if (deserializeJson(d, json)) {
+    err = "bad json";
+    return false;
+  }
+  if (strcmp(d["format"] | "", BACKUP_FORMAT) != 0) {
+    err = "not a HIT-Proxy backup";
+    return false;
+  }
+  if ((d["formatVersion"] | 0) != BACKUP_FORMAT_VERSION) {
+    err = "unsupported backup version";
+    return false;
+  }
+  JsonObjectConst s = d["settings"];
+  if (s.isNull() || !s["ok"].is<JsonObjectConst>()) {
+    err = "no settings";
+    return false;
+  }
+  // erst alles prüfen, damit eine kaputte Datei nichts halb überschreibt
+  size_t entries = 0, strBytes = 0;
+  for (JsonPairConst kv : s) {
+    const char *k = kv.key().c_str();
+    const size_t n = strlen(k);
+    const EntryType t = entryType(kv.value()["t"] | "");
+    if (!n || n > 15 || t == EntryType::Bad || !valueFits(t, kv.value()["v"])) {
+      err = String("invalid entry ") + k;
+      return false;
+    }
+    entries++;
+    if (t == EntryType::Str) strBytes += strlen(kv.value()["v"].as<const char *>());
+  }
+  // die NVS-Partition ist nur 20 KB groß; eine echte Sicherung bleibt weit darunter
+  if (entries > BACKUP_MAX_ENTRIES || strBytes > BACKUP_MAX_STR_TOTAL) {
+    err = "backup too large";
+    return false;
+  }
+  for (JsonPairConst kv : s) {
+    const char *k = kv.key().c_str();
+    // ohne Display ist ein Zugangscode nicht ablesbar und würde nur eine versteckte Anmeldung öffnen
+    if (!HAS_DISPLAY && strcmp(k, "dcode") == 0) continue;
+    if (!writeEntry(k, entryType(kv.value()["t"]), kv.value()["v"])) {
+      load();
+      err = String("write failed at ") + k + ", settings partly restored";
+      return false;
+    }
+  }
+  prefs.putBool("ok", true);
+  load();
+  // wie enforceAccess: ohne Display gilt die Einrichtung ohne eigenes Passwort nicht als fertig
+  if (!HAS_DISPLAY && !cfg.displayCode[0] && strlen(cfg.webPass) < MIN_PASS_LEN && cfg.setupComplete) {
+    cfg.setupComplete = false;
+    save();
+  }
   return true;
 }
 
