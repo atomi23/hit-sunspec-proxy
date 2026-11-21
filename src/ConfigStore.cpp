@@ -48,23 +48,26 @@ bool valueFits(EntryType t, JsonVariantConst v) {
   case EntryType::I32: return v.is<int32_t>();
   case EntryType::U64: return v.is<uint64_t>();
   case EntryType::I64: return v.is<int64_t>();
-  case EntryType::Str: return v.is<const char *>() && strlen(v.as<const char *>()) < 4000; // NVS-Grenze
+  case EntryType::Str: return v.is<const char *>() && strlen(v.as<const char *>()) <= ConfigStore::BACKUP_MAX_STR;
   default: return false;
   }
 }
 
-void writeEntry(const char *k, EntryType t, JsonVariantConst v) {
+bool writeEntry(const char *k, EntryType t, JsonVariantConst v) {
   switch (t) {
-  case EntryType::U8: prefs.putUChar(k, v.as<uint8_t>()); break;
-  case EntryType::I8: prefs.putChar(k, v.as<int8_t>()); break;
-  case EntryType::U16: prefs.putUShort(k, v.as<uint16_t>()); break;
-  case EntryType::I16: prefs.putShort(k, v.as<int16_t>()); break;
-  case EntryType::U32: prefs.putUInt(k, v.as<uint32_t>()); break;
-  case EntryType::I32: prefs.putInt(k, v.as<int32_t>()); break;
-  case EntryType::U64: prefs.putULong64(k, v.as<uint64_t>()); break;
-  case EntryType::I64: prefs.putLong64(k, v.as<int64_t>()); break;
-  case EntryType::Str: prefs.putString(k, v.as<const char *>()); break;
-  default: break;
+  case EntryType::U8: return prefs.putUChar(k, v.as<uint8_t>());
+  case EntryType::I8: return prefs.putChar(k, v.as<int8_t>());
+  case EntryType::U16: return prefs.putUShort(k, v.as<uint16_t>());
+  case EntryType::I16: return prefs.putShort(k, v.as<int16_t>());
+  case EntryType::U32: return prefs.putUInt(k, v.as<uint32_t>());
+  case EntryType::I32: return prefs.putInt(k, v.as<int32_t>());
+  case EntryType::U64: return prefs.putULong64(k, v.as<uint64_t>());
+  case EntryType::I64: return prefs.putLong64(k, v.as<int64_t>());
+  case EntryType::Str: {
+    const char *str = v.as<const char *>();
+    return prefs.putString(k, str) == strlen(str);
+  }
+  default: return false;
   }
 }
 }
@@ -429,20 +432,32 @@ bool importBackup(const char *json, String &err) {
     return false;
   }
   // erst alles prüfen, damit eine kaputte Datei nichts halb überschreibt
+  size_t entries = 0, strBytes = 0;
   for (JsonPairConst kv : s) {
     const char *k = kv.key().c_str();
     const size_t n = strlen(k);
-    if (!n || n > 15 || entryType(kv.value()["t"] | "") == EntryType::Bad ||
-        !valueFits(entryType(kv.value()["t"] | ""), kv.value()["v"])) {
+    const EntryType t = entryType(kv.value()["t"] | "");
+    if (!n || n > 15 || t == EntryType::Bad || !valueFits(t, kv.value()["v"])) {
       err = String("invalid entry ") + k;
       return false;
     }
+    entries++;
+    if (t == EntryType::Str) strBytes += strlen(kv.value()["v"].as<const char *>());
+  }
+  // die NVS-Partition ist nur 20 KB groß; eine echte Sicherung bleibt weit darunter
+  if (entries > BACKUP_MAX_ENTRIES || strBytes > BACKUP_MAX_STR_TOTAL) {
+    err = "backup too large";
+    return false;
   }
   for (JsonPairConst kv : s) {
     const char *k = kv.key().c_str();
     // ohne Display ist ein Zugangscode nicht ablesbar und würde nur eine versteckte Anmeldung öffnen
     if (!HAS_DISPLAY && strcmp(k, "dcode") == 0) continue;
-    writeEntry(k, entryType(kv.value()["t"]), kv.value()["v"]);
+    if (!writeEntry(k, entryType(kv.value()["t"]), kv.value()["v"])) {
+      load();
+      err = String("write failed at ") + k + ", settings partly restored";
+      return false;
+    }
   }
   prefs.putBool("ok", true);
   load();
