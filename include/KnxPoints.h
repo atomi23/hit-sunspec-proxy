@@ -16,6 +16,7 @@ enum KnxChId : uint8_t {
   // Akkudetails; nur hinten anhängen, die gespeicherte Zuordnung hängt an der Position
   KNX_AKKU_TMAX, KNX_AKKU_TMIN, KNX_AKKU_VMAX, KNX_AKKU_VMIN, KNX_AKKU_VDIFF,
   KNX_AKKU_CYCLES, KNX_AKKU_REMAIN, KNX_AKKU_ALARM,
+  KNX_DISPLAY_SWITCH,
   KNX_CH_COUNT
 };
 
@@ -25,7 +26,7 @@ struct KnxCh {
   uint16_t dpt = 0; // 0 = Default aus Katalog
 };
 
-enum class KnxValKind : uint8_t { PowerW, Percent, Volt, Amp, Hz, EnergyKwh, RatioPct, Temp, MilliVolt, Count, Flag };
+enum class KnxValKind : uint8_t { PowerW, Percent, Volt, Amp, Hz, EnergyKwh, RatioPct, Temp, MilliVolt, Count, Flag, Switch };
 
 struct KnxPointMeta {
   const char *id;
@@ -81,6 +82,7 @@ inline const KnxPointMeta &knxMeta(uint8_t i) {
       {"akku_cycles", "Ladezyklen", "Charge cycles", 12001, KnxValKind::Count},
       {"akku_remain", "Restenergie", "Remaining energy", 13013, KnxValKind::EnergyKwh},
       {"akku_alarm", "Akku-Alarm", "Battery alarm", 1005, KnxValKind::Flag},
+      {"display_switch", "Display schalten (Empfang)", "Display switch (receive)", 1001, KnxValKind::Switch},
   };
   return k[i < KNX_CH_COUNT ? i : 0];
 }

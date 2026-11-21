@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "DisplaySchedule.h"
 #include "KnxPoints.h"
 #include "UiPrefs.h"
 
@@ -93,6 +94,8 @@ struct AppConfig {
   bool displayAutoPage = false;   // aus: Live-Seite bleibt stehen, Antippen blättert
   uint32_t displayPageMs = 8000;
   uint16_t displayTimeoutS = 300; // Hintergrundlicht aus nach Inaktivität, 0 = immer an
+  bool displayScheduleEnabled = false;
+  DisplayDay displayWeek[DisplaySchedule::DAYS] = {};
 
   // Tasmota
   bool tasmotaEnabled = false;

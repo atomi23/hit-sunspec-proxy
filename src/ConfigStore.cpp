@@ -131,6 +131,17 @@ bool load() {
   cfg.displayPageMs = prefs.getUInt("pageMs", cfg.displayPageMs);
   cfg.displayAutoPage = prefs.getBool("dispAuto", cfg.displayAutoPage);
   cfg.displayTimeoutS = prefs.getUShort("dispTo", cfg.displayTimeoutS);
+  cfg.displayScheduleEnabled = prefs.getBool("dispSched", cfg.displayScheduleEnabled);
+  // Pro Tag: aktiv (Bit 22), Beginn und Ende als Minuten seit Mitternacht (je 11 Bit).
+  for (int i = 0; i < DisplaySchedule::DAYS; ++i) {
+    char key[] = "dispDay0";
+    key[7] += i;
+    const uint32_t v = prefs.getUInt(key, UINT32_MAX);
+    if (v == UINT32_MAX) continue;
+    const uint16_t start = (v >> 11) & 0x7ff, end = v & 0x7ff;
+    if (start < DisplaySchedule::MINUTES_PER_DAY && end < DisplaySchedule::MINUTES_PER_DAY)
+      cfg.displayWeek[i] = {bool(v & (1u << 22)), start, end};
+  }
 
   cfg.tasmotaEnabled = prefs.getBool("tasena", cfg.tasmotaEnabled);
   strlcpy(cfg.tasmotaHost, prefs.getString("tashost", cfg.tasmotaHost).c_str(), sizeof(cfg.tasmotaHost));
@@ -254,6 +265,13 @@ bool save() {
   prefs.putUInt("pageMs", cfg.displayPageMs);
   prefs.putBool("dispAuto", cfg.displayAutoPage);
   prefs.putUShort("dispTo", cfg.displayTimeoutS);
+  prefs.putBool("dispSched", cfg.displayScheduleEnabled);
+  for (int i = 0; i < DisplaySchedule::DAYS; ++i) {
+    char key[] = "dispDay0";
+    key[7] += i;
+    const auto &d = cfg.displayWeek[i];
+    prefs.putUInt(key, (uint32_t(d.enabled) << 22) | (uint32_t(d.start) << 11) | d.end);
+  }
 
   prefs.putBool("tasena", cfg.tasmotaEnabled);
   prefs.putString("tashost", cfg.tasmotaHost);
