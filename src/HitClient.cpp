@@ -215,7 +215,7 @@ void taskMain(void *) {
   for (;;) {
     takeConfig();
     if (started && !networkReady()) {
-      nextPoll = 0;
+      nextPoll = millis();
     } else if (started && (forcePoll || int32_t(millis() - nextPoll) >= 0)) {
       forcePoll = false;
       nextPoll = millis() + max<uint32_t>(5000, local.hitPollMs);
