@@ -10,9 +10,14 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.13** — [Release mit `firmware.bin`](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.13)
+Aktuelle Firmware: **v0.5.14** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.14)
 
-### Neu in v0.5.13
+### Neu in v0.5.14
+- Die englische Weboberfläche umfasst jetzt auch alle Einstellungs-Untermenüs, Protokolle sowie Firmware und Reset.
+- Der Verlauf hat englische Diagrammbeschriftungen für Screenreader. Auf kleinen oder flachen Bildschirmen überlappen die Diagrammbereiche nicht mehr.
+- Für OTA die zum Board passende Datei aus dem Release wählen. Beim **T-Connect-Pro mit Display** ist es `firmware.bin`, nicht `firmware-t-poe-pro.bin`.
+
+### v0.5.13
 - **Neuer Einrichtungsassistent** mit zwei Wegen: *Einfach* stellt Fragen („Hast du ein Consolinno HEMS?“,
   „Hast du KNX im Haus?“ …) und schaltet die Dienste daraus selbst; *Experte* zeigt alle Felder (Ports,
   Unit-IDs, RS485). Zugangsdaten für Hoymiles-Cloud, Dyness-Cloud, MQTT, Tasmota und Heim-WLAN werden gleich

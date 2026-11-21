@@ -737,7 +737,11 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
 .hist .panel h2{margin-bottom:8px}
 .hist .hint{margin-top:4px}
 .chart{display:block;width:100%;flex:1 1 0;height:0;min-height:140px;overflow:visible}
-@media(max-height:720px),(max-width:860px){.main:has(.hist){height:auto;overflow:visible}.chart{flex:none;height:260px}}
+@media(max-height:720px),(max-width:860px){
+  .main:has(.hist){height:auto;overflow:visible}
+  .hist .panel{flex:none}
+  .chart{flex:none;height:260px}
+}
 .chart .ax{stroke:var(--rule);stroke-width:1}
 .chart .zero{stroke:var(--rule2);stroke-width:1}
 .chart text{fill:var(--dim);font:400 12px var(--font)}
@@ -814,7 +818,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   <h2 data-t="h24">Letzte 24 Stunden</h2>
   <div class="tabs" id="mode24"></div>
   <div class="legend" id="leg"></div>
-  <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden"></svg>
+  <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden" data-en-aria-label="Power over the last 24 hours"></svg>
   <div class="read" id="r24"></div>
   <p class="hint" data-t="bal">Flächen über der Null-Linie: PV, Netzbezug und Akku entladen. Die Linien zeigen, wohin die Energie geht: rot das Haus, gelb Akku laden. Unter der Null-Linie nur die Einspeisung.</p>
 </section>
@@ -823,7 +827,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
   <h2 data-t="hE">Energie</h2>
   <div class="tabs" id="tabs"></div>
   <div class="legend" id="legB"></div>
-  <svg id="cb" class="chart" viewBox="0 0 960 280" role="img" aria-label="Energie je Zeitraum"></svg>
+  <svg id="cb" class="chart" viewBox="0 0 960 280" role="img" aria-label="Energie je Zeitraum" data-en-aria-label="Energy per period"></svg>
   <div class="kpis" id="kpis"></div>
   <p class="hint" id="since"></p>
 </section>
