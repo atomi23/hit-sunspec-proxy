@@ -10,9 +10,14 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.15** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.15)
+Aktuelle Firmware: **v0.5.16** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.16)
 
-### Neu in v0.5.15
+### Neu in v0.5.16
+- **Protokolle und Verlauf:** Ereignis- und Debug-Protokoll als Textdatei, Verlaufsdaten als CSV herunterladen.
+- **Display am T-Connect-Pro:** Wochenplan mit eigenen An- und Aus-Zeiten pro Wochentag. Ein optionales KNX-Objekt (DPT 1.001) schaltet die Beleuchtung ein oder aus.
+- **Firmware und Reset:** Einstellungen als JSON sichern und wiederherstellen. Passwörter und Zugangscode lassen sich beim Export abwählen.
+
+### v0.5.15
 - **HIT-Abfragen:** Starten erst, wenn Netzwerk und IP-Adresse bereit sind. Dadurch landen keine netzwerkbedingten Fehlversuche beim Boot mehr in der Statistik. RS485 und Demo bleiben unverändert.
 - **Abfrageintervall:** Standard jetzt 30 s. Bestehende Einstellungen bleiben erhalten; bei Bedarf unter **HIT-Wechselrichter** den Wert **Poll (ms)** auf `30000` setzen.
 
