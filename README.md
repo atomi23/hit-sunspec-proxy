@@ -162,7 +162,7 @@ Display weiterhin beleuchtet.
 ![Strings und Netz](docs/screenshots/device-strings.jpg)
 ![System](docs/screenshots/device-system.jpg)
 
-### Bluetooth-LED-Strip über KNX (T-Connect-Pro)
+### Bluetooth-LED-Strip per Weboberfläche und KNX (T-Connect-Pro)
 
 LED-Strips, die mit der App **Lotus Lantern** laufen (Bluetooth-Namen `ELK-BLEDOM…`, `MELK-…`, `LEDBLE…`), lassen
 sich über KNX schalten. Unter **Einstellungen → KNX** den Strip suchen, auswählen, speichern und mit **Test: an/aus**
@@ -172,10 +172,14 @@ weil der Strip nur eine Bluetooth-Verbindung annimmt; die App am Handy muss daf�
 auf dem T-Connect-Pro (ESP32-S3): auf den ESP32-Boards reicht der Speicher für Bluetooth nicht, der ESP32-P4 hat kein
 Bluetooth. Der Befehlssatz stammt aus öffentlichen Protokollbeschreibungen (ELK-BLEDOM).
 
+Auch ohne KNX-Gruppenadressen lässt sich der eingerichtete Strip auf der Seite **Bluetooth** schalten,
+dimmen und färben. Die Seite zeigt den Verbindungszustand, den letzten Fehler, die zuletzt gesendeten
+Werte und die LED-Einträge des Ereignisprotokolls. Die gesendeten Werte sind keine Rückmeldung des Strips.
+
 ## Architektur
 
 ```
-                         ┌── SunSpec :1502 ──→ Consolinno HEMS
+                         ┌── SunSpec :1502 (optional) ──→ Consolinno HEMS
 Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assistant, andere Modbus-Clients
    (eine Verbindung)     ├── MQTT + Discovery ──→ Home Assistant
           ESP32          ├── KNX IP Routing ──→ KNX-Bus
@@ -184,18 +188,18 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 
 | Pfad | Pflicht? | Rolle |
 |------|----------|--------|
-| HIT (Modbus TCP oder RS485) | ja | Datenquelle, einzige Verbindung zum HIT |
-| SunSpec :1502 | ja | Consolinno HEMS (GEN24-Emulation, Modelle 1/103/120–124/160; optional Meter 203) |
+| HIT (Modbus TCP oder RS485) | für direkten HIT-Zugriff | Primäre Datenquelle, einzige Verbindung zum HIT; für Live-Daten sind MQTT und Hoymiles-Cloud als Ersatzquellen möglich |
+| SunSpec :1502 | nur für Consolinno | Standardport für die GEN24-Emulation (Modelle 1/103/120–124/160; optional Meter 203); Dienst abschaltbar |
 | Modbus-Gateway | nein | Andere Modbus-Clients lesen den HIT über den ESP |
 | MQTT | nein | HA-Sensoren per Discovery, optional MQTT als Ersatzquelle |
-| KNX IP | nein | Multicast-Routing aller wählbaren Live-Werte |
+| KNX IP | nein | Multicast-Routing wählbarer Live-Werte; empfängt auf dem T-Connect-Pro auch Schaltbefehle für Display und LED-Strip |
 | Tasmota | nein | Netzzähler für Live-View und optional SunSpec Model 203 |
 | Hoymiles-Cloud | nein | S-Miles nur lesen, Ersatzquelle wenn HIT und MQTT ausfallen |
 | HIT-Schreiben | nein | Akku-Grenzen 306–309, APC 279/280, standardmäßig aus |
 
 ## Screenshots
 
-> Original-Oberfläche aus der Firmware (HTML/CSS aus `WebConfig.cpp` gerendert), Demo-Daten mit RFC‑5737-Adressen.
+> Beispielaufnahmen aus früheren Firmware-Versionen mit Demo-Daten und RFC‑5737-Adressen. Die aktuelle Oberfläche kann davon abweichen.
 
 ### Live
 
@@ -211,8 +215,10 @@ Wählbar wie die anderen Designs, aber mit eigener Menüführung und einem Energ
 
 ### Verlauf
 
-Leistungsbilanz der letzten 24 Stunden: Quellen (PV, Netzbezug, Akku entladen) über der Null-Linie,
-Verbraucher (Haus, Einspeisung, Akku laden) darunter. Darunter Energie je Tag, Monat, Jahr und gesamt.
+Leistung der letzten 24 Stunden: PV, Netzbezug und Akkuentladung erscheinen als Flächen, Hausverbrauch
+und Akkuladung als Linien oberhalb der Null-Linie. Nur die Einspeisung liegt in der Ansicht **Bilanz**
+unterhalb der Null-Linie; mit **Alles positiv** erscheint auch sie oberhalb. Darunter steht die Energie
+je Tag, Monat, Jahr und gesamt. Die Verlaufsdaten lassen sich als CSV herunterladen.
 
 ![Verlauf](docs/screenshots/history.jpg)
 
@@ -220,8 +226,9 @@ Verbraucher (Haus, Einspeisung, Akku laden) darunter. Darunter Energie je Tag, M
 
 ### Protokoll
 
-Systemprotokoll mit HIT-Ausfällen samt Ursache, Wiederkehr, Cloud-Status, OTA und Neustarts.
-Die §14a-Schreibzugriffe von Consolinno stehen im zweiten Reiter.
+Systemprotokoll mit HIT-Ausfällen samt Ursache, Wiederkehr, Cloud-Status, OTA und Neustarts sowie
+Bluetooth-Verbindungen und gesendeten LED-Befehlen auf dem T-Connect-Pro. Die §14a-Schreibzugriffe
+von Consolinno stehen im zweiten Reiter. Beide Protokolle lassen sich als Textdatei herunterladen.
 
 ![Systemprotokoll](docs/screenshots/system-log.jpg)
 
@@ -290,6 +297,9 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
   IP-Adresse und `<gerätename>.local`, wird bei neuer IP oder vor Ablauf selbst erneuert; eigenes Zertifikat
   (PEM, auch mit Zwischenzertifikaten) hochladbar, der ESP prüft ob Schlüssel und Zertifikat zusammenpassen
 - **Werksreset**, **Neustart** (mit letztem Neustartgrund) und **OTA-Update** in der Weboberfläche
+- **Sicherung und Wiederherstellung** unter *Firmware und Reset*: Einstellungen als JSON exportieren
+  und importieren. Passwörter und Zugangscode sind standardmäßig im Klartext enthalten und lassen sich
+  beim Export abwählen. HTTPS-Zertifikat, Verlauf und Protokolle sind nicht Teil der Sicherung.
 - **Zugangscode** jederzeit neu erzeugen; bleibt sonst über Neustarts und Updates erhalten
 - **Heim-WLAN** zusätzlich zum Geräte-WLAN (Notzugang), Änderungen ohne Neustart; das Geräte-WLAN lässt sich
   abschalten und kommt nur zurück, wenn das Gerät am Kabel keine Adresse bekommt
@@ -307,7 +317,8 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
    fragt ab, was gebraucht wird; ohne Display ist dabei ein eigenes Passwort Pflicht.
 4. Consolinno: Gerät als Fronius Hybrid / SunSpec, **Proxy-IP**, Port **1502**, Unit-ID **1**  
    (Scan nur auf 502 findet den Proxy nicht, solange SunSpec auf 1502 lauscht)
-5. Danach läuft die Oberfläche über `https://<esp-ip>/`. Für einen Aufruf ohne Warnung die Geräte-CA
+5. Wenn HTTPS aktiv ist, läuft die Oberfläche über `https://<esp-ip>/`, sonst über HTTP (z. B. auf dem
+   WT32-ETH01). Für einen HTTPS-Aufruf ohne Warnung die Geräte-CA
    unter *Netzwerk und Zugang* herunterladen und einmal als vertrauenswürdige Stamm-CA installieren
    (siehe [HTTPS](#https)). Alternativ ein eigenes Zertifikat hochladen.
 

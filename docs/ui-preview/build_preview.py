@@ -25,7 +25,10 @@ css = extract("UI_CSS")
 dash = extract("DASH_HTML")
 idx = extract("INDEX_HTML")
 (OUT / "a.css").write_text(css, encoding="utf-8")
-(OUT / "b.js").write_text(extract("UI_JS"), encoding="utf-8")
+ui_js = extract("UI_JS").replace("a.href='/bluetooth'", "a.href='/bluetooth.html'").replace(
+    "location.pathname==='/bluetooth'", "location.pathname.endsWith('/bluetooth.html')"
+)
+(OUT / "b.js").write_text(ui_js, encoding="utf-8")
 
 mock_status = {
     "version": VERSION,
@@ -81,8 +84,22 @@ mock_status = {
 mock_status.update({
     "board": "T-Connect-Pro",
     "hasDisplay": True,
+    "hasBleLed": True,
     "features": {"sunspec": True, "mqtt": False, "gateway": True, "knx": True, "tasmota": False, "cloud": False},
 })
+
+mock_ble = {
+    "supported": True,
+    "enabled": True,
+    "state": "bereit",
+    "connected": False,
+    "name": "ELK-BLEDOM-DEMO",
+    "addr": "02:00:00:00:00:01",
+    "on": True,
+    "bri": 65,
+    "rgb": "#ffffff",
+    "found": [],
+}
 
 dash_js = f"""
 <script>
@@ -133,7 +150,7 @@ cfg = {
     "hitHost": "192.0.2.50",
     "hitPort": 502,
     "hitUnitId": 1,
-    "hitPollMs": 25000,
+    "hitPollMs": 30000,
     "wifiSsid": "HIT-Proxy",
     "wifiEnabled": True,
     "useEthernet": True,
@@ -145,6 +162,9 @@ cfg = {
     "displayTimeoutS": 300,
     "displayScheduleEnabled": True,
     "displayWeek": [{"enabled": day < 5, "start": 420, "end": 1320} for day in range(7)],
+    "bleLedEnabled": mock_ble["enabled"],
+    "bleLedName": mock_ble["name"],
+    "bleLedAddr": mock_ble["addr"],
     "gatewayEnabled": True,
     "gatewayPort": 502,
     "mqttEnabled": False,
@@ -197,6 +217,7 @@ cfg_js = f"""
 const META={json.dumps({"points": meta})};
 const CFG={json.dumps(cfg)};
 const STATUS={json.dumps(mock_status)};
+const BLE={json.dumps(mock_ble)};
 const TLS={{subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
   sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
   chain:1,source:"self",running:true,enabled:true,caSigned:true,caValidTo:"2036-02-08",
@@ -205,6 +226,7 @@ const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
   if(u.includes('/api/knx/meta')) return {{ok:true,json:async()=>META}};
+  if(u==='/api/bleled') return {{ok:true,json:async()=>BLE}};
   if(u.includes('/api/tls')) return {{ok:true,json:async()=>TLS}};
   if(u.includes('/api/config') && (!o || !o.method || o.method==='GET'))
     return {{ok:true,json:async()=>CFG}};
@@ -216,6 +238,7 @@ window.fetch=async(u,o)=>{{
 window.alert=()=>{{}};
 </script>
 """
+idx = re.sub(r'(name="bleLedAddr"[^>]*placeholder=")[0-9a-f:]+', r'\g<1>02:00:00:00:00:01', idx)
 (OUT / "config.html").write_text(idx.replace("<body>", "<body>" + cfg_js, 1), encoding="utf-8")
 
 # Einrichtungsassistent: Erststart, noch nichts eingerichtet
@@ -295,6 +318,8 @@ ev = [
     (5 * 3600e3 + 640e3, "I", "HIT", "wieder erreichbar nach 26 Fehlversuchen (640 s)"),
     (8 * 3600e3, "W", "Cloud", "Datenabruf fehlgeschlagen (HTTP 502)"),
     (8 * 3600e3 + 61e3, "I", "Cloud", "Daten kommen an"),
+    (up - 35000, "I", "LED", "verbunden mit ELK-BLEDOM-DEMO (02:00:00:00:00:01), Schreibkanal fff3"),
+    (up - 35000, "I", "LED", "gesendet: ein (7e 04 04 f0 00 01 ff 00 ef)"),
 ]
 events = [{"t": int(t), "ts": 0, "lv": lv, "src": s, "msg": m} for t, lv, s, m in ev]
 dbg_js = f"""
@@ -315,4 +340,28 @@ window.fetch=async(u,o)=>{{
 </script>
 """
 (OUT / "debug.html").write_text(dbg.replace("<body>", "<body>" + dbg_js, 1), encoding="utf-8")
+
+ble = extract("BLE_HTML").replace(
+    '<div class="ble">',
+    '<p class="hint" data-en="Static preview with sample data; no strip is connected.">'
+    'Statische Vorschau mit Beispieldaten; kein Strip verbunden.</p><div class="ble">',
+    1,
+)
+ble_js = f"""
+<script>
+const STATUS={json.dumps(mock_status)};
+const BLE={json.dumps(mock_ble)};
+const EV={{uptimeMs:{up},events:{json.dumps(events)}}};
+const _f=window.fetch;
+window.fetch=async(u,o)=>{{
+  u=String(u);
+  if(u==='/api/status') return {{ok:true,json:async()=>STATUS}};
+  if(u==='/api/bleled') return {{ok:true,json:async()=>BLE}};
+  if(u.startsWith('/api/bleled/set?')) return {{ok:true}};
+  if(u==='/api/events') return {{ok:true,json:async()=>EV}};
+  return _f(u,o);
+}};
+</script>
+"""
+(OUT / "bluetooth.html").write_text(ble.replace("<body>", "<body>" + ble_js, 1), encoding="utf-8")
 print(f"wrote {len(meta)} knx points -> {OUT}")
