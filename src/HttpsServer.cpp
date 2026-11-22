@@ -150,11 +150,20 @@ bool ensureCa(bool &created) {
   if (!p.begin("tls", false)) return false;
   caPem = p.getString("cacrt", "");
   const String storedKey = p.getString("cakey", "");
-  if (caPem.length() || storedKey.length()) {
-    p.end();
-    return caPem.length() && storedKey.length();
-  }
   Rng rng;
+  if (!rng.ok) { p.end(); return false; }
+  if (caPem.length() || storedKey.length()) {
+    if (LocalCertificates::validCaPair(reinterpret_cast<const unsigned char *>(caPem.c_str()),
+        reinterpret_cast<const unsigned char *>(storedKey.c_str()), &rng.drbg)) {
+      p.end();
+      return true;
+    }
+    EventLog::add('W', "HTTPS", "unvollständige oder ungültige Geräte-CA, erzeuge sie neu");
+    p.remove("cacrt");
+    p.remove("cakey");
+    p.remove("caLeaf");
+    caPem = "";
+  }
   mbedtls_pk_context key;
   mbedtls_pk_init(&key);
   auto *pem = static_cast<unsigned char *>(calloc(1, 2048));
@@ -170,6 +179,11 @@ bool ensureCa(bool &created) {
     caPem = reinterpret_cast<char *>(pem);
     ok = p.putString("cakey", reinterpret_cast<char *>(kpem)) > 0 && p.putString("cacrt", caPem) > 0;
     created = ok;
+  }
+  if (!ok) {
+    p.remove("cacrt");
+    p.remove("cakey");
+    caPem = "";
   }
   p.end();
   free(pem);

@@ -25,6 +25,15 @@ int main(int argc, char **argv) {
     return fclose(f) == 0 && ok;
   };
   if (!rc && !save("ca.pem", pem)) rc = -1;
+  unsigned char caPem[2048];
+  memcpy(caPem, pem, sizeof(pem));
+  const auto *empty = reinterpret_cast<const unsigned char *>("");
+  const auto *bad = reinterpret_cast<const unsigned char *>("invalid PEM");
+  if (!rc && (!LocalCertificates::validCaPair(caPem, key, &rng) ||
+      LocalCertificates::validCaPair(caPem, empty, &rng) ||
+      LocalCertificates::validCaPair(empty, key, &rng) ||
+      LocalCertificates::validCaPair(bad, key, &rng) ||
+      LocalCertificates::validCaPair(caPem, bad, &rng))) rc = -1;
   mbedtls_x509_crt parsed;
   mbedtls_x509_crt_init(&parsed);
   if (!rc) rc = LocalCertificates::parseCa(&parsed, pem);
@@ -49,6 +58,8 @@ int main(int argc, char **argv) {
   if (!rc) rc = LocalCertificates::generate(false, "CN=test,O=HIT-SunSpec-Proxy", caName,
       "20260101000000", "20280331000000", &leaf, &ca, san, &rng, pem, sizeof(pem), key, sizeof(key));
   if (!rc && !save("leaf.pem", pem)) rc = -1;
+  if (!rc && LocalCertificates::validCaPair(caPem, key, &rng)) rc = -1;
+  printf("CA pair checks (valid, missing, corrupt, mismatched): %s\n", rc ? "FAIL" : "OK");
   mbedtls_pk_free(&leaf);
   mbedtls_pk_free(&ca);
   mbedtls_ctr_drbg_free(&rng);

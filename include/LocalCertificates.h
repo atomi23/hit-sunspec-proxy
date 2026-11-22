@@ -23,6 +23,21 @@ inline int parseCa(mbedtls_x509_crt *crt, const unsigned char *certificate) {
   return rc;
 }
 
+inline bool validCaPair(const unsigned char *certificate, const unsigned char *privateKey,
+                        mbedtls_ctr_drbg_context *rng) {
+  mbedtls_x509_crt crt;
+  mbedtls_pk_context key;
+  mbedtls_x509_crt_init(&crt);
+  mbedtls_pk_init(&key);
+  const bool ok = parseCa(&crt, certificate) == 0 && crt.MBEDTLS_PRIVATE(ca_istrue) &&
+      mbedtls_pk_parse_key(&key, privateKey, strlen(reinterpret_cast<const char *>(privateKey)) + 1,
+          nullptr, 0, mbedtls_ctr_drbg_random, rng) == 0 &&
+      mbedtls_pk_check_pair(&crt.pk, &key, mbedtls_ctr_drbg_random, rng) == 0;
+  mbedtls_pk_free(&key);
+  mbedtls_x509_crt_free(&crt);
+  return ok;
+}
+
 inline int generate(bool ca, const char *subject, const char *issuer,
                     const char *notBefore, const char *notAfter,
                     mbedtls_pk_context *key, mbedtls_pk_context *issuerKey,
