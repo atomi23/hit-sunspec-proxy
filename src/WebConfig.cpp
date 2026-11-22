@@ -2456,7 +2456,12 @@ bool requireAuth(AsyncWebServerRequest *req) {
   if (c.wifiPass[0] && req->authenticate(user, c.wifiPass)) return true;
 
   Serial.printf("Auth fail user=%s\n", user);
-  req->requestAuthentication("HIT-Proxy", false); // Default wäre Digest
+  auto *r = req->beginResponse(401, "text/plain; charset=utf-8", ConfigStore::uiText(
+      "Abgemeldet oder nicht angemeldet. Seite neu laden zum Anmelden.",
+      "Signed out or not signed in. Reload the page to sign in."));
+  r->addHeader("WWW-Authenticate", "Basic realm=\"HIT-Proxy\"");
+  r->addHeader("Cache-Control", "no-store");
+  req->send(r);
   return false;
 }
 

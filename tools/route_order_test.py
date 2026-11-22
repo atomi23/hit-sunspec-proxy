@@ -92,6 +92,16 @@ class RouteOrderTest(unittest.TestCase):
         self.assertIn('if(xhr.status>=200&&xhr.status<300)', self.web)
         self.assertNotIn("btoa('logout:'", self.web)
 
+    def test_regular_auth_challenge_has_localized_body(self):
+        auth = self.web.split('bool requireAuth(', 1)[1].split('// Der Body', 1)[0]
+        challenge = auth.split('Serial.printf("Auth fail', 1)[1]
+        self.assertIn('beginResponse(401, "text/plain; charset=utf-8", ConfigStore::uiText(', challenge)
+        self.assertIn('Abgemeldet oder nicht angemeldet. Seite neu laden zum Anmelden.', challenge)
+        self.assertIn('Signed out or not signed in. Reload the page to sign in.', challenge)
+        self.assertIn('"Basic realm=\\"HIT-Proxy\\""', challenge)
+        self.assertIn('r->addHeader("Cache-Control", "no-store")', challenge)
+        self.assertNotIn('requestAuthentication', challenge)
+
 
 if __name__ == "__main__":
     unittest.main()
