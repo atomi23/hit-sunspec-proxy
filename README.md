@@ -10,7 +10,10 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.20** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.20)
+Aktuelle Firmware: **v0.5.22** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.22)
+
+### Neu in v0.5.22
+- **HTTPS unter Windows:** CA-Installationsschritte mit manueller Auswahl des Stammzertifikatsspeichers ergänzt, damit Chrome der Geräte-CA vertraut.
 
 ### Neu in v0.5.20
 - **Weboberfläche:** Lädt das Layout mit der Seite, statt es nach einem Neustart separat anfordern zu müssen.
@@ -207,7 +210,11 @@ Der Ersatz kann eine Browserwarnung auslösen. Ohne laufenden HTTPS-Server erfol
 Für HTTPS ohne Browserwarnung unter *Netzwerk und Zugang* **CA-Zertifikat herunterladen** wählen
 (`/api/tls/ca.crt`, öffentlich und auch über HTTP erreichbar; enthält keinen privaten Schlüssel). Den angezeigten CA-SHA-256-Fingerabdruck
 über eine vertrauenswürdige Verbindung vergleichen und die CA einmal pro Client als Stamm-CA installieren:
-- Windows: **Vertrauenswürdige Stammzertifizierungsstellen**
+- Windows:
+  1. Doppelklick auf `hit-proxy-ca.crt` → **Zertifikat installieren** → **Aktueller Benutzer**.
+  2. **Alle Zertifikate in folgendem Speicher speichern** → **Durchsuchen** → **Vertrauenswürdige Stammzertifizierungsstellen** wählen; Installation abschließen und die Sicherheitsabfrage mit **Ja** bestätigen.
+  3. Browser komplett neu starten.
+  **Wichtig:** Die automatische Speicherauswahl legt das Zertifikat im falschen Speicher ab; Chrome zeigt dann `NET::ERR_CERT_AUTHORITY_INVALID`.
 - macOS: **Schlüsselbund**, **Immer vertrauen**
 - iOS: **Profil installieren**, danach unter **Zertifikatsvertrauenseinstellungen** aktivieren
 - Android: **CA-Zertifikat** installieren
