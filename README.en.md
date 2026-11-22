@@ -334,10 +334,10 @@ OTA between app slots remains possible afterwards.
 
 ### Where to buy
 
-- [Search Amazon.de for LILYGO T-Connect-Pro](https://www.amazon.de/s?k=LILYGO+T-Connect-Pro&tag=atomi23-21)\*
-- [LILYGO T-POE-Pro on Amazon.de](https://www.amazon.de/dp/B0CR3JMCVX?tag=atomi23-21)\*
-- [WT32-ETH01 on Amazon.de](https://www.amazon.de/dp/B0CTK9414M?tag=atomi23-21)\*
-- [Waveshare ESP32-P4-WIFI6-POE-ETH on Amazon.de](https://www.amazon.de/dp/B0G259RFX5?tag=atomi23-21)\*
+- [Search Amazon.de for LILYGO T-Connect-Pro (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=LILYGO+T-Connect-Pro&rh=p_85%3A20943776031)\*
+- [Search Amazon.de for LILYGO T-POE-Pro (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=LILYGO+T-POE-Pro&rh=p_85%3A20943776031)\*
+- [WT32-ETH01 on Amazon.de](https://www.amazon.de/dp/B0CW3DDWZ4?tag=atomi23-21)\*
+- [Waveshare ESP32-P4-WIFI6-POE-ETH on Amazon.de](https://www.amazon.de/dp/B0G62SNY9S?tag=atomi23-21)\*
 
 \*As an Amazon Associate I earn from qualifying purchases. Links marked * are affiliate/advertising links.
 
