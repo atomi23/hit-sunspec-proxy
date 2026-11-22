@@ -10,7 +10,10 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.17** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.17)
+Aktuelle Firmware: **v0.5.18** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.18)
+
+### Neu in v0.5.18
+- **CA-Download:** Liefert jetzt die Zertifikatsdatei statt der Zertifikatsinformationen als JSON.
 
 ### Neu in v0.5.17
 - **HTTPS ohne Browserwarnung:** Die Geräte-CA signiert das Serverzertifikat; ihr CA-Zertifikat einmal als vertrauenswürdige Stamm-CA installieren.
