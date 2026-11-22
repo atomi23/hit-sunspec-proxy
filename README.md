@@ -201,6 +201,10 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assi
 
 > Beispielaufnahmen aus früheren Firmware-Versionen mit Demo-Daten und RFC‑5737-Adressen. Die aktuelle Oberfläche kann davon abweichen.
 
+Die statischen Web-Vorschauen unter `docs/ui-preview/` zeigen Beispieldaten. Zum lokalen Ansehen
+`python3 -m http.server --bind 127.0.0.1 --directory docs/ui-preview` starten und z. B.
+`http://127.0.0.1:8000/bluetooth.html` öffnen. Mit `?lang=en` schaltet die Vorschau auf Englisch um.
+
 ### Live
 
 ![Live](docs/screenshots/live-dashboard.jpg)

@@ -101,9 +101,14 @@ mock_ble = {
     "found": [],
 }
 
+def status_js(name):
+    return (f"const {name}={json.dumps(mock_status)};\n"
+            f"{name}.uiLang=new URLSearchParams(location.search).get('lang')==='en'?'en':'de';")
+
+
 dash_js = f"""
 <script>
-const MOCK={json.dumps(mock_status)};
+{status_js("MOCK")}
 MOCK.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
@@ -216,7 +221,7 @@ cfg_js = f"""
 <script>
 const META={json.dumps({"points": meta})};
 const CFG={json.dumps(cfg)};
-const STATUS={json.dumps(mock_status)};
+{status_js("STATUS")}
 const BLE={json.dumps(mock_ble)};
 const TLS={{subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
   sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
@@ -247,7 +252,7 @@ setup_cfg = dict(cfg, setupComplete=False, hitHost="", displayCode="K7Q2-M9XD", 
 setup_js = f"""
 <script>
 const CFG={json.dumps(setup_cfg)};
-const STATUS={json.dumps(mock_status)};
+{status_js("STATUS")}
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
@@ -289,7 +294,7 @@ hist = extract("HISTORY_HTML")
 hist_js = f"""
 <script>
 const H={{day:{json.dumps(day)},bars:{{day:{json.dumps(days)},month:{json.dumps(months)},year:{json.dumps(years)}}},total:{json.dumps(total)}}};
-const STATUS={json.dumps(mock_status)};
+{status_js("STATUS")}
 STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
@@ -324,7 +329,7 @@ ev = [
 events = [{"t": int(t), "ts": 0, "lv": lv, "src": s, "msg": m} for t, lv, s, m in ev]
 dbg_js = f"""
 <script>
-const STATUS={json.dumps(mock_status)};
+{status_js("STATUS")}
 STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const EV={{uptimeMs:{up},hitPolls:1394,hitFails:27,hitErr:"Verbindungsaufbau fehlgeschlagen",events:{json.dumps(events)}}};
 const WR={{uptimeMs:{up},wMaxLimPct:6000,wMaxLimEna:true,sunspecClient:true,hitWriteEnabled:false,sunspecWriteToHit:false,
@@ -349,7 +354,7 @@ ble = extract("BLE_HTML").replace(
 )
 ble_js = f"""
 <script>
-const STATUS={json.dumps(mock_status)};
+{status_js("STATUS")}
 const BLE={json.dumps(mock_ble)};
 const EV={{uptimeMs:{up},events:{json.dumps(events)}}};
 const _f=window.fetch;
