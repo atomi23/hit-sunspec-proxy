@@ -447,6 +447,27 @@ function translate(){
     });
   });
 }
+function addLogout(){
+  const logout=document.createElement('button');logout.type='button';logout.className='sec';
+  logout.textContent='Abmelden';logout.setAttribute('data-en','Sign out');
+  logout.onclick=()=>{
+    logout.disabled=true;
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST','/api/logout',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.timeout=5000;
+    xhr.onloadend=()=>{
+      if(xhr.status>=200&&xhr.status<300)location.replace('/');
+      else{
+        logout.disabled=false;
+        alert(uiText('Abmelden fehlgeschlagen. Bitte erneut versuchen.',
+          'Sign out failed. Please try again.'));
+      }
+    };
+    xhr.send();
+  };
+  const head=document.querySelector('.page-head');if(head)head.append(logout);
+}
 function build(){
   built=true;
   const side=document.querySelector('.side'),nav=side&&side.querySelector('nav');if(!nav)return;
@@ -503,6 +524,7 @@ function menu(){
   return true;
 }
 window.applyThemeLang=s=>{base(s);translate();if(menu())live(s);};
+addLogout();
 menu();
 })();
 )JS";
@@ -2405,6 +2427,28 @@ bool requireAuth(AsyncWebServerRequest *req) {
         "{\"ok\":false,\"error\":\"Request from another website rejected.\"}"));
     return false;
   }
+  String cookies = req->header("Cookie");
+  while (cookies.length()) {
+    const int end = cookies.indexOf(';');
+    String cookie = end < 0 ? cookies : cookies.substring(0, end);
+    cookie.trim();
+    if (cookie == "hp_lo=1") {
+      const bool navigate = req->hasHeader("Sec-Fetch-Mode")
+          ? req->header("Sec-Fetch-Mode").equalsIgnoreCase("navigate")
+          : req->header("Accept").indexOf("text/html") >= 0;
+      auto *r = req->beginResponse(401, "text/plain; charset=utf-8", ConfigStore::uiText(
+          "Abgemeldet. Seite neu laden zum Anmelden.", "Signed out. Reload the page to sign in."));
+      r->addHeader("Cache-Control", "no-store");
+      if (navigate) {
+        r->addHeader("WWW-Authenticate", "Basic realm=\"HIT-Proxy\"");
+        r->addHeader("Set-Cookie", "hp_lo=; Path=/; Max-Age=0; SameSite=Strict; HttpOnly");
+      }
+      req->send(r);
+      return false;
+    }
+    if (end < 0) break;
+    cookies = cookies.substring(end + 1);
+  }
   auto &c = ConfigStore::get();
   const char *user = c.webUser[0] ? c.webUser : "admin";
   if (c.displayCode[0] && req->authenticate(user, c.displayCode)) return true;
@@ -2412,7 +2456,12 @@ bool requireAuth(AsyncWebServerRequest *req) {
   if (c.wifiPass[0] && req->authenticate(user, c.wifiPass)) return true;
 
   Serial.printf("Auth fail user=%s\n", user);
-  req->requestAuthentication("HIT-Proxy", false); // Default wäre Digest
+  auto *r = req->beginResponse(401, "text/plain; charset=utf-8", ConfigStore::uiText(
+      "Abgemeldet oder nicht angemeldet. Seite neu laden zum Anmelden.",
+      "Signed out or not signed in. Reload the page to sign in."));
+  r->addHeader("WWW-Authenticate", "Basic realm=\"HIT-Proxy\"");
+  r->addHeader("Cache-Control", "no-store");
+  req->send(r);
   return false;
 }
 
@@ -2766,6 +2815,18 @@ void begin() {
   });
   server.on("/b.js", HTTP_GET, [](AsyncWebServerRequest *req) {
     req->send(200, "text/javascript", (const uint8_t *)UI_JS, strlen(UI_JS));
+  });
+  server.on(AsyncURIMatcher::exact("/api/logout"), HTTP_POST, [](AsyncWebServerRequest *req) {
+    // JSON erzwingt bei fremden Websites einen CORS-Preflight, auch ohne Fetch-Metadaten.
+    if (crossSite(req) || req->contentType() != "application/json") {
+      req->send(403, "text/plain", "Forbidden");
+      return;
+    }
+    if (!requireAuth(req)) return;
+    auto *r = req->beginResponse(204, "text/plain", "");
+    r->addHeader("Set-Cookie", "hp_lo=1; Path=/; SameSite=Strict; HttpOnly");
+    r->addHeader("Cache-Control", "no-store");
+    req->send(r);
   });
   server.on("/f/barlow-400.woff", HTTP_GET, [](AsyncWebServerRequest *req) {
     auto *r = req->beginResponse(200, "font/woff", FONT_BARLOW_400, FONT_BARLOW_400_LEN);
