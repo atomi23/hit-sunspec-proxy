@@ -3291,7 +3291,7 @@ void begin() {
     req->send(200, "application/json", out);
   });
 
-  server.on("/api/bleled", HTTP_GET, [](AsyncWebServerRequest *req) {
+  server.on(AsyncURIMatcher::exact("/api/bleled"), HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     JsonDocument doc;
     BleLed::status(doc.to<JsonObject>());
