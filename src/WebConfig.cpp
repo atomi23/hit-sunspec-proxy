@@ -2753,7 +2753,7 @@ void begin() {
     req->send(200, "text/html", (const uint8_t *)DEBUG_HTML, strlen(DEBUG_HTML));
   });
 
-  server.on("/api/debug", HTTP_GET, [](AsyncWebServerRequest *req) {
+  server.on(AsyncURIMatcher::exact("/api/debug"), HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     auto &c = ConfigStore::get();
     String ev = DebugLog::toJson(40);
@@ -2805,7 +2805,7 @@ void begin() {
     req->send(200, "application/json", out);
   });
 
-  server.on("/api/tls", HTTP_GET, [](AsyncWebServerRequest *req) {
+  server.on(AsyncURIMatcher::exact("/api/tls"), HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     req->send(200, "application/json", HttpsServer::infoJson());
   });
