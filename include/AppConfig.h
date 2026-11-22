@@ -148,6 +148,13 @@ struct AppConfig {
   uint16_t knxMinDeltaW = 50;
   KnxCh knxCh[KNX_CH_COUNT] = {};
 
+  // Bluetooth-LED-Strip (App "Lotus Lantern"), geschaltet über KNX
+  bool bleLedEnabled = false;
+  char bleLedAddr[18] = "";     // MAC aa:bb:cc:dd:ee:ff
+  uint8_t bleLedAddrType = 0;   // 0 = public, 1 = random
+  char bleLedName[24] = "";     // Bluetooth-Name, bestimmt den Befehlssatz
+  uint8_t bleLedVariant = 0;    // LotusLantern::Variant, 0 = automatisch nach Name
+
   // UI: Sprache + Farbschema (Web + Display)
   UiLang uiLang = UiLang::De;
   UiTheme uiTheme = UiTheme::Mint;

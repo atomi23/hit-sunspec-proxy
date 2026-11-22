@@ -14,6 +14,7 @@
 #include "OtaUpdate.h"
 #include "HoyCloud.h"
 #include "KnxIp.h"
+#include "BleLed.h"
 #include "KnxPoints.h"
 #include "DataSource.h"
 #include "UiFonts.h"
@@ -1368,6 +1369,19 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <label data-en="Interval (ms)">Intervall (ms)</label><input name="knxPublishMs" type="number"/>
 <label><input name="knxOnlyOnChange" type="checkbox"/> <span data-en="Only when the value changes">nur bei Änderung</span></label>
 <label data-en="Min. power change (W)">Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
+<div id="bleLedBox" hidden>
+<label><input name="bleLedEnabled" type="checkbox"/> <span data-en="Switch a Bluetooth LED strip (Lotus Lantern app) by KNX">Bluetooth-LED-Strip (App „Lotus Lantern“) über KNX schalten</span></label>
+<div class="knx-tools"><button type="button" class="sec" onclick="bleLed('scan')" data-en="Search for LED strip">LED-Strip suchen</button>
+<button type="button" class="sec" onclick="bleLed('test?on=1')" data-en="Test: on">Test: an</button>
+<button type="button" class="sec" onclick="bleLed('test?on=0')" data-en="Test: off">Test: aus</button>
+<span class="meta" id="bleLedState"></span></div>
+<div id="bleLedFound" class="meta"></div>
+<label data-en="Bluetooth name">Bluetooth-Name</label><input name="bleLedName" maxlength="23" autocomplete="off" placeholder="ELK-BLEDOM"/>
+<label data-en="Bluetooth address">Bluetooth-Adresse</label><input name="bleLedAddr" maxlength="17" autocomplete="off" placeholder="be:16:f8:1d:d6:66"/>
+<label data-en="Address type">Adresstyp</label><select name="bleLedAddrType"><option value="0">public</option><option value="1">random</option></select>
+<label data-en="Power-on command">Einschaltbefehl</label><select name="bleLedVariant"><option value="0" data-en="automatic (by name)">automatisch (nach Name)</option><option value="1">7e 04 04 f0 …</option><option value="2">7e 07 04 ff …</option><option value="3">7e 00 04 01 …</option></select>
+<p class="hint" data-en="Close the Lotus Lantern app first: the strip accepts only one Bluetooth connection. Save before testing. Then enable the LED strip rows below: switch (1.001), brightness (5.001) and RGB color (232.600). The ESP connects only to send and releases the strip after 10 seconds. If the test does nothing, try another power-on command.">Vorher die App „Lotus Lantern“ schließen: der Strip nimmt nur eine Bluetooth-Verbindung an. Vor dem Test speichern. Danach unten die LED-Strip-Zeilen aktivieren: Schalten (1.001), Helligkeit (5.001) und Farbe RGB (232.600). Der ESP verbindet sich nur zum Senden und gibt den Strip nach 10 Sekunden wieder frei. Reagiert der Strip beim Test nicht, einen anderen Einschaltbefehl wählen.</p>
+</div>
 <p class="hint" id="knxDisplayHint" hidden data-en="Display switch (receive): assign a separate group address. Group writes of 1 (on) or 0 (off) override the backlight until the next schedule transition, or until another command or restart without a schedule.">Display schalten (Empfang): eigene Gruppenadresse zuweisen. Gruppenschreibwerte 1 (an) und 0 (aus) übersteuern die Beleuchtung bis zum nächsten Wechsel im Wochenplan. Ohne Plan gilt der Befehl bis zum nächsten Schaltbefehl oder Neustart.</p>
 <p class="hint"><span data-en="For each row, tick the box and enter a three-level group address">Pro Zeile: Haken setzen, Gruppenadresse dreistufig</span> <code data-en="main/middle/sub">H/M/U</code> (<span data-en="e.g.">z.B.</span> <code>1/2/10</code><span data-en="), then adjust the datapoint type if needed. Red means invalid or duplicated.">), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</span></p>
 <div id="knxRows">
@@ -1421,7 +1435,8 @@ async function saveUiPrefs(){
 <script>
 const KNX_DPT={PowerW:[[14056,'14.056 W'],[9024,'9.024 kW']],Percent:[[5001,'5.001 %'],[9007,'9.007 %']],Volt:[[14027,'14.027 V'],[9001,'9.001']],Amp:[[14019,'14.019 A'],[9001,'9.001']],Hz:[[14033,'14.033 Hz'],[9001,'9.001']],EnergyKwh:[[13010,'13.010 Wh'],[13013,'13.013 kWh'],[14019,'14.x Float kWh']],RatioPct:[[5001,'5.001 %'],[9007,'9.007 %']],Temp:[[9001,'9.001 °C'],[14068,'14.068 °C']],MilliVolt:[[9020,'9.020 mV']],Count:[[12001,'12.001']],Flag:[[1005,'1.005 Alarm']]};
 let KNX_META=[];
-KNX_DPT.Switch=[[1001,'1.001']];
+KNX_DPT.Switch=[[1001,'1.001']];KNX_DPT.Scaling=[[5001,'5.001 %']];KNX_DPT.Rgb=[[232600,'232.600 RGB']];
+const knxRx=m=>['Switch','Scaling','Rgb'].includes(m.kind);
 function dptOpts(kind,cur){
   return (KNX_DPT[kind]||KNX_DPT.PowerW).map(([v,l])=>`<option value="${v}" ${Number(cur)===v?'selected':''}>${l}</option>`).join('');
 }
@@ -1433,6 +1448,7 @@ function knxGrp(id){
   if(/^e/.test(id))return uiText('Energie HIT','HIT energy');
   if(/^tas/.test(id))return uiText('Tasmota-Zähler','Tasmota meter');
   if(id==='display_switch')return 'Display';
+  if(/^led_/.test(id))return uiText('LED-Strip (Bluetooth)','LED strip (Bluetooth)');
   return 'Consolinno';
 }
 function knxLabel(m){return uiText(m.label,m.labelEn||m.label);}
@@ -1443,15 +1459,15 @@ const gaStr=n=>`${n>>11}/${(n>>8)&7}/${n&255}`;
 function knxEl(k,i){return document.querySelector(`#knxBody [data-knx=${k}][data-i="${i}"]`);}
 function renderKnx(meta,ch){
   KNX_META=meta;
-  document.getElementById('knxDisplayHint').hidden=!meta.some(m=>m.kind==='Switch');
+  document.getElementById('knxDisplayHint').hidden=!meta.some(m=>m.id==='display_switch'&&!m.hide);
   const body=document.getElementById('knxBody'); if(!body)return;
   let html='',last='',alt=false;
   meta.forEach((m,i)=>{
     const g=knxGrp(m.id);
-    if(g!==last){html+=`<tr class="grp"><td colspan="4">${knxEsc(g)}<span></span></td></tr>`;last=g;alt=false;}
+    if(!m.hide&&g!==last){html+=`<tr class="grp"><td colspan="4">${knxEsc(g)}<span></span></td></tr>`;last=g;alt=false;}
     const c=(ch&&ch[i])||{};
     const label=knxEsc(knxLabel(m));
-    html+=`<tr data-row="${i}" class="${c.ena?'on':''}${alt?' alt':''}">
+    html+=`<tr data-row="${i}" ${m.hide?'hidden':''} class="${c.ena?'on':''}${alt?' alt':''}">
       <td><input type="checkbox" data-knx="e" data-i="${i}" ${c.ena?'checked':''} aria-label="${uiText(label+' aktivieren','Enable '+label)}"/></td>
       <td class="knx-l">${label}<small>${knxEsc(m.id)}</small></td>
       <td><input data-knx="g" data-i="${i}" type="text" autocomplete="off" spellcheck="false" placeholder="${uiText('z.B.','e.g.')} 1/2/${10+i}" value="${knxEsc(c.ga)}" aria-label="${uiText('Gruppenadresse','Group address')} ${label}"/></td>
@@ -1472,14 +1488,14 @@ function knxCheck(){
     r.classList.toggle('on',e.checked);
     let msg='';
     if(v&&n<0)msg=uiText('Ungültig, Format H/M/U (0-31/0-7/0-255)','Invalid. Use main/middle/sub (0-31/0-7/0-255).');
-    else if(n===0&&KNX_META[r.dataset.row].kind==='Switch')msg=uiText('0/0/0 ist für Broadcast reserviert.','0/0/0 is reserved for broadcasts.');
+    else if(n===0&&knxRx(KNX_META[r.dataset.row]))msg=uiText('0/0/0 ist für Broadcast reserviert.','0/0/0 is reserved for broadcasts.');
     else if(e.checked&&!v)msg=uiText('Aktiv, aber ohne Gruppenadresse','Enabled without a group address');
     else if(e.checked&&seen[n]>1)msg=uiText('Adresse mehrfach vergeben','Duplicate address');
     g.classList.toggle('bad-ga',!!msg);g.title=msg||uiText('Gruppenadresse H/M/U','Group address main/middle/sub');
   });
   document.querySelectorAll('#knxBody tr.grp').forEach(gr=>{
     let on=0,all=0;
-    for(let r=gr.nextElementSibling;r&&!r.classList.contains('grp');r=r.nextElementSibling){all++;if(r.classList.contains('on'))on++;}
+    for(let r=gr.nextElementSibling;r&&!r.classList.contains('grp');r=r.nextElementSibling){if(r.hidden)continue;all++;if(r.classList.contains('on'))on++;}
     gr.querySelector('span').textContent=uiText(`${on} von ${all} aktiv`,`${on} of ${all} enabled`);
   });
 }
@@ -1488,6 +1504,23 @@ function knxCheck(){
    // erste gültige Adresse in einer leeren Zeile setzt den Haken einmalig mit
    if(t.dataset.knx==='g'&&!t.defaultValue&&!t.dataset.auto&&gaParse(t.value)>=0){const cb=knxEl('e',t.dataset.i);if(cb&&!cb.checked)cb.checked=true;t.dataset.auto=1;}
    knxCheck();}));}
+async function bleLed(act){
+  const box=document.getElementById('bleLedBox'),st=document.getElementById('bleLedState');
+  if(act)await fetch('/api/bleled/'+act,{method:'POST'}).catch(()=>null);
+  for(let n=0;n<40;n++){
+    const r=await fetch('/api/bleled').catch(()=>null);const j=r&&r.ok?await r.json():null;
+    if(!j||!j.supported)return;
+    box.hidden=false;
+    st.textContent=(j.state||'')+(j.error?' – '+j.error:'');
+    const l=document.getElementById('bleLedFound');
+    l.innerHTML=(j.found||[]).map((d,i)=>`<button type="button" class="sec" data-i="${i}">${knxEsc(d.name)} · ${knxEsc(d.addr)} · ${d.rssi} dBm</button>`).join(' ')
+      ||(act==='scan'&&!j.scanning?uiText('Kein passender LED-Strip gefunden. Strip einschalten und die App am Handy schließen.','No matching LED strip found. Power the strip and close the app on the phone.'):'');
+    l.querySelectorAll('button').forEach(b=>b.onclick=()=>{const d=j.found[b.dataset.i],f=document.getElementById('f');
+      f.bleLedAddr.value=d.addr;f.bleLedName.value=d.name;f.bleLedAddrType.value=d.type;f.bleLedEnabled.checked=true;});
+    if(!act||(act==='scan'?!j.scanning:n>=12))return;
+    await new Promise(x=>setTimeout(x,700));
+  }
+}
 function collectKnx(){
   return KNX_META.map((m,i)=>{const e=knxEl('e',i),g=knxEl('g',i),d=knxEl('d',i);
     return {ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0};});
@@ -1502,7 +1535,7 @@ const KNX_TAG='hit-sunspec-proxy:';
 // Export im Format von ETS "Gruppenadressen exportieren" (XML ga-export/01 bzw. CSV 1/1)
 function knxExport(fmt){
   const rows=collectKnx().map((c,i)=>({m:KNX_META[i],ena:c.ena,n:gaParse(c.ga),dpt:c.dpt}))
-    .filter(r=>r.ena&&r.n>=0&&(r.n!==0||r.m.kind!=='Switch')).sort((a,b)=>a.n-b.n);
+    .filter(r=>r.ena&&r.n>=0&&(r.n!==0||!knxRx(r.m))).sort((a,b)=>a.n-b.n);
   if(!rows.length){knxMsg(uiText('Keine aktive Zeile mit gültiger Gruppenadresse','No enabled row with a valid group address'),false);return;}
   const tree=new Map();
   rows.forEach(r=>{const h=r.n>>11,mi=(r.n>>8)&7;if(!tree.has(h))tree.set(h,new Map());
@@ -1604,7 +1637,7 @@ async function knxImport(inp){
     if(i===undefined)i=byName.get(norm(g.name));
     if(i===undefined)i=byId.get(g.name.trim().toLowerCase());
     const n=gaParse(g.addr);
-    if(i===undefined||n<0||(n===0&&KNX_META[i].kind==='Switch')){miss++;return;}
+    if(i===undefined||n<0||(n===0&&knxRx(KNX_META[i]))){miss++;return;}
     knxEl('g',i).value=gaStr(n);knxEl('e',i).checked=true;
     const d=knxPickDpt(KNX_META[i].kind,g.dpt);if(d)knxEl('d',i).value=String(d);
     done.add(i);
@@ -1697,6 +1730,7 @@ async function load(){
   document.querySelectorAll('.has-code').forEach(e=>e.classList.toggle('hide',!!c.ownPassOnly));
   document.querySelectorAll('.own-only').forEach(e=>e.classList.toggle('hide',!c.ownPassOnly));
   renderDisplayWeek(c.displayWeek||[]);
+  bleLed();
   renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls(); batBox();
 }
 async function batBox(){
@@ -2526,6 +2560,7 @@ void runPendingApply() {
   TasmotaClient::applyConfig(c);
   MqttHa::applyConfig(c);
   HoyCloud::applyConfig(c);
+  BleLed::applyConfig(c);
   KnxIp::applyConfig(c);
   HttpsServer::applyConfig(c);
   if (poll) HitClient::pollNow();
@@ -2724,10 +2759,23 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
     for (size_t i = 0; i < KNX_CH_COUNT && i < a.size(); i++) {
       if (!a[i]["ena"].isNull()) c.knxCh[i].ena = a[i]["ena"];
       if (a[i]["ga"].is<const char *>()) strlcpy(c.knxCh[i].ga, a[i]["ga"], sizeof(c.knxCh[i].ga));
-      if (i == KNX_DISPLAY_SWITCH) c.knxCh[i].dpt = knxMeta(i).defaultDpt;
+      if (i >= KNX_DISPLAY_SWITCH) c.knxCh[i].dpt = knxMeta(i).defaultDpt;
       else if (!a[i]["dpt"].isNull()) c.knxCh[i].dpt = a[i]["dpt"];
     }
   }
+  if (!o["bleLedEnabled"].isNull()) c.bleLedEnabled = o["bleLedEnabled"];
+  if (o["bleLedAddr"].is<const char *>()) {
+    String a = o["bleLedAddr"].as<String>();
+    a.trim();
+    a.toLowerCase();
+    unsigned b[6];
+    char tail;
+    if (!a.length() || (a.length() == 17 && sscanf(a.c_str(), "%2x:%2x:%2x:%2x:%2x:%2x%c", b, b + 1, b + 2, b + 3, b + 4, b + 5, &tail) == 6))
+      strlcpy(c.bleLedAddr, a.c_str(), sizeof(c.bleLedAddr));
+  }
+  if (!o["bleLedAddrType"].isNull()) c.bleLedAddrType = o["bleLedAddrType"].as<int>() ? 1 : 0;
+  if (o["bleLedName"].is<const char *>()) strlcpy(c.bleLedName, o["bleLedName"], sizeof(c.bleLedName));
+  if (!o["bleLedVariant"].isNull()) c.bleLedVariant = uint8_t(constrain(o["bleLedVariant"].as<int>(), 0, 3));
   if (o["deviceName"].is<const char *>()) strlcpy(c.deviceName, o["deviceName"], sizeof(c.deviceName));
   if (o["uiLang"].is<const char *>()) c.uiLang = uiLangFrom(o["uiLang"]);
   if (o["uiTheme"].is<const char *>()) c.uiTheme = uiThemeFrom(o["uiTheme"]);
@@ -3224,12 +3272,17 @@ void begin() {
     doc["knxPublishMs"] = c.knxPublishMs;
     doc["knxOnlyOnChange"] = c.knxOnlyOnChange;
     doc["knxMinDeltaW"] = c.knxMinDeltaW;
+    doc["bleLedEnabled"] = c.bleLedEnabled;
+    doc["bleLedAddr"] = c.bleLedAddr;
+    doc["bleLedAddrType"] = c.bleLedAddrType;
+    doc["bleLedName"] = c.bleLedName;
+    doc["bleLedVariant"] = c.bleLedVariant;
     JsonArray ch = doc["knxCh"].to<JsonArray>();
     for (size_t i = 0; i < KNX_CH_COUNT; i++) {
       JsonObject o = ch.add<JsonObject>();
       o["ena"] = c.knxCh[i].ena;
       o["ga"] = c.knxCh[i].ga;
-      o["dpt"] = i != KNX_DISPLAY_SWITCH && c.knxCh[i].dpt ? c.knxCh[i].dpt : knxMeta(i).defaultDpt;
+      o["dpt"] = i < KNX_DISPLAY_SWITCH && c.knxCh[i].dpt ? c.knxCh[i].dpt : knxMeta(i).defaultDpt;
     }
     doc["deviceName"] = c.deviceName;
     doc["uiLang"] = uiLangCode(c.uiLang);
@@ -3238,16 +3291,37 @@ void begin() {
     req->send(200, "application/json", out);
   });
 
+  server.on("/api/bleled", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    JsonDocument doc;
+    BleLed::status(doc.to<JsonObject>());
+    String out; serializeJson(doc, out);
+    req->send(200, "application/json", out);
+  });
+
+  server.on("/api/bleled/scan", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    BleLed::startScan();
+    req->send(200, "application/json", "{\"ok\":true}");
+  });
+
+  server.on("/api/bleled/test", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    BleLed::setPower(req->hasParam("on") && req->getParam("on")->value() == "1");
+    req->send(200, "application/json", "{\"ok\":true}");
+  });
+
   server.on("/api/knx/meta", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     JsonDocument doc;
     JsonArray pts = doc["points"].to<JsonArray>();
     static const char *kinds[] = {"PowerW", "Percent", "Volt", "Amp", "Hz", "EnergyKwh", "RatioPct",
-                                   "Temp", "MilliVolt", "Count", "Flag", "Switch"};
+                                   "Temp", "MilliVolt", "Count", "Flag", "Switch", "Scaling", "Rgb"};
     for (size_t i = 0; i < KNX_CH_COUNT; i++) {
-      if (i == KNX_DISPLAY_SWITCH && !HAS_DISPLAY) continue;
       const auto &m = knxMeta(i);
       JsonObject o = pts.add<JsonObject>();
+      // ausgeblendete Zeilen bleiben in der Liste, damit die Position zur gespeicherten Zuordnung passt
+      if ((i == KNX_DISPLAY_SWITCH && !HAS_DISPLAY) || (i >= KNX_LED_SWITCH && !BleLed::SUPPORTED)) o["hide"] = true;
       o["id"] = m.id;
       o["label"] = m.label;
       o["labelEn"] = m.labelEn;

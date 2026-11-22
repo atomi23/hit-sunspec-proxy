@@ -1,5 +1,6 @@
 #include "DisplaySchedule.h"
 #include "KnxDisplayTelegram.h"
+#include "LotusLantern.h"
 #include <assert.h>
 
 using DisplaySchedule::isOn;
@@ -73,7 +74,52 @@ static void testTelegram() {
   assert(!KnxDisplayTelegram::readSwitch(withInfo, sizeof(withInfo), ga, ownPa, on));
 }
 
+static void testGroupWrite() {
+  constexpr uint16_t ownPa = 0xfffa;
+  uint16_t ga = 0;
+  uint8_t value = 0, n = 9;
+  const uint8_t *data = nullptr;
+  uint8_t sw[] = {6, 0x10, 5, 0x30, 0, 17, 0x29, 0, 0xbc, 0xe0, 0x11, 0x03, 0x0a, 0x05, 1, 0, 0x81};
+  assert(KnxDisplayTelegram::readWrite(sw, sizeof(sw), ownPa, ga, value, data, n));
+  assert(ga == 0x0a05 && value == 1 && n == 0);
+  sw[16] = 0x41; // GroupValueResponse
+  assert(!KnxDisplayTelegram::readWrite(sw, sizeof(sw), ownPa, ga, value, data, n));
+
+  uint8_t pct[] = {6, 0x10, 5, 0x30, 0, 18, 0x29, 0, 0xbc, 0xe0, 0x11, 0x03, 0x0a, 0x06, 2, 0, 0x80, 0x80};
+  assert(KnxDisplayTelegram::readWrite(pct, sizeof(pct), ownPa, ga, value, data, n));
+  assert(ga == 0x0a06 && n == 1 && data[0] == 0x80);
+  assert(!KnxDisplayTelegram::readWrite(pct, sizeof(pct), 0x1103, ga, value, data, n));
+
+  uint8_t rgb[] = {6, 0x10, 5, 0x30, 0, 20, 0x29, 0, 0xbc, 0xe0, 0x11, 0x03, 0x0a, 0x07, 4, 0, 0x80, 1, 2, 3};
+  assert(KnxDisplayTelegram::readWrite(rgb, sizeof(rgb), ownPa, ga, value, data, n));
+  assert(ga == 0x0a07 && n == 3 && data[0] == 1 && data[2] == 3);
+  rgb[14] = 5; // Länge passt nicht zum Paket
+  assert(!KnxDisplayTelegram::readWrite(rgb, sizeof(rgb), ownPa, ga, value, data, n));
+}
+
+static void testLotusLantern() {
+  using namespace LotusLantern;
+  uint8_t c[CMD_LEN];
+  const uint8_t on[] = {0x7e, 4, 4, 0xf0, 0, 1, 0xff, 0, 0xef}, off[] = {0x7e, 4, 4, 0, 0, 0, 0xff, 0, 0xef};
+  power(c, variantFor("ELK-BLEDOM", Variant::Auto), true);
+  assert(!memcmp(c, on, CMD_LEN));
+  power(c, variantFor("ELK-BLEDOM", Variant::Auto), false);
+  assert(!memcmp(c, off, CMD_LEN));
+  assert(variantFor("MELK-OA10", Variant::Auto) == Variant::F0);
+  assert(variantFor("MELK-OG10W", Variant::Auto) == Variant::FF);
+  assert(variantFor("MELK-A", Variant::Auto) == Variant::One);
+  assert(variantFor("ELK-BLEDOM", Variant::One) == Variant::One);
+  assert(modelFor("LEDBLE-01")->ffe1 && !modelFor("Fernseher"));
+  const uint8_t rgb[] = {0x7e, 7, 5, 3, 10, 20, 30, 0x10, 0xef}, bri[] = {0x7e, 4, 1, 100, 0xff, 0, 0xff, 0, 0xef};
+  color(c, 10, 20, 30);
+  assert(!memcmp(c, rgb, CMD_LEN));
+  brightness(c, 200);
+  assert(!memcmp(c, bri, CMD_LEN));
+}
+
 int main() {
+  testGroupWrite();
+  testLotusLantern();
   testWeek();
   testOverride();
   testTelegram();

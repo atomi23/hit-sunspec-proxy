@@ -11,6 +11,7 @@
 #include "HitControl.h"
 #include "HoyCloud.h"
 #include "KnxIp.h"
+#include "BleLed.h"
 #include "DataSource.h"
 #include "Watchdog.h"
 #include "HitBus.h"
@@ -50,6 +51,7 @@ void setup() {
   SunSpecServer::begin(cfg);
   MqttHa::begin(cfg);
   HoyCloud::begin(cfg);
+  BleLed::begin(cfg);
   KnxIp::begin(cfg);
   DataBroker::begin();
   WebConfig::begin();

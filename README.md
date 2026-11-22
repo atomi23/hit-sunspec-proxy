@@ -152,6 +152,16 @@ Display weiterhin beleuchtet.
 ![Strings und Netz](docs/screenshots/device-strings.jpg)
 ![System](docs/screenshots/device-system.jpg)
 
+### Bluetooth-LED-Strip über KNX (T-Connect-Pro)
+
+LED-Strips, die mit der App **Lotus Lantern** laufen (Bluetooth-Namen `ELK-BLEDOM…`, `MELK-…`, `LEDBLE…`), lassen
+sich über KNX schalten. Unter **Einstellungen → KNX** den Strip suchen, auswählen, speichern und mit **Test: an/aus**
+prüfen. Danach den Empfangsobjekten Gruppenadressen geben: **Schalten** (DPT 1.001), **Helligkeit** (DPT 5.001) und
+**Farbe RGB** (DPT 232.600). Der ESP verbindet sich nur zum Senden und gibt den Strip nach 10 Sekunden wieder frei,
+weil der Strip nur eine Bluetooth-Verbindung annimmt; die App am Handy muss dafür geschlossen sein. Das gibt es nur
+auf dem T-Connect-Pro (ESP32-S3): auf den ESP32-Boards reicht der Speicher für Bluetooth nicht, der ESP32-P4 hat kein
+Bluetooth. Der Befehlssatz stammt aus öffentlichen Protokollbeschreibungen (ELK-BLEDOM).
+
 ## Architektur
 
 ```

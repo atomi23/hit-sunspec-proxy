@@ -17,22 +17,23 @@ enum KnxChId : uint8_t {
   KNX_AKKU_TMAX, KNX_AKKU_TMIN, KNX_AKKU_VMAX, KNX_AKKU_VMIN, KNX_AKKU_VDIFF,
   KNX_AKKU_CYCLES, KNX_AKKU_REMAIN, KNX_AKKU_ALARM,
   KNX_DISPLAY_SWITCH,
+  KNX_LED_SWITCH, KNX_LED_BRIGHTNESS, KNX_LED_COLOR,
   KNX_CH_COUNT
 };
 
 struct KnxCh {
   bool ena = false;
   char ga[14] = "";
-  uint16_t dpt = 0; // 0 = Default aus Katalog
+  uint32_t dpt = 0; // 0 = Default aus Katalog
 };
 
-enum class KnxValKind : uint8_t { PowerW, Percent, Volt, Amp, Hz, EnergyKwh, RatioPct, Temp, MilliVolt, Count, Flag, Switch };
+enum class KnxValKind : uint8_t { PowerW, Percent, Volt, Amp, Hz, EnergyKwh, RatioPct, Temp, MilliVolt, Count, Flag, Switch, Scaling, Rgb };
 
 struct KnxPointMeta {
   const char *id;
   const char *label;
   const char *labelEn;
-  uint16_t defaultDpt;
+  uint32_t defaultDpt;
   KnxValKind kind;
 };
 
@@ -83,6 +84,9 @@ inline const KnxPointMeta &knxMeta(uint8_t i) {
       {"akku_remain", "Restenergie", "Remaining energy", 13013, KnxValKind::EnergyKwh},
       {"akku_alarm", "Akku-Alarm", "Battery alarm", 1005, KnxValKind::Flag},
       {"display_switch", "Display schalten (Empfang)", "Display switch (receive)", 1001, KnxValKind::Switch},
+      {"led_switch", "LED-Strip schalten (Empfang)", "LED strip switch (receive)", 1001, KnxValKind::Switch},
+      {"led_brightness", "LED-Strip Helligkeit (Empfang)", "LED strip brightness (receive)", 5001, KnxValKind::Scaling},
+      {"led_color", "LED-Strip Farbe RGB (Empfang)", "LED strip RGB color (receive)", 232600, KnxValKind::Rgb},
   };
   return k[i < KNX_CH_COUNT ? i : 0];
 }
