@@ -16,6 +16,7 @@ Current firmware: **v0.5.22** — [release with firmware for every board](https:
 
 ### New in v0.5.22
 - **HTTPS on Windows:** CA installation steps now select the root certificate store manually, so Chrome trusts the device CA.
+- **Log out:** Button on the main pages of the web UI, also over HTTPS. If the browser keeps the login, the hint to close the browser helps.
 
 <details>
 <summary><b>Older versions</b> (v0.5.20 to v0.5.6)</summary>
