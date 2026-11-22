@@ -447,6 +447,26 @@ function translate(){
     });
   });
 }
+function addLogout(){
+  const logout=document.createElement('button');logout.type='button';logout.className='sec';
+  logout.textContent='Abmelden';logout.setAttribute('data-en','Sign out');
+  logout.onclick=()=>{
+    logout.disabled=true;
+    const xhr=new XMLHttpRequest();
+    const password='logout-'+Date.now();
+    xhr.open('POST','/api/logout',true,'logout',password);
+    xhr.setRequestHeader('Authorization','Basic '+btoa('logout:'+password));
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.timeout=5000;
+    xhr.onloadend=()=>{
+      alert(uiText('Browser schließen, um die Abmeldung abzuschließen, falls die Anmeldung erhalten bleibt.',
+        'Close the browser to finish signing out if you remain signed in.'));
+      location.replace('/');
+    };
+    xhr.send();
+  };
+  const head=document.querySelector('.page-head');if(head)head.append(logout);
+}
 function build(){
   built=true;
   const side=document.querySelector('.side'),nav=side&&side.querySelector('nav');if(!nav)return;
@@ -503,6 +523,7 @@ function menu(){
   return true;
 }
 window.applyThemeLang=s=>{base(s);translate();if(menu())live(s);};
+addLogout();
 menu();
 })();
 )JS";
@@ -2766,6 +2787,16 @@ void begin() {
   });
   server.on("/b.js", HTTP_GET, [](AsyncWebServerRequest *req) {
     req->send(200, "text/javascript", (const uint8_t *)UI_JS, strlen(UI_JS));
+  });
+  server.on(AsyncURIMatcher::exact("/api/logout"), HTTP_POST, [](AsyncWebServerRequest *req) {
+    // JSON erzwingt bei fremden Websites einen CORS-Preflight, auch ohne Fetch-Metadaten.
+    if (crossSite(req) || req->contentType() != "application/json") {
+      req->send(403, "text/plain", "Forbidden");
+      return;
+    }
+    auto *r = req->beginResponse(401, "text/plain", "");
+    r->addHeader("Cache-Control", "no-store");
+    req->send(r);
   });
   server.on("/f/barlow-400.woff", HTTP_GET, [](AsyncWebServerRequest *req) {
     auto *r = req->beginResponse(200, "font/woff", FONT_BARLOW_400, FONT_BARLOW_400_LEN);

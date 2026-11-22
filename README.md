@@ -16,6 +16,7 @@ Aktuelle Firmware: **v0.5.22** — [Release mit Firmware für jedes Board](https
 - **HTTPS unter Windows:** CA-Installationsschritte mit manueller Auswahl des Stammzertifikatsspeichers ergänzt, damit Chrome der Geräte-CA vertraut.
 
 ### Neu in v0.5.20
+- **Abmelden:** Schaltfläche auf den Hauptseiten der Weboberfläche, auch über HTTPS. Falls der Browser die Anmeldung behält, hilft der Hinweis zum Schließen des Browsers.
 - **Weboberfläche:** Lädt das Layout mit der Seite, statt es nach einem Neustart separat anfordern zu müssen.
 
 ### Neu in v0.5.19

@@ -42,6 +42,35 @@ class RouteOrderTest(unittest.TestCase):
         end = self.web.index("server.on(", start + 1)
         self.assertIn("if (!requireAuth(req)) return;", self.web[start:end])
 
+    def test_logout_rejects_cross_site_requests_without_auth_challenge(self):
+        start = self.web.index('server.on(AsyncURIMatcher::exact("/api/logout")')
+        end = self.web.index("server.on(", start + 1)
+        handler = self.web[start:end]
+        self.assertIn('HTTP_POST', handler)
+        self.assertIn('crossSite(req) || req->contentType() != "application/json"', handler)
+        self.assertIn('req->send(403, "text/plain", "Forbidden")', handler)
+        self.assertIn('beginResponse(401, "text/plain", "")', handler)
+        self.assertIn('r->addHeader("Cache-Control", "no-store")', handler)
+        self.assertNotIn('requireAuth', handler)
+        self.assertNotIn('requestAuthentication', handler)
+        self.assertNotIn('WWW-Authenticate', handler)
+        proxy = (ROOT / "src/HttpsServer.cpp").read_text()
+        for header in ('Authorization', 'Content-Type', 'Origin', 'Sec-Fetch-Site'):
+            self.assertIn('"' + header + '"', proxy)
+
+    def test_logout_control_is_shared_by_authenticated_pages_only(self):
+        for page in ('DASH_HTML', 'INDEX_HTML', 'HISTORY_HTML', 'DEBUG_HTML'):
+            html = self.web.split('const char ' + page + '[]', 1)[1].split(')HTML";', 1)[0]
+            self.assertIn('class="page-head"', html)
+            self.assertIn('<script src="/b.js"></script>', html)
+        setup = self.web.split('const char SETUP_HTML[]', 1)[1].split(')HTML";', 1)[0]
+        self.assertNotIn('/b.js', setup)
+        self.assertIn("logout.textContent='Abmelden'", self.web)
+        self.assertIn("logout.setAttribute('data-en','Sign out')", self.web)
+        self.assertIn("xhr.onloadend=", self.web)
+        self.assertIn("xhr.timeout=5000", self.web)
+        self.assertIn("location.replace('/')", self.web)
+
 
 if __name__ == "__main__":
     unittest.main()
