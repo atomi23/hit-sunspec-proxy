@@ -3,6 +3,7 @@
 const base=window.applyThemeLang;let built=false;
 const en=()=>document.documentElement.lang==='en';
 window.uiText=(de,english)=>en()?english:de;
+window.num=(n,d=0,max=d)=>(Number(n)||0).toLocaleString(en()?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:max});
 let renderedLang='de';
 const german=new WeakMap();
 const translatedAttrs=['placeholder','title','aria-label'];
@@ -19,6 +20,27 @@ function translate(){
       if(english!==null)el.setAttribute(attr,en()?english:original.attrs[i]);
     });
   });
+}
+function addLogout(){
+  const logout=document.createElement('button');logout.type='button';logout.className='sec';
+  logout.textContent='Abmelden';logout.setAttribute('data-en','Sign out');
+  logout.onclick=()=>{
+    logout.disabled=true;
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST','/api/logout',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.timeout=5000;
+    xhr.onloadend=()=>{
+      if(xhr.status>=200&&xhr.status<300)location.replace('/');
+      else{
+        logout.disabled=false;
+        alert(uiText('Abmelden fehlgeschlagen. Bitte erneut versuchen.',
+          'Sign out failed. Please try again.'));
+      }
+    };
+    xhr.send();
+  };
+  const head=document.querySelector('.page-head');if(head)head.append(logout);
 }
 function build(){
   built=true;
@@ -69,12 +91,22 @@ function live(s){
     `<text x="${VW/2}" y="368" text-anchor="middle" class="dir">${E?'Battery':'Akku'} ${fmt(soc)} %</text>`;
   g.innerHTML=h;
 }
+// Menüpunkt nur auf Boards mit Bluetooth; so muss er nicht in jeder Seitenleiste stehen
+function bleNav(s){
+  if(!s||!s.hasBleLed||document.getElementById('navBle'))return;
+  const knx=document.querySelector('.side nav a[href="/config#knx"]');if(!knx)return;
+  const a=document.createElement('a');a.id='navBle';a.href='/bluetooth.html';
+  a.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg> Bluetooth';
+  if(location.pathname.endsWith('/bluetooth.html')){a.className='on';a.setAttribute('aria-current','page');}
+  knx.after(a);
+}
 function menu(){
   if(document.documentElement.dataset.theme!=='blueprint')return false;
   if(!built)build();
   const b=document.querySelector('.bp-btn span');if(b)b.textContent=en()?'Settings':'Einstellungen';
   return true;
 }
-window.applyThemeLang=s=>{base(s);translate();if(menu())live(s);};
+window.applyThemeLang=s=>{base(s);bleNav(s);translate();if(menu())live(s);};
+addLogout();
 menu();
 })();

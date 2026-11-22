@@ -162,7 +162,7 @@ display is enabled.
 ![Strings and grid](docs/screenshots/device-strings.jpg)
 ![System](docs/screenshots/device-system.jpg)
 
-### Bluetooth LED strip by KNX (T-Connect-Pro)
+### Bluetooth LED strip via the web UI and KNX (T-Connect-Pro)
 
 LED strips driven by the **Lotus Lantern** app (Bluetooth names `ELK-BLEDOM…`, `MELK-…`, `LEDBLE…`) can be switched
 by KNX. Under **Settings → KNX**, search for the strip, select it, save, and check it with **Test: on/off**. Then
@@ -172,10 +172,14 @@ single Bluetooth connection; the app on the phone must be closed. Available on t
 ESP32 boards lack the memory for Bluetooth and the ESP32-P4 has no Bluetooth. The command set comes from public
 protocol descriptions (ELK-BLEDOM).
 
+Once configured, the strip can also be switched, dimmed and set to a color on the **Bluetooth** page
+without assigning any KNX group addresses. The page shows the connection state, the last error,
+the last values sent, and LED entries from the event log. The values sent are not feedback from the strip.
+
 ## Architecture
 
 ```
-                         ┌── SunSpec :1502 ──→ Consolinno HEMS
+                         ┌── SunSpec :1502 (optional) ──→ Consolinno HEMS
 Hoymiles HIT ──TCP/RS485─┤── Modbus gateway :502 ──→ Home Assistant, other Modbus clients
    (one connection)      ├── MQTT + Discovery ──→ Home Assistant
           ESP32          ├── KNX IP Routing ──→ KNX bus
@@ -184,18 +188,22 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus gateway :502 ──→ Home Assi
 
 | Path | Required? | Role |
 |------|-----------|------|
-| HIT (Modbus TCP or RS485) | yes | Data source, the only connection to the HIT |
-| SunSpec :1502 | yes | Consolinno HEMS (GEN24 emulation, models 1/103/120–124/160; optional meter 203) |
+| HIT (Modbus TCP or RS485) | for direct HIT access | Primary data source, the only connection to the HIT; MQTT and Hoymiles cloud can supply fallback live data |
+| SunSpec :1502 | for Consolinno only | Default port for GEN24 emulation (models 1/103/120–124/160; optional meter 203); the service can be disabled |
 | Modbus gateway | no | Other Modbus clients read the HIT through the ESP |
 | MQTT | no | HA sensors via discovery, optionally MQTT as fallback source |
-| KNX IP | no | Multicast routing of all selectable live values |
+| KNX IP | no | Multicast routing of selectable live values; on the T-Connect-Pro it also receives commands for the display and LED strip |
 | Tasmota | no | Grid meter for the live view and optionally SunSpec model 203 |
 | Hoymiles cloud | no | S-Miles read-only, fallback source when HIT and MQTT fail |
 | HIT write | no | Battery limits 306–309, APC 279/280, off by default |
 
 ## Screenshots
 
-> Original UI from the firmware (HTML/CSS rendered from `WebConfig.cpp`), demo data with RFC 5737 addresses. The screenshots show the German UI.
+> Example screenshots from earlier firmware versions, with demo data and RFC 5737 addresses. They show the German UI and may differ from the current version.
+
+The static web previews in `docs/ui-preview/` show sample data. To view them locally, run
+`python3 -m http.server --bind 127.0.0.1 --directory docs/ui-preview` and open, for example,
+`http://127.0.0.1:8000/bluetooth.html`. Add `?lang=en` to switch the preview to English.
 
 ### Live
 
@@ -211,8 +219,10 @@ Selectable like the other designs, but with its own menu navigation and an energ
 
 ### History
 
-Power balance of the last 24 hours: sources (PV, grid import, battery discharge) above the zero line,
-consumers (house, feed-in, battery charge) below it. Below that, energy per day, month, year and total.
+Power over the last 24 hours: PV, grid import and battery discharge appear as filled areas; household
+consumption and battery charging appear as lines above zero. Only feed-in is below zero in **Balance**
+view; **All positive** also shows it above zero. Energy per day, month, year and total appears below.
+History data can be downloaded as CSV.
 
 ![History](docs/screenshots/history.jpg)
 
@@ -220,8 +230,9 @@ consumers (house, feed-in, battery charge) below it. Below that, energy per day,
 
 ### Log
 
-System log with HIT outages and their cause, recovery, cloud status, OTA and restarts.
-Consolinno's §14a write accesses are in the second tab.
+The system log shows HIT outages and their cause, recovery, cloud status, OTA and restarts, as well as
+Bluetooth connections and sent LED commands on the T-Connect-Pro. Consolinno's §14a writes are in the
+second tab. Both logs can be downloaded as text files.
 
 ![System log](docs/screenshots/system-log.jpg)
 
@@ -290,6 +301,9 @@ Matching uses the description `hit-sunspec-proxy:<id>`, otherwise the name.
   IP address and `<devicename>.local`, renewed automatically on a new IP or before expiry; a custom certificate
   (PEM, also with intermediate certificates) can be uploaded, and the ESP checks that key and certificate match
 - **Factory reset**, **restart** (with the last restart reason) and **OTA update** in the web UI
+- **Backup and restore** under *Firmware and reset*: export and import settings as JSON. Passwords and
+  the access code are included in plain text by default and can be excluded on export. The HTTPS
+  certificate, history and logs are not included.
 - **Access code** can be regenerated at any time; otherwise it persists across restarts and updates
 - **Home Wi-Fi** in addition to the device Wi-Fi (emergency access), changes without restart; the device Wi-Fi can be
   switched off and only comes back if the device gets no address on the cable
@@ -307,7 +321,8 @@ Matching uses the description `hit-sunspec-proxy:<id>`, otherwise the name.
    asks what is needed; without a display, setting your own password is mandatory.
 4. Consolinno: device as Fronius Hybrid / SunSpec, **proxy IP**, port **1502**, unit ID **1**  
    (a scan on 502 only does not find the proxy while SunSpec listens on 1502)
-5. Afterwards the UI runs at `https://<esp-ip>/`. To open it without a warning, download the device CA
+5. When HTTPS is active, the UI runs at `https://<esp-ip>/`; otherwise it uses HTTP (for example on the
+   WT32-ETH01). To open it over HTTPS without a warning, download the device CA
    under *Network and access* and install it once as a trusted root CA
    (see [HTTPS](#https)). Alternatively upload your own certificate.
 
@@ -356,8 +371,15 @@ OTA between app slots remains possible afterwards.
 
 - [Search Amazon.de for LILYGO T-Connect-Pro (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=LILYGO+T-Connect-Pro&rh=p_85%3A20943776031)\*
 - [Search Amazon.de for LILYGO T-POE-Pro (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=LILYGO+T-POE-Pro&rh=p_85%3A20943776031)\*
+- [LILYGO T-POE-Pro on Amazon.de (alternative listing)](https://www.amazon.de/dp/B0CR3JMCVX?tag=atomi23-21)\* — approx. €14 shipping.
 - [WT32-ETH01 on Amazon.de](https://www.amazon.de/dp/B0CW3DDWZ4?tag=atomi23-21)\*
 - [Waveshare ESP32-P4-WIFI6-POE-ETH on Amazon.de](https://www.amazon.de/dp/B0G62SNY9S?tag=atomi23-21)\*
+- [Search Amazon.de for Lotus Lantern Bluetooth LED strips (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=Lotus+Lantern+Bluetooth+LED+Strip&rh=p_85%3A20943776031)\* — check that the listing names the **Lotus Lantern** app before buying; individual models have not been tested.
+- [Search for RS485 converter modules with 3.3 V logic and automatic direction control (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=RS485+TTL+3.3V+Modul+automatische+Richtungsumschaltung&rh=p_85%3A20943776031)\* — optional for the WT32-ETH01 and Waveshare ESP32-P4.
+- [Search for USB-to-serial adapters with 3.3 V logic (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=USB+UART+TTL+3.3V+Adapter&rh=p_85%3A20943776031)\* — for flashing the WT32-ETH01.
+- [Search for WT32-ETH01 PoE adapter boards (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=WT32-ETH01+PoE+Adapterplatine&rh=p_85%3A20943776031)\* — check the connection and enclosure dimensions before buying.
+- [Search for step-down modules with 12–24 V input and 5 V output (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=DC+DC+Step+Down+12V+24V+auf+5V+Modul&rh=p_85%3A20943776031)\* — for the WT32-ETH01 RS485 enclosure variant; check the input voltage range and dimensions.
+- [Search for Tasmota optical readers for electricity meters (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=Tasmota+Lesekopf+Stromz%C3%A4hler&rh=p_85%3A20943776031)\* — check compatibility with your meter before buying.
 
 \*As an Amazon Associate I earn from qualifying purchases. Links marked * are affiliate/advertising links.
 
