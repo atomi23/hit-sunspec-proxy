@@ -98,6 +98,11 @@ void rtuBegin() {
 
 size_t rtuRead(uint8_t *buf, size_t n) { return Serial1.readBytes(buf, n); }
 
+bool rtuIncomplete() {
+  setErr("RS485: Antwort unvollständig", "RS485: incomplete response");
+  return false;
+}
+
 bool rtuTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, size_t respMax, size_t &respLen) {
   rtuBegin();
   if (len + 3 > 260) return false;
@@ -128,17 +133,14 @@ bool rtuTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, si
   if (fc & 0x80) {
     body = 1;
   } else if (fc <= 4) {
-    if (rtuRead(buf + 2, 1) != 1) return false;
+    if (rtuRead(buf + 2, 1) != 1) return rtuIncomplete();
     got = 3;
     body = buf[2];
   } else {
     body = 4; // FC5/6/15/16: Adresse + Wert/Anzahl
   }
   size_t need = body + 2; // + CRC
-  if (got + need > sizeof(buf) || rtuRead(buf + got, need) != need) {
-    setErr("RS485: Antwort unvollständig", "RS485: incomplete response");
-    return false;
-  }
+  if (got + need > sizeof(buf) || rtuRead(buf + got, need) != need) return rtuIncomplete();
   got += need;
   lastFrameUs = micros();
   uint16_t rc = crc16(buf, got - 2);
