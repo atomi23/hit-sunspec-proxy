@@ -519,13 +519,22 @@ function live(s){
     `<text x="${VW/2}" y="368" text-anchor="middle" class="dir">${E?'Battery':'Akku'} ${fmt(soc)} %</text>`;
   g.innerHTML=h;
 }
+// Menüpunkt nur auf Boards mit Bluetooth; so muss er nicht in jeder Seitenleiste stehen
+function bleNav(s){
+  if(!s||!s.hasBleLed||document.getElementById('navBle'))return;
+  const knx=document.querySelector('.side nav a[href="/config#knx"]');if(!knx)return;
+  const a=document.createElement('a');a.id='navBle';a.href='/bluetooth';
+  a.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg> Bluetooth';
+  if(location.pathname==='/bluetooth'){a.className='on';a.setAttribute('aria-current','page');}
+  knx.after(a);
+}
 function menu(){
   if(document.documentElement.dataset.theme!=='blueprint')return false;
   if(!built)build();
   const b=document.querySelector('.bp-btn span');if(b)b.textContent=en()?'Settings':'Einstellungen';
   return true;
 }
-window.applyThemeLang=s=>{base(s);translate();if(menu())live(s);};
+window.applyThemeLang=s=>{base(s);bleNav(s);translate();if(menu())live(s);};
 addLogout();
 menu();
 })();
@@ -825,6 +834,195 @@ async function refresh(){
 refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
 </script></body></html>
 )HTML";
+
+#ifdef HAS_BLE_LED
+const char BLE_HTML[] PROGMEM = R"HTML(
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title>Bluetooth · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>
+.ble{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}
+.ble .wide{grid-column:1/-1}
+.ble dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0}
+.ble dt{color:var(--dim)}
+.ble dd{margin:0;word-break:break-word}
+.ble input[type=range]{width:100%}
+.ble input[type=color]{width:64px;height:40px;padding:2px}
+.ble .sw{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ble .sw button{width:36px;height:36px;padding:0;border-radius:50%;border:1px solid var(--rule2)}
+.ble table{width:100%;border-collapse:collapse;font-size:14px}
+.ble td{padding:5px 10px 5px 0;border-top:1px solid var(--rule);vertical-align:top}
+.ble td:first-child{white-space:nowrap;color:var(--dim)}
+.ble tr.W td:last-child,.ble tr.E td:last-child{color:var(--fault)}
+</style>
+</head><body><div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
+  <nav>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
+      </select>
+    </div>
+  </div>
+</aside>
+<main class="main">
+<div class="page-head">
+  <div>
+    <h1>Bluetooth</h1>
+    <p class="sub" data-en="LED strip of the Lotus Lantern app: state, control and sent commands.">LED-Strip der App „Lotus Lantern“: Zustand, Bedienung und gesendete Befehle.</p>
+  </div>
+</div>
+<div class="ble">
+<section class="panel">
+  <h2 data-en="State">Zustand</h2>
+  <div class="chips"><span class="chip idle" id="bChip"><span class="dot"></span><span id="bState">—</span></span></div>
+  <dl style="margin-top:14px">
+    <dt data-en="Strip">Strip</dt><dd id="bName">—</dd>
+    <dt data-en="Address">Adresse</dt><dd id="bAddr">—</dd>
+    <dt data-en="Last sent">Zuletzt gesendet</dt><dd id="bLast">—</dd>
+    <dt data-en="Last error">Letzter Fehler</dt><dd id="bErr">—</dd>
+  </dl>
+  <p class="hint" id="bOff" hidden><span data-en="The LED strip is not enabled yet. Search for the strip and enable it under ">Der LED-Strip ist noch nicht aktiviert. Strip suchen und aktivieren unter </span><a href="/config#knx" data-en="Settings → KNX">Einstellungen → KNX</a>.</p>
+  <p class="hint" data-en="The strip reports nothing back: shown is what the gateway sent last, not what the strip really does. The gateway connects only to send and releases the strip after 10 seconds, so the Lotus Lantern app can connect again.">Der Strip meldet nichts zurück: angezeigt wird, was das Gateway zuletzt gesendet hat, nicht was der Strip wirklich tut. Das Gateway verbindet sich nur zum Senden und gibt den Strip nach 10 Sekunden wieder frei, damit die App „Lotus Lantern“ wieder verbinden kann.</p>
+</section>
+<section class="panel">
+  <h2 data-en="Control">Bedienung</h2>
+  <div class="row" style="margin-top:0">
+    <button type="button" class="ctl" onclick="bSet('on=1')" data-en="On">Ein</button>
+    <button type="button" class="sec ctl" onclick="bSet('on=0')" data-en="Off">Aus</button>
+  </div>
+  <label for="bBri" style="display:block;margin-top:18px"><span data-en="Brightness">Helligkeit</span> <b id="bBriV">—</b></label>
+  <input class="ctl" id="bBri" type="range" min="1" max="100" value="100" oninput="bBriV.textContent=this.value+' %'" onchange="bBriSet(1)" onpointerup="if(event.button===0)bBriEnd()" onkeyup="if(/^(Arrow|Home|End|Page)/.test(event.key))bBriEnd()"/>
+  <label for="bCol" style="display:block;margin-top:18px" data-en="Color">Farbe</label>
+  <input class="ctl" id="bCol" type="color" value="#ffffff" onchange="bSet('rgb='+this.value.slice(1))"/>
+  <div class="sw" id="bSw"></div>
+</section>
+<section class="panel wide">
+  <h2 data-en="Bluetooth log">Bluetooth-Protokoll</h2>
+  <table><tbody id="bLog"></tbody></table>
+  <p class="hint"><span data-en="Entries of the LED strip since the last restart, newest first. Everything else is in the ">Einträge des LED-Strips seit dem letzten Neustart, neueste zuerst. Alles andere steht im </span><a href="/debug" data-en="log">Protokoll</a>.</p>
+</section>
+</div>
+</main></div>
+
+<script>
+const I18N={de:{},en:{}};
+let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script src="/b.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let busy=0;
+$('bSw').innerHTML=['ffffff','ff0000','ff8000','ffff00','00ff00','00ffff','0000ff','ff00ff'].map(c=>
+  `<button type="button" class="ctl" style="background:#${c}" aria-label="#${c}" onclick="bSet('rgb=${c}')"></button>`).join('');
+function when(e,up){
+  if(e.ts)return new Date(e.ts*1000).toLocaleTimeString(LANG==='en'?'en-GB':'de-DE');
+  const s=Math.max(0,Math.round((up-e.t)/1000));
+  return uiText('vor '+s+' s',s+' s ago');
+}
+// Wählt jemand den Wert, auf dem der Regler schon steht (anfangs 100 %), feuert kein "change":
+// dann sendet das Ende der Bedienung (Maus, Finger, Pfeiltaste) den Wert.
+let briChanged=false;
+function bBriSet(c){briChanged=!!c;bSet('bri='+$('bBri').value);}
+function bBriEnd(){setTimeout(()=>{if(!briChanged)bBriSet(0);briChanged=false;},0);}
+async function bLoad(){
+  const r=await fetch('/api/bleled').catch(()=>null);const j=r&&r.ok?await r.json():null;
+  if(j){
+    const chip=$('bChip');chip.className='chip '+(j.connected?'on':j.error?'off':'idle');
+    $('bState').textContent=j.state||'—';
+    $('bName').textContent=j.name||'—';$('bAddr').textContent=j.addr||'—';
+    const last=[];
+    if('on' in j)last.push(j.on?uiText('ein','on'):uiText('aus','off'));
+    if('bri' in j)last.push(uiText('Helligkeit ','brightness ')+j.bri+' %');
+    if(j.rgb)last.push(uiText('Farbe ','color ')+j.rgb);
+    $('bLast').textContent=last.join(', ')||uiText('noch nichts','nothing yet');
+    $('bErr').textContent=j.error||uiText('keiner','none');
+    $('bOff').hidden=!!j.enabled;
+    document.querySelectorAll('.ctl').forEach(b=>b.disabled=!j.enabled);
+    if(!busy){
+      if('bri' in j&&document.activeElement!==$('bBri')){$('bBri').value=j.bri;$('bBriV').textContent=j.bri+' %';}
+      if(j.rgb&&document.activeElement!==$('bCol'))$('bCol').value=j.rgb;
+    }
+  }
+  const e=await fetch('/api/events').catch(()=>null);const ev=e&&e.ok?await e.json():null;
+  if(ev){
+    const rows=(ev.events||[]).filter(x=>x.src==='LED').reverse();
+    $('bLog').innerHTML=rows.map(x=>`<tr class="${esc(x.lv)}"><td>${esc(when(x,ev.uptimeMs))}</td><td>${esc(x.msg)}</td></tr>`).join('')
+      ||`<tr><td colspan="2">${uiText('Noch keine Einträge.','No entries yet.')}</td></tr>`;
+  }
+}
+async function bSet(q){
+  busy++;
+  await fetch('/api/bleled/set?'+q,{method:'POST'}).catch(()=>null);
+  for(let n=0;n<8;n++){await new Promise(x=>setTimeout(x,600));await bLoad();}
+  busy--;
+}
+async function boot(){
+  const s=await(await fetch('/api/status')).json();applyThemeLang(s);
+  await bLoad();
+}
+boot();
+setInterval(()=>{if(!document.hidden&&!busy)bLoad();},3000);
+</script></body></html>
+)HTML";
+#endif
 
 const char HISTORY_HTML[] PROGMEM = R"HTML(
 <!doctype html>
@@ -3166,6 +3364,7 @@ void begin() {
     }
     doc["board"] = BOARD_NAME;
     doc["hasDisplay"] = BOARD_HAS_DISPLAY;
+    doc["hasBleLed"] = BleLed::SUPPORTED;
     String out; serializeJson(doc, out);
     req->send(200, "application/json", out);
   });
@@ -3309,6 +3508,31 @@ void begin() {
     BleLed::setPower(req->hasParam("on") && req->getParam("on")->value() == "1");
     req->send(200, "application/json", "{\"ok\":true}");
   });
+
+  // Bedienung von der Seite "Bluetooth": on=0|1, bri=1..100 (0 = aus), rgb=rrggbb
+  server.on("/api/bleled/set", HTTP_POST, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    if (req->hasParam("on")) BleLed::setPower(req->getParam("on")->value() == "1");
+    if (req->hasParam("rgb")) {
+      const String v = req->getParam("rgb")->value();
+      char *end = nullptr;
+      const unsigned long rgb = strtoul(v.c_str(), &end, 16);
+      if (v.length() != 6 || *end) {
+        req->send(400, "application/json", "{\"ok\":false}");
+        return;
+      }
+      BleLed::setColor(rgb >> 16, (rgb >> 8) & 0xff, rgb & 0xff);
+    }
+    if (req->hasParam("bri")) BleLed::setBrightness(constrain(req->getParam("bri")->value().toInt(), 0, 100));
+    req->send(200, "application/json", "{\"ok\":true}");
+  });
+
+#ifdef HAS_BLE_LED
+  server.on("/bluetooth", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    sendPage(req, BLE_HTML);
+  });
+#endif
 
   server.on("/api/knx/meta", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;

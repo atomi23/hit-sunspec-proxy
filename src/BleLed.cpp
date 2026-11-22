@@ -4,6 +4,7 @@
 
 #ifdef HAS_BLE_LED
 #include <BLEDevice.h>
+#include <esp_gattc_api.h>
 
 namespace {
 constexpr uint32_t IDLE_DISCONNECT_MS = 10000; // danach ist der Strip wieder für die App frei
@@ -36,16 +37,26 @@ struct Pending {
   bool any() const { return power >= 0 || bri >= 0 || hasColor; }
 };
 
+// Zuletzt an den Strip geschickte Werte; der Strip selbst meldet nichts zurück.
+struct Sent {
+  int8_t power = -1;
+  int16_t bri = -1;
+  bool hasColor = false;
+  uint8_t r = 0, g = 0, b = 0;
+};
+
 SemaphoreHandle_t lock;
 TaskHandle_t task;
 Target target;
 Pending pending;
+Sent sent;
+const char *connectErr = "";
 bool targetChanged = false;
 Found found[MAX_FOUND];
 size_t foundN = 0;
 const char *state = "aus";
 const char *stateEn = "off";
-char lastErr[48] = "";
+char lastErr[96] = "";
 bool scanning = false;
 
 bool bleUp = false;
@@ -121,46 +132,85 @@ bool connectStrip(const Target &t) {
   tx = nullptr;
   if (!client->connect(BLEAddress(String(t.addr)), t.addrType ? BLE_ADDR_TYPE_RANDOM : BLE_ADDR_TYPE_PUBLIC,
                        CONNECT_TIMEOUT_MS)) {
+    connectErr = ConfigStore::uiText("LED-Strip nicht erreichbar (ausgeschaltet, zu weit weg oder mit der App verbunden)",
+                                     "LED strip not reachable (off, too far away or connected to the app)");
     return false;
   }
   static const char *const pairs[][2] = {{"fff0", "fff3"}, {"ffe0", "ffe1"}};
   const LotusLantern::Model *m = LotusLantern::modelFor(t.name);
   const int first = m && m->ffe1 ? 1 : 0;
+  const char *chr = "";
   for (int k = 0; k < 2 && !tx; k++) {
     const char *const *p = pairs[(first + k) % 2];
     BLERemoteService *svc = client->getService(BLEUUID(p[0]));
     if (svc) tx = svc->getCharacteristic(BLEUUID(p[1]));
+    chr = p[1];
   }
   if (!tx) {
     client->disconnect();
+    connectErr = ConfigStore::uiText("verbunden, aber kein Schreibkanal fff3/ffe1: anderes Protokoll",
+                                     "connected, but no write channel fff3/ffe1: different protocol");
     return false;
   }
+  EventLog::add('I', "LED", ConfigStore::uiText("verbunden mit %s (%s), Schreibkanal %s",
+                                                "connected to %s (%s), write channel %s"), t.name, t.addr, chr);
   setState("verbunden", "connected");
   return true;
 }
 
-void write(const uint8_t *cmd) {
+// Jeder Befehl steht mit seinen Bytes im Ereignisprotokoll; eine Quittung vom Strip gibt es nicht.
+bool write(const uint8_t *cmd, const char *what) {
   uint8_t buf[LotusLantern::CMD_LEN];
   memcpy(buf, cmd, sizeof(buf));
-  tx->writeValue(buf, sizeof(buf), false);
+  if (!client->isConnected()) {
+    fail(ConfigStore::uiText("Verbindung abgebrochen, Befehl nicht gesendet", "connection lost, command not sent"));
+    return false;
+  }
+  // Direkt statt tx->writeValue(): nur so ist zu sehen, ob der Bluetooth-Stack den Befehl angenommen hat.
+  const esp_err_t rc = esp_ble_gattc_write_char(client->getGattcIf(), client->getConnId(), tx->getHandle(), sizeof(buf), buf,
+                                                ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
+  if (rc != ESP_OK) {
+    char msg[72];
+    snprintf(msg, sizeof(msg), ConfigStore::uiText("Befehl nicht gesendet (Bluetooth-Fehler %d)", "command not sent (Bluetooth error %d)"), int(rc));
+    fail(msg);
+    return false;
+  }
+  char hex[LotusLantern::CMD_LEN * 3 + 1];
+  for (size_t i = 0; i < sizeof(buf); i++) snprintf(hex + i * 3, 4, "%02x ", buf[i]);
+  hex[sizeof(hex) - 2] = 0;
+  EventLog::add('I', "LED", ConfigStore::uiText("gesendet: %s (%s)", "sent: %s (%s)"), what, hex);
   vTaskDelay(pdMS_TO_TICKS(40));
+  return true;
 }
 
-void send(const Target &t, const Pending &p) {
+bool send(const Target &t, const Pending &p) {
   const auto v = LotusLantern::variantFor(t.name, LotusLantern::Variant(t.variant));
   uint8_t cmd[LotusLantern::CMD_LEN];
+  char what[40];
   if (p.power >= 0) {
     LotusLantern::power(cmd, v, p.power);
-    write(cmd);
+    if (!write(cmd, p.power ? ConfigStore::uiText("ein", "on") : ConfigStore::uiText("aus", "off"))) return false;
   }
   if (p.hasColor) {
     LotusLantern::color(cmd, p.r, p.g, p.b);
-    write(cmd);
+    snprintf(what, sizeof(what), ConfigStore::uiText("Farbe #%02x%02x%02x", "color #%02x%02x%02x"), p.r, p.g, p.b);
+    if (!write(cmd, what)) return false;
   }
   if (p.bri >= 0) {
     LotusLantern::brightness(cmd, uint8_t(p.bri));
-    write(cmd);
+    snprintf(what, sizeof(what), ConfigStore::uiText("Helligkeit %d %%", "brightness %d %%"), p.bri);
+    if (!write(cmd, what)) return false;
   }
+  Guard g;
+  if (p.power >= 0) sent.power = p.power;
+  if (p.hasColor) {
+    sent.hasColor = true;
+    sent.r = p.r;
+    sent.g = p.g;
+    sent.b = p.b;
+  }
+  if (p.bri >= 0) sent.bri = p.bri;
+  return true;
 }
 
 void run(void *) {
@@ -179,6 +229,10 @@ void run(void *) {
       targetChanged = false;
     }
     if (changed) {
+      {
+        Guard g;
+        sent = Sent();
+      }
       drop();
       // Der Client merkt sich Dienste und Handles des alten Strips: für den neuen einen frischen anlegen.
       for (int i = 0; client && client->isConnected() && i < 20; i++) vTaskDelay(pdMS_TO_TICKS(100));
@@ -188,7 +242,7 @@ void run(void *) {
     if (p.scan) runScan();
     if (p.any()) {
       if (!t.addr[0]) {
-        fail("kein LED-Strip ausgewählt");
+        fail(ConfigStore::uiText("kein LED-Strip ausgewählt", "no LED strip selected"));
       } else {
         bool ok = false;
         for (int attempt = 0; attempt < 3 && !ok; attempt++) {
@@ -196,12 +250,13 @@ void run(void *) {
           if (!ok) vTaskDelay(pdMS_TO_TICKS(500));
         }
         if (ok) {
-          send(t, p);
           lastUse = millis();
-          Guard g;
-          lastErr[0] = 0;
+          if (send(t, p)) {
+            Guard g;
+            lastErr[0] = 0;
+          }
         } else {
-          fail("LED-Strip nicht erreichbar");
+          fail(connectErr);
           setState("bereit", "idle");
         }
       }
@@ -306,6 +361,16 @@ void status(JsonObject out) {
   out["state"] = ConfigStore::uiText(target.enabled || task ? state : "aus", target.enabled || task ? stateEn : "off");
   out["scanning"] = scanning;
   out["error"] = lastErr;
+  out["connected"] = tx != nullptr;
+  out["name"] = target.name;
+  out["addr"] = target.addr;
+  if (sent.power >= 0) out["on"] = sent.power != 0;
+  if (sent.bri >= 0) out["bri"] = sent.bri;
+  if (sent.hasColor) {
+    char rgb[8];
+    snprintf(rgb, sizeof(rgb), "#%02x%02x%02x", sent.r, sent.g, sent.b);
+    out["rgb"] = rgb;
+  }
   JsonArray a = out["found"].to<JsonArray>();
   for (size_t i = 0; i < foundN; i++) {
     JsonObject o = a.add<JsonObject>();
