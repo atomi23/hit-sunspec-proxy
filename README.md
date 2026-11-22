@@ -374,6 +374,11 @@ OTA zwischen App-Slots bleibt danach möglich.
 - [WT32-ETH01 auf Amazon.de](https://www.amazon.de/dp/B0CW3DDWZ4?tag=atomi23-21)\*
 - [Waveshare ESP32-P4-WIFI6-POE-ETH auf Amazon.de](https://www.amazon.de/dp/B0G62SNY9S?tag=atomi23-21)\*
 - [Bluetooth-LED-Strips mit Lotus Lantern auf Amazon.de suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=Lotus+Lantern+Bluetooth+LED+Strip&rh=p_85%3A20943776031)\* — vor dem Kauf prüfen, ob das Angebot die App **Lotus Lantern** nennt; einzelne Modelle wurden nicht getestet.
+- [RS485-Wandlermodule mit 3,3-V-Logik und automatischer Richtungsumschaltung suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=RS485+TTL+3.3V+Modul+automatische+Richtungsumschaltung&rh=p_85%3A20943776031)\* — optional für WT32-ETH01 und Waveshare ESP32-P4.
+- [USB-Seriell-Adapter mit 3,3-V-Logik suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=USB+UART+TTL+3.3V+Adapter&rh=p_85%3A20943776031)\* — zum Flashen des WT32-ETH01.
+- [PoE-Adapterplatinen für WT32-ETH01 suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=WT32-ETH01+PoE+Adapterplatine&rh=p_85%3A20943776031)\* — vor dem Kauf Anschluss und Gehäusemaße prüfen.
+- [Step-down-Module mit 12–24 V Eingang und 5 V Ausgang suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=DC+DC+Step+Down+12V+24V+auf+5V+Modul&rh=p_85%3A20943776031)\* — für die RS485-Gehäusevariante des WT32-ETH01; Eingangsspannungsbereich und Maße prüfen.
+- [Tasmota-Leseköpfe für Stromzähler suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=Tasmota+Lesekopf+Stromz%C3%A4hler&rh=p_85%3A20943776031)\* — vor dem Kauf prüfen, ob der Lesekopf zum eigenen Zähler passt.
 
 \*Als Amazon-Partner verdiene ich an qualifizierten Verkäufen. Mit * markierte Links sind Werbe-/Affiliate-Links.
 
