@@ -12,16 +12,20 @@ Target board: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect
 Without a display it also runs on the **WT32-ETH01** (ESP32 + LAN8720, 4 MB flash) and the LilyGO T-POE-Pro, see [Build](#build).
 There is a [printable DIN rail enclosure (2 modules)](hardware/wt32-din/) for the WT32-ETH01, and one with [3.5 modules](hardware/p4-poe-din/) for the Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`).
 
-Current firmware: **v0.5.23** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.23)
+Current firmware: **v0.6.0** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.6.0)
 
-### New in v0.5.23
+### New in v0.6.0
+- **"Bluetooth" page (T-Connect-Pro only):** Shows the connection state of the LED strip and the last error, switches the strip on and off and sets brightness and color. It shows what the gateway sent last; the strip reports nothing back.
+- **Bluetooth log:** Every command sent to the strip is in the event log with its bytes, as is every connection. Error messages now name the reason (not reachable or no matching write channel).
+
+<details>
+<summary><b>Older versions</b> (v0.5.23 to v0.5.6)</summary>
+
+### v0.5.23
 - **Bluetooth LED strip via KNX (T-Connect-Pro only):** LED strips driven by the *Lotus Lantern* app can be switched (DPT 1.001), dimmed (DPT 5.001) and colored (DPT 232.600) through three KNX objects. Set up with strip search and test under *Settings → KNX*. The commands come from public protocol descriptions and have not yet been tried on a real strip.
 - **Web UI:** Decimal numbers follow the selected language (comma or point).
 - **HIT inverter:** A truncated RS485 response is reported as an error.
 - **Data origin:** Is reset when all data sources have expired.
-
-<details>
-<summary><b>Older versions</b> (v0.5.22 to v0.5.6)</summary>
 
 ### v0.5.22
 - **HTTPS on Windows:** CA installation steps now select the root certificate store manually, so Chrome trusts the device CA.
