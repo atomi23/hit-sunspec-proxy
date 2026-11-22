@@ -927,7 +927,7 @@ const char BLE_HTML[] PROGMEM = R"HTML(
     <button type="button" class="sec ctl" onclick="bSet('on=0')" data-en="Off">Aus</button>
   </div>
   <label for="bBri" style="display:block;margin-top:18px"><span data-en="Brightness">Helligkeit</span> <b id="bBriV">—</b></label>
-  <input class="ctl" id="bBri" type="range" min="1" max="100" value="100" oninput="bBriV.textContent=this.value+' %'" onchange="bBriSet(1)" onpointerup="bBriEnd()" onkeyup="if(/^(Arrow|Home|End|Page)/.test(event.key))bBriEnd()"/>
+  <input class="ctl" id="bBri" type="range" min="1" max="100" value="100" oninput="bBriV.textContent=this.value+' %'" onchange="bBriSet(1)" onpointerup="if(event.button===0)bBriEnd()" onkeyup="if(/^(Arrow|Home|End|Page)/.test(event.key))bBriEnd()"/>
   <label for="bCol" style="display:block;margin-top:18px" data-en="Color">Farbe</label>
   <input class="ctl" id="bCol" type="color" value="#ffffff" onchange="bSet('rgb='+this.value.slice(1))"/>
   <div class="sw" id="bSw"></div>
