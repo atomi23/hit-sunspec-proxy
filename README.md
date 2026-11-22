@@ -12,14 +12,20 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.22** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.22)
+Aktuelle Firmware: **v0.5.23** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.23)
 
-### Neu in v0.5.22
-- **HTTPS unter Windows:** CA-Installationsschritte mit manueller Auswahl des Stammzertifikatsspeichers ergänzt, damit Chrome der Geräte-CA vertraut.
-- **Abmelden:** Schaltfläche auf den Hauptseiten der Weboberfläche, auch über HTTPS. Falls der Browser die Anmeldung behält, hilft der Hinweis zum Schließen des Browsers.
+### Neu in v0.5.23
+- **Bluetooth-LED-Strip per KNX (nur T-Connect-Pro):** LED-Strips der App *Lotus Lantern* lassen sich über drei KNX-Objekte schalten (DPT 1.001), dimmen (DPT 5.001) und färben (DPT 232.600). Einrichtung mit Strip-Suche und Test unter *Einstellungen → KNX*. Die Befehle stammen aus öffentlichen Protokollbeschreibungen und sind noch nicht an einem echten Strip erprobt.
+- **Weboberfläche:** Dezimalzahlen folgen der gewählten Sprache (Komma oder Punkt).
+- **HIT-Wechselrichter:** Eine abgeschnittene RS485-Antwort wird als Fehler gemeldet.
+- **Datenherkunft:** Wird zurückgesetzt, wenn alle Datenquellen abgelaufen sind.
 
 <details>
-<summary><b>Ältere Versionen</b> (v0.5.20 bis v0.5.6)</summary>
+<summary><b>Ältere Versionen</b> (v0.5.22 bis v0.5.6)</summary>
+
+### v0.5.22
+- **HTTPS unter Windows:** CA-Installationsschritte mit manueller Auswahl des Stammzertifikatsspeichers ergänzt, damit Chrome der Geräte-CA vertraut.
+- **Abmelden:** Schaltfläche auf den Hauptseiten der Weboberfläche, auch über HTTPS. Falls der Browser die Anmeldung behält, hilft der Hinweis zum Schließen des Browsers.
 
 ### v0.5.20
 - **Weboberfläche:** Lädt das Layout mit der Seite, statt es nach einem Neustart separat anfordern zu müssen.
