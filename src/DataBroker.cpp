@@ -42,10 +42,8 @@ void reconcile() {
     }
   }
 
-  if (gLive.dataOrigin == DataOrigin::Native || gLive.dataOrigin == DataOrigin::None) {
-    gLive.dataOrigin = DataOrigin::None;
-    if (!gLive.hitOk) strlcpy(gLive.status, "keine Quelle", sizeof(gLive.status));
-  }
+  gLive.dataOrigin = DataOrigin::None;
+  if (!gLive.hitOk) strlcpy(gLive.status, "keine Quelle", sizeof(gLive.status));
 }
 
 } // namespace DataBroker
