@@ -32,6 +32,7 @@ httpd_handle_t server = nullptr;
 String certPem, keyPem;
 String caPem;
 bool ownCert = false;
+bool caSigned = false;
 bool lowRam = false;
 uint32_t startAfterMs = 0;
 uint32_t restartAt = 0;
@@ -192,7 +193,7 @@ bool ensureCa(bool &created) {
   return ok;
 }
 
-bool makeSelfSigned() {
+bool makeCertificate(bool plain = false) {
   Rng rng;
   mbedtls_pk_context key;
   mbedtls_pk_context issuerKey;
@@ -238,22 +239,26 @@ bool makeSelfSigned() {
   bool ok = false;
   do {
     if (!pem || !kpem || !rng.ok) break;
-    Preferences p;
-    p.begin("tls", true);
-    String caKey = p.getString("cakey", "");
-    p.end();
-    if (mbedtls_pk_parse_key(&issuerKey, reinterpret_cast<const unsigned char *>(caKey.c_str()), caKey.length() + 1,
-        nullptr, 0, mbedtls_ctr_drbg_random, &rng.drbg)) break;
-    if (parseCa(&ca)) break;
-    if (mbedtls_pk_check_pair(&ca.pk, &issuerKey, mbedtls_ctr_drbg_random, &rng.drbg)) break;
     char issuer[192];
-    if (mbedtls_x509_dn_gets(issuer, sizeof(issuer), &ca.subject) < 0) break;
+    if (plain) {
+      snprintf(issuer, sizeof(issuer), "%s", name);
+    } else {
+      Preferences p;
+      p.begin("tls", true);
+      String caKey = p.getString("cakey", "");
+      p.end();
+      if (mbedtls_pk_parse_key(&issuerKey, reinterpret_cast<const unsigned char *>(caKey.c_str()), caKey.length() + 1,
+          nullptr, 0, mbedtls_ctr_drbg_random, &rng.drbg)) break;
+      if (parseCa(&ca)) break;
+      if (mbedtls_pk_check_pair(&ca.pk, &issuerKey, mbedtls_ctr_drbg_random, &rng.drbg)) break;
+      if (mbedtls_x509_dn_gets(issuer, sizeof(issuer), &ca.subject) < 0) break;
+    }
     const time_t from = nowOrBuild() - 86400;
     char nb[16], na[16];
     fmtTime(nb, from);
     fmtTime(na, from + time_t(SELF_DAYS) * 86400);
     if (LocalCertificates::generate(false, name, issuer, nb, na, &key, &issuerKey, san,
-        &rng.drbg, pem, 2048, kpem, 512)) break;
+        &rng.drbg, pem, 2048, kpem, 512, plain)) break;
     certPem = reinterpret_cast<char *>(pem);
     keyPem = reinterpret_cast<char *>(kpem);
     ok = true;
@@ -268,14 +273,15 @@ bool makeSelfSigned() {
   mbedtls_pk_free(&issuerKey);
   mbedtls_pk_free(&key);
   if (!ok) return false;
+  caSigned = !plain;
 
   Preferences p;
-  if (!p.begin("tls", false)) return false;
-  const bool saved = p.putString("crt", certPem) > 0 && p.putString("key", keyPem) > 0 &&
-                     p.putString("ips", currentIps()) > 0 && p.putBool("caLeaf", true) > 0;
+  const bool saved = p.begin("tls", false) && p.putBool("caLeaf", false) > 0 &&
+                     p.putString("crt", certPem) > 0 && p.putString("key", keyPem) > 0 &&
+                     p.putString("ips", currentIps()) > 0 && p.putBool("caLeaf", !plain) > 0;
   p.end();
-  if (!saved) return false;
-  EventLog::add('I', "HTTPS", "von Geräte-CA signiertes Zertifikat erzeugt (%s, %s %s)", host.c_str(), gLive.ipEth,
+  if (!saved) EventLog::add('W', "HTTPS", "Serverzertifikat nur im RAM, Speichern fehlgeschlagen");
+  EventLog::add('I', "HTTPS", "%s Zertifikat erzeugt (%s, %s %s)", plain ? "selbst signiertes" : "von Geräte-CA signiertes", host.c_str(), gLive.ipEth,
                 strcmp(gLive.ipWifi, "-") ? gLive.ipWifi : "");
   return true;
 }
@@ -342,6 +348,7 @@ void buildInfo() {
   }
   mbedtls_x509_crt_free(&c);
   j += String("\"source\":\"") + (ownCert ? "own" : "self") + "\",\"running\":" + (server ? "true" : "false") +
+       ",\"caSigned\":" + (caSigned ? "true" : "false") +
        ",\"enabled\":" + (local.httpsEnabled ? "true" : "false") + ",\"lowRam\":" + (lowRam ? "true" : "false") + "}";
   if (infoLock) xSemaphoreTake(infoLock, portMAX_DELAY);
   info = j;
@@ -360,8 +367,44 @@ bool selfSignedExpired() {
   return expired;
 }
 
+bool loadStoredLeaf(bool requireCa) {
+  Preferences p;
+  if (!p.begin("tls", true)) return false;
+  String crt = p.getString("crt", "");
+  String key = p.getString("key", "");
+  const bool moved = p.getString("ips", "") != currentIps();
+  const bool signedByCa = p.getBool("caLeaf", false);
+  p.end();
+  if (moved || (requireCa && !signedByCa) || !crt.length() || !key.length()) return false;
+  Rng rng;
+  mbedtls_x509_crt c;
+  mbedtls_pk_context k;
+  mbedtls_x509_crt_init(&c);
+  mbedtls_pk_init(&k);
+  const bool ok = rng.ok && mbedtls_x509_crt_parse(&c,
+      reinterpret_cast<const unsigned char *>(crt.c_str()), crt.length() + 1) == 0 &&
+      (time(nullptr) < 1700000000 || validTo(c) > time(nullptr) + 7 * 86400) &&
+      mbedtls_pk_parse_key(&k, reinterpret_cast<const unsigned char *>(key.c_str()), key.length() + 1,
+          nullptr, 0, mbedtls_ctr_drbg_random, &rng.drbg) == 0 &&
+      mbedtls_pk_check_pair(&c.pk, &k, mbedtls_ctr_drbg_random, &rng.drbg) == 0;
+  mbedtls_pk_free(&k);
+  mbedtls_x509_crt_free(&c);
+  if (ok) {
+    certPem = crt;
+    keyPem = key;
+    caSigned = signedByCa;
+  }
+  return ok;
+}
+
+bool fallbackCertificate() {
+  EventLog::add('W', "HTTPS", "Geräte-CA fehlgeschlagen, nutze Ersatz-Zertifikat; neuer Versuch beim nächsten Start");
+  return loadStoredLeaf(false) || makeCertificate(true);
+}
+
 bool loadCert(bool regenerate) {
   ownCert = false;
+  caSigned = false;
   Preferences caStore;
   caStore.begin("tls", true);
   caPem = caStore.getString("cacrt", "");
@@ -376,21 +419,9 @@ bool loadCert(bool regenerate) {
     EventLog::add('W', "HTTPS", "eigenes Zertifikat nicht lesbar, nehme selbst signiertes");
   }
   bool created = false;
-  if (!ensureCa(created)) return false;
-  if (!regenerate && !created) {
-    Preferences p;
-    p.begin("tls", true);
-    certPem = p.getString("crt", "");
-    keyPem = p.getString("key", "");
-    const String ips = p.getString("ips", "");
-    const bool caLeaf = p.getBool("caLeaf", false);
-    p.end();
-    // neue Adresse (DHCP): Zertifikat neu, sonst passt es nicht mehr zur Adresszeile
-    const bool moved = ips != currentIps();
-    if (moved && certPem.length()) EventLog::add('I', "HTTPS", "IP-Adresse geändert, erneuere Zertifikat");
-    if (caLeaf && certPem.length() && keyPem.length() && !moved && !selfSignedExpired()) return true;
-  }
-  return makeSelfSigned();
+  if (!ensureCa(created)) return fallbackCertificate();
+  if (!regenerate && !created && loadStoredLeaf(true)) return true;
+  return makeCertificate() || fallbackCertificate();
 }
 
 // ---- Proxy auf die Weboberfläche --------------------------------------------------------------
@@ -636,7 +667,7 @@ void start(bool regenerate) {
     u.handler = proxy;
     httpd_register_uri_handler(server, &u);
   }
-  EventLog::add('I', "HTTPS", "Port 443 aktiv, %s Zertifikat", ownCert ? "eigenes" : "von Geräte-CA signiertes");
+  EventLog::add('I', "HTTPS", "Port 443 aktiv, %s Zertifikat", ownCert ? "eigenes" : caSigned ? "von Geräte-CA signiertes" : "selbst signiertes");
   buildInfo();
 }
 

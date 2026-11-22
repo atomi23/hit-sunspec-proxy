@@ -1707,7 +1707,7 @@ async function loadTls(){
   const esc=s=>String(s||'–').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
   tb.innerHTML=row('Status',!t.enabled?uiText('aus',"Off"):t.running?uiText('<span class="ok">läuft</span>',"<span class=\"ok\">Running</span>"):t.lowRam?uiText('<span class="bad">zu wenig Speicher auf diesem Board, die Oberfläche läuft über HTTP</span>',"<span class=\"bad\">Not enough memory on this board; the interface uses HTTP</span>"):uiText('<span class="bad">nicht gestartet</span>',"<span class=\"bad\">Not started</span>"))+
-    row(uiText('Zertifikat',"Certificate"),t.source==='own'?uiText('eigenes',"Custom")+(t.chain>1?uiText(' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')',' (with '+(t.chain-1)+' intermediate certificate'+(t.chain>2?'s':'')+')'):''):uiText('von der Geräte-CA signiert',"Signed by device CA"))+
+    row(uiText('Zertifikat',"Certificate"),t.source==='own'?uiText('eigenes',"Custom")+(t.chain>1?uiText(' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')',' (with '+(t.chain-1)+' intermediate certificate'+(t.chain>2?'s':'')+')'):''):t.caSigned===false?uiText('selbst signiert (Ersatz)',"Self-signed (fallback)"):uiText('von der Geräte-CA signiert',"Signed by device CA"))+
     row(uiText('Ausgestellt für',"Issued to"),esc(t.subject))+(t.source==='own'?row(uiText('Aussteller',"Issuer"),esc(t.issuer)):'')+
     row(uiText('Gültig bis',"Valid until"),esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`)+
     (t.caSha256?row('CA SHA-256',`<code style="font-size:12px">${esc(t.caSha256)}</code>`)+row(uiText('CA gültig bis',"CA valid until"),esc(t.caValidTo)):'');

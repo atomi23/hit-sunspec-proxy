@@ -42,7 +42,8 @@ inline int generate(bool ca, const char *subject, const char *issuer,
                     const char *notBefore, const char *notAfter,
                     mbedtls_pk_context *key, mbedtls_pk_context *issuerKey,
                     mbedtls_x509_san_list *san, mbedtls_ctr_drbg_context *rng,
-                    unsigned char *pem, size_t pemSize, unsigned char *keyPem, size_t keySize) {
+                    unsigned char *pem, size_t pemSize, unsigned char *keyPem, size_t keySize,
+                    bool selfSigned = false) {
   mbedtls_x509write_cert crt;
   mbedtls_x509write_crt_init(&crt);
   int rc = 0;
@@ -52,7 +53,7 @@ inline int generate(bool ca, const char *subject, const char *issuer,
     mbedtls_x509write_crt_set_version(&crt, MBEDTLS_X509_CRT_VERSION_3);
     mbedtls_x509write_crt_set_md_alg(&crt, MBEDTLS_MD_SHA256);
     mbedtls_x509write_crt_set_subject_key(&crt, key);
-    mbedtls_x509write_crt_set_issuer_key(&crt, ca ? key : issuerKey);
+    mbedtls_x509write_crt_set_issuer_key(&crt, ca || selfSigned ? key : issuerKey);
     if ((rc = mbedtls_x509write_crt_set_subject_name(&crt, subject))) break;
     if ((rc = mbedtls_x509write_crt_set_issuer_name(&crt, issuer))) break;
     unsigned char serial[16];

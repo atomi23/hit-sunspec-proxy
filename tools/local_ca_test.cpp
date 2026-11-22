@@ -58,8 +58,19 @@ int main(int argc, char **argv) {
   if (!rc) rc = LocalCertificates::generate(false, "CN=test,O=HIT-SunSpec-Proxy", caName,
       "20260101000000", "20280331000000", &leaf, &ca, san, &rng, pem, sizeof(pem), key, sizeof(key));
   if (!rc && !save("leaf.pem", pem)) rc = -1;
+  if (!rc && !save("leaf.key", key)) rc = -1;
+  mbedtls_x509_crt_init(&parsed);
+  if (!rc) rc = mbedtls_x509_crt_parse(&parsed, pem, strlen((char *)pem) + 1);
+  printf("mbedtls_x509_crt_parse(leaf only): %s (rc=%d)\n", rc ? "FAIL" : "OK", rc);
+  mbedtls_x509_crt_free(&parsed);
   if (!rc && LocalCertificates::validCaPair(caPem, key, &rng)) rc = -1;
   printf("CA pair checks (valid, missing, corrupt, mismatched): %s\n", rc ? "FAIL" : "OK");
+  mbedtls_pk_free(&leaf);
+  mbedtls_pk_init(&leaf);
+  if (!rc) rc = LocalCertificates::generate(false, "CN=test,O=HIT-SunSpec-Proxy", "CN=test,O=HIT-SunSpec-Proxy",
+      "20260101000000", "20280331000000", &leaf, nullptr, san, &rng, pem, sizeof(pem), key, sizeof(key), true);
+  if (!rc && !save("fallback.pem", pem)) rc = -1;
+  printf("Plain self-signed fallback generation: %s (rc=%d)\n", rc ? "FAIL" : "OK", rc);
   mbedtls_pk_free(&leaf);
   mbedtls_pk_free(&ca);
   mbedtls_ctr_drbg_free(&rng);
