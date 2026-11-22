@@ -178,7 +178,13 @@ void run(void *) {
       changed = targetChanged;
       targetChanged = false;
     }
-    if (changed) drop();
+    if (changed) {
+      drop();
+      // Der Client merkt sich Dienste und Handles des alten Strips: für den neuen einen frischen anlegen.
+      for (int i = 0; client && client->isConnected() && i < 20; i++) vTaskDelay(pdMS_TO_TICKS(100));
+      delete client;
+      client = nullptr;
+    }
     if (p.scan) runScan();
     if (p.any()) {
       if (!t.addr[0]) {
@@ -212,6 +218,7 @@ void run(void *) {
   }
 }
 
+// Aufrufer hält lock: Hauptschleife (KNX) und Web-Task dürfen nicht beide einen Task anlegen.
 void wake() {
   if (!task) xTaskCreatePinnedToCore(run, "bleled", 8192, nullptr, 1, &task, 0);
   else xTaskNotifyGive(task);
@@ -252,8 +259,8 @@ void setPower(bool on) {
       pending.bri = -1;
       pending.hasColor = false;
     }
+    wake();
   }
-  wake();
 }
 
 void setBrightness(uint8_t pct) {
@@ -263,8 +270,8 @@ void setBrightness(uint8_t pct) {
     Guard g;
     pending.power = 1;
     pending.bri = pct > 100 ? 100 : pct;
+    wake();
   }
-  wake();
 }
 
 void setColor(uint8_t r, uint8_t g8, uint8_t b) {
@@ -277,8 +284,8 @@ void setColor(uint8_t r, uint8_t g8, uint8_t b) {
     pending.r = r;
     pending.g = g8;
     pending.b = b;
+    wake();
   }
-  wake();
 }
 
 void startScan() {
@@ -287,8 +294,8 @@ void startScan() {
     Guard g;
     pending.scan = true;
     scanning = true;
+    wake();
   }
-  wake();
 }
 
 void status(JsonObject out) {
