@@ -373,6 +373,7 @@ OTA zwischen App-Slots bleibt danach möglich.
 - [LILYGO T-POE-Pro auf Amazon.de suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=LILYGO+T-POE-Pro&rh=p_85%3A20943776031)\*
 - [WT32-ETH01 auf Amazon.de](https://www.amazon.de/dp/B0CW3DDWZ4?tag=atomi23-21)\*
 - [Waveshare ESP32-P4-WIFI6-POE-ETH auf Amazon.de](https://www.amazon.de/dp/B0G62SNY9S?tag=atomi23-21)\*
+- [Bluetooth-LED-Strips mit Lotus Lantern auf Amazon.de suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=Lotus+Lantern+Bluetooth+LED+Strip&rh=p_85%3A20943776031)\* — vor dem Kauf prüfen, ob das Angebot die App **Lotus Lantern** nennt; einzelne Modelle wurden nicht getestet.
 
 \*Als Amazon-Partner verdiene ich an qualifizierten Verkäufen. Mit * markierte Links sind Werbe-/Affiliate-Links.
 
