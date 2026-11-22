@@ -29,11 +29,23 @@ int main(int argc, char **argv) {
   memcpy(caPem, pem, sizeof(pem));
   const auto *empty = reinterpret_cast<const unsigned char *>("");
   const auto *bad = reinterpret_cast<const unsigned char *>("invalid PEM");
-  if (!rc && (!LocalCertificates::validCaPair(caPem, key, &rng) ||
-      LocalCertificates::validCaPair(caPem, empty, &rng) ||
-      LocalCertificates::validCaPair(empty, key, &rng) ||
-      LocalCertificates::validCaPair(bad, key, &rng) ||
-      LocalCertificates::validCaPair(caPem, bad, &rng))) rc = -1;
+  using LocalCertificates::CaPairStatus;
+  using LocalCertificates::checkCaPair;
+  if (!rc && (checkCaPair(caPem, key, &rng) != CaPairStatus::Valid ||
+      checkCaPair(caPem, empty, &rng) != CaPairStatus::Corrupt ||
+      checkCaPair(empty, key, &rng) != CaPairStatus::Corrupt ||
+      checkCaPair(bad, key, &rng) != CaPairStatus::Corrupt ||
+      checkCaPair(caPem, bad, &rng) != CaPairStatus::Corrupt)) rc = -1;
+  const int transient[] = {MBEDTLS_ERR_PEM_ALLOC_FAILED, MBEDTLS_ERR_X509_ALLOC_FAILED,
+      MBEDTLS_ERR_PK_ALLOC_FAILED, MBEDTLS_ERR_ECP_ALLOC_FAILED, MBEDTLS_ERR_ASN1_ALLOC_FAILED,
+      MBEDTLS_ERR_X509_INVALID_EXTENSIONS + MBEDTLS_ERR_ASN1_ALLOC_FAILED,
+      MBEDTLS_ERR_ECP_RANDOM_FAILED, MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE, -1};
+  for (int error : transient)
+    if (LocalCertificates::caValidationStatus(error, true) != CaPairStatus::Retry ||
+        LocalCertificates::caValidationStatus(error, false) != CaPairStatus::Retry) rc = -1;
+  if (LocalCertificates::caValidationStatus(MBEDTLS_ERR_X509_INVALID_FORMAT + MBEDTLS_ERR_ASN1_OUT_OF_DATA,
+      true) != CaPairStatus::Corrupt) rc = -1;
+  printf("Transient CA validation errors preserve CA: %s\n", rc ? "FAIL" : "OK");
   mbedtls_x509_crt parsed;
   mbedtls_x509_crt_init(&parsed);
   if (!rc) rc = LocalCertificates::parseCa(&parsed, pem);
@@ -63,7 +75,7 @@ int main(int argc, char **argv) {
   if (!rc) rc = mbedtls_x509_crt_parse(&parsed, pem, strlen((char *)pem) + 1);
   printf("mbedtls_x509_crt_parse(leaf only): %s (rc=%d)\n", rc ? "FAIL" : "OK", rc);
   mbedtls_x509_crt_free(&parsed);
-  if (!rc && LocalCertificates::validCaPair(caPem, key, &rng)) rc = -1;
+  if (!rc && checkCaPair(caPem, key, &rng) != CaPairStatus::Corrupt) rc = -1;
   printf("CA pair checks (valid, missing, corrupt, mismatched): %s\n", rc ? "FAIL" : "OK");
   mbedtls_pk_free(&leaf);
   mbedtls_pk_init(&leaf);

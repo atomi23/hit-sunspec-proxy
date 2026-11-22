@@ -1,5 +1,6 @@
 #pragma once
 #include <cstring>
+#include <mbedtls/base64.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/oid.h>
 #include <mbedtls/pk.h>
@@ -23,19 +24,60 @@ inline int parseCa(mbedtls_x509_crt *crt, const unsigned char *certificate) {
   return rc;
 }
 
-inline bool validCaPair(const unsigned char *certificate, const unsigned char *privateKey,
+enum class CaPairStatus { Valid, Corrupt, Retry };
+
+inline CaPairStatus caValidationStatus(int rc, bool parsing) {
+  if (!rc) return CaPairStatus::Valid;
+  if (!parsing) {
+    return rc == MBEDTLS_ERR_PK_TYPE_MISMATCH || rc == MBEDTLS_ERR_PK_BAD_INPUT_DATA ||
+           rc == MBEDTLS_ERR_ECP_BAD_INPUT_DATA || rc == MBEDTLS_ERR_ECP_INVALID_KEY ?
+           CaPairStatus::Corrupt : CaPairStatus::Retry;
+  }
+  const int low = -((-rc) & 0x7f);
+  if (low != 0 && low != MBEDTLS_ERR_ASN1_OUT_OF_DATA && low != MBEDTLS_ERR_ASN1_UNEXPECTED_TAG &&
+      low != MBEDTLS_ERR_ASN1_INVALID_LENGTH && low != MBEDTLS_ERR_ASN1_LENGTH_MISMATCH &&
+      low != MBEDTLS_ERR_ASN1_INVALID_DATA && low != MBEDTLS_ERR_BASE64_INVALID_CHARACTER)
+    return CaPairStatus::Retry;
+  switch (-((-rc) & ~0x7f)) {
+    case MBEDTLS_ERR_PEM_NO_HEADER_FOOTER_PRESENT:
+    case MBEDTLS_ERR_PEM_INVALID_DATA:
+    case MBEDTLS_ERR_X509_INVALID_FORMAT:
+    case MBEDTLS_ERR_X509_INVALID_VERSION:
+    case MBEDTLS_ERR_X509_INVALID_SERIAL:
+    case MBEDTLS_ERR_X509_INVALID_ALG:
+    case MBEDTLS_ERR_X509_INVALID_NAME:
+    case MBEDTLS_ERR_X509_INVALID_DATE:
+    case MBEDTLS_ERR_X509_INVALID_SIGNATURE:
+    case MBEDTLS_ERR_X509_INVALID_EXTENSIONS:
+    case MBEDTLS_ERR_X509_SIG_MISMATCH:
+    case MBEDTLS_ERR_X509_CERT_UNKNOWN_FORMAT:
+    case MBEDTLS_ERR_PK_KEY_INVALID_VERSION:
+    case MBEDTLS_ERR_PK_KEY_INVALID_FORMAT:
+    case MBEDTLS_ERR_PK_INVALID_PUBKEY:
+    case MBEDTLS_ERR_PK_INVALID_ALG:
+      return CaPairStatus::Corrupt;
+    default:
+      return CaPairStatus::Retry;
+  }
+}
+
+inline CaPairStatus checkCaPair(const unsigned char *certificate, const unsigned char *privateKey,
                         mbedtls_ctr_drbg_context *rng) {
+  if (!certificate[0] || !privateKey[0]) return CaPairStatus::Corrupt;
   mbedtls_x509_crt crt;
   mbedtls_pk_context key;
   mbedtls_x509_crt_init(&crt);
   mbedtls_pk_init(&key);
-  const bool ok = parseCa(&crt, certificate) == 0 && crt.MBEDTLS_PRIVATE(ca_istrue) &&
-      mbedtls_pk_parse_key(&key, privateKey, strlen(reinterpret_cast<const char *>(privateKey)) + 1,
-          nullptr, 0, mbedtls_ctr_drbg_random, rng) == 0 &&
-      mbedtls_pk_check_pair(&crt.pk, &key, mbedtls_ctr_drbg_random, rng) == 0;
+  CaPairStatus status = caValidationStatus(parseCa(&crt, certificate), true);
+  if (status == CaPairStatus::Valid && !crt.MBEDTLS_PRIVATE(ca_istrue)) status = CaPairStatus::Corrupt;
+  if (status == CaPairStatus::Valid)
+    status = caValidationStatus(mbedtls_pk_parse_key(&key, privateKey,
+        strlen(reinterpret_cast<const char *>(privateKey)) + 1, nullptr, 0, mbedtls_ctr_drbg_random, rng), true);
+  if (status == CaPairStatus::Valid)
+    status = caValidationStatus(mbedtls_pk_check_pair(&crt.pk, &key, mbedtls_ctr_drbg_random, rng), false);
   mbedtls_pk_free(&key);
   mbedtls_x509_crt_free(&crt);
-  return ok;
+  return status;
 }
 
 inline int generate(bool ca, const char *subject, const char *issuer,

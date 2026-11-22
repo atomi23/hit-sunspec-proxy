@@ -151,13 +151,22 @@ bool ensureCa(bool &created) {
   if (!p.begin("tls", false)) return false;
   caPem = p.getString("cacrt", "");
   const String storedKey = p.getString("cakey", "");
+  if ((p.isKey("cacrt") && !caPem.length()) || (p.isKey("cakey") && !storedKey.length())) {
+    p.end();
+    return false;
+  }
   Rng rng;
   if (!rng.ok) { p.end(); return false; }
   if (caPem.length() || storedKey.length()) {
-    if (LocalCertificates::validCaPair(reinterpret_cast<const unsigned char *>(caPem.c_str()),
-        reinterpret_cast<const unsigned char *>(storedKey.c_str()), &rng.drbg)) {
+    const auto status = LocalCertificates::checkCaPair(reinterpret_cast<const unsigned char *>(caPem.c_str()),
+        reinterpret_cast<const unsigned char *>(storedKey.c_str()), &rng.drbg);
+    if (status == LocalCertificates::CaPairStatus::Valid) {
       p.end();
       return true;
+    }
+    if (status == LocalCertificates::CaPairStatus::Retry) {
+      p.end();
+      return false;
     }
     EventLog::add('W', "HTTPS", "unvollständige oder ungültige Geräte-CA, erzeuge sie neu");
     p.remove("cacrt");
