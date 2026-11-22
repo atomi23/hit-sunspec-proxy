@@ -188,7 +188,7 @@ Die CA wird einmal erzeugt, für etwa zehn Jahre ausgestellt und bleibt bei IP-W
 Serverzertifikate werden automatisch umgestellt; hochgeladene eigene Zertifikate bleiben unverändert.
 
 Für HTTPS ohne Browserwarnung unter *Netzwerk und Zugang* **CA-Zertifikat herunterladen** wählen
-(`/api/tls/ca.crt`, mit Anmeldung auch über HTTP erreichbar). Den angezeigten CA-SHA-256-Fingerabdruck
+(`/api/tls/ca.crt`, öffentlich und auch über HTTP erreichbar; enthält keinen privaten Schlüssel). Den angezeigten CA-SHA-256-Fingerabdruck
 über eine vertrauenswürdige Verbindung vergleichen und die CA einmal pro Client als Stamm-CA installieren:
 - Windows: **Vertrauenswürdige Stammzertifizierungsstellen**
 - macOS: **Schlüsselbund**, **Immer vertrauen**

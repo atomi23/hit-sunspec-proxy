@@ -2811,7 +2811,6 @@ void begin() {
   });
 
   server.on("/api/tls/ca.crt", HTTP_GET, [](AsyncWebServerRequest *req) {
-    if (!requireAuth(req)) return;
     const String ca = HttpsServer::caCertificate();
     if (!ca.length()) {
       req->send(404, "text/plain", "No device CA available");
