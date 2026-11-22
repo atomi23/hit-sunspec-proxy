@@ -979,7 +979,7 @@ async function sLoad(){
     +row('Bluetooth',yes(j.hasBleLed));
   $('sSw').innerHTML=row('Firmware','v'+esc(j.version))
     +row(uiText('Gebaut am','Built'),esc(j.build))
-    +row(uiText('Firmwaregröße','Firmware size'),esc(mb(j.sketchBytes)+uiText(' von ',' of ')+mb(j.sketchBytes+j.sketchFree)))
+    +row(uiText('Firmwaregröße','Firmware size'),esc(mb(j.sketchBytes)+uiText(' von ',' of ')+mb(j.sketchFree)))
     +row('Arduino-ESP32',esc(j.arduino))
     +row('ESP-IDF',esc(j.sdk))
     +row(uiText('Läuft seit','Uptime'),esc(dur(j.uptimeS)))

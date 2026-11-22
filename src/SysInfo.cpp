@@ -56,7 +56,7 @@ void fill(JsonObject out) {
   out["heapMin"] = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
   out["heapBlock"] = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
   out["sketchBytes"] = ESP.getSketchSize();
-  out["sketchFree"] = ESP.getFreeSketchSpace();
+  out["sketchFree"] = ESP.getFreeSketchSpace(); // Größe der OTA-Partition, nicht der Rest
   out["fsBytes"] = LittleFS.totalBytes();
   out["fsUsed"] = LittleFS.usedBytes();
   out["sdk"] = ESP.getSdkVersion();
