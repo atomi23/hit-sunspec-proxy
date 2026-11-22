@@ -29,11 +29,19 @@ OTA zwischen App-Slots bleibt danach möglich.
 - [WT32-ETH01 auf Amazon.de](https://www.amazon.de/dp/B0CW3DDWZ4?tag=atomi23-21)\*
 - [Waveshare ESP32-P4-WIFI6-POE-ETH auf Amazon.de](https://www.amazon.de/dp/B0G62SNY9S?tag=atomi23-21)\*
 - [Bluetooth-LED-Strips mit Lotus Lantern auf Amazon.de suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=Lotus+Lantern+Bluetooth+LED+Strip&rh=p_85%3A20943776031)\* — vor dem Kauf prüfen, ob das Angebot die App **Lotus Lantern** nennt; einzelne Modelle wurden nicht getestet.
+- [Lotus-Lantern-Bluetooth-RGB-Controller für LED-Strips suchen](https://www.amazon.de/s?k=Lotus+Lantern+Bluetooth+RGB+LED+Controller+ELK-BLEDOM&tag=atomi23-21)\* — für den T-Connect-Pro mit vorhandenem RGB-Strip. Vor dem Kauf Bluetooth-Namen (z. B. `ELK-BLEDOM…`), Ausgang und Spannung prüfen. Das Gateway spricht den Controller per Bluetooth an, nicht den Strip direkt per GPIO.
 - [RS485-Wandlermodule mit 3,3-V-Logik und automatischer Richtungsumschaltung suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=RS485+TTL+3.3V+Modul+automatische+Richtungsumschaltung&rh=p_85%3A20943776031)\* — optional für WT32-ETH01 und Waveshare ESP32-P4.
 - [USB-Seriell-Adapter mit 3,3-V-Logik suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=USB+UART+TTL+3.3V+Adapter&rh=p_85%3A20943776031)\* — zum Flashen des WT32-ETH01.
 - [PoE-Adapterplatinen für WT32-ETH01 suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=WT32-ETH01+PoE+Adapterplatine&rh=p_85%3A20943776031)\* — vor dem Kauf Anschluss und Gehäusemaße prüfen.
 - [Step-down-Module mit 12–24 V Eingang und 5 V Ausgang suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=DC+DC+Step+Down+12V+24V+auf+5V+Modul&rh=p_85%3A20943776031)\* — für die RS485-Gehäusevariante des WT32-ETH01; Eingangsspannungsbereich und Maße prüfen.
 - [Tasmota-Leseköpfe für Stromzähler suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=Tasmota+Lesekopf+Stromz%C3%A4hler&rh=p_85%3A20943776031)\* — vor dem Kauf prüfen, ob der Lesekopf zum eigenen Zähler passt.
+
+**PoE und Aufbau**
+
+- [Aktive IEEE-PoE-Injektoren mit Netzteil suchen](https://www.amazon.de/s?k=aktiver+IEEE+PoE+Injektor+mit+Netzteil&tag=atomi23-21)\* — wenn kein PoE-Switch vorhanden ist. PoE-Standard und Leistungsbedarf des T-POE-Pro, Waveshare-Boards oder der separaten WT32-ETH01-Adapterplatine mit den jeweiligen Herstellerangaben abgleichen; kein passives PoE auf Verdacht anschließen.
+- [RJ45-Patchkabel (Cat 5e) suchen](https://www.amazon.de/s?k=RJ45+Cat+5e+Ethernet+Patchkabel&tag=atomi23-21)\* — für kabelgebundenes Ethernet, auch zwischen PoE-Quelle und Board.
+- [USB-Datenkabel suchen](https://www.amazon.de/s?k=USB+Datenkabel+zur+Daten%C3%BCbertragung&tag=atomi23-21)\* — zum Flashen per USB, z. B. am T-Connect-Pro; Stecker passend zu Board und Rechner wählen, kein reines Ladekabel.
+- [Dupont-Jumperkabel suchen](https://www.amazon.de/s?k=Dupont+Jumperkabel+Stecker+Buchse&tag=atomi23-21)\* — für den temporären Anschluss des USB-Seriell-Adapters an den WT32-ETH01; Stecker passend zu den Stiftleisten wählen.
 
 \*Als Amazon-Partner verdiene ich an qualifizierten Verkäufen. Mit * markierte Links sind Werbe-/Affiliate-Links.
 

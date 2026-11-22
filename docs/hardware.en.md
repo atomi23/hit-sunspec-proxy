@@ -29,11 +29,19 @@ OTA between app slots remains possible afterwards.
 - [WT32-ETH01 on Amazon.de](https://www.amazon.de/dp/B0CW3DDWZ4?tag=atomi23-21)\*
 - [Waveshare ESP32-P4-WIFI6-POE-ETH on Amazon.de](https://www.amazon.de/dp/B0G62SNY9S?tag=atomi23-21)\*
 - [Search Amazon.de for Lotus Lantern Bluetooth LED strips (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=Lotus+Lantern+Bluetooth+LED+Strip&rh=p_85%3A20943776031)\* — check that the listing names the **Lotus Lantern** app before buying; individual models have not been tested.
+- [Search for Lotus Lantern Bluetooth RGB strip controllers](https://www.amazon.de/s?k=Lotus+Lantern+Bluetooth+RGB+LED+Controller+ELK-BLEDOM&tag=atomi23-21)\* — for use with the T-Connect-Pro and an existing RGB strip. Check the Bluetooth name (e.g. `ELK-BLEDOM…`), output and voltage before buying. The gateway talks to the controller over Bluetooth; it does not drive the strip directly via GPIO.
 - [Search for RS485 converter modules with 3.3 V logic and automatic direction control (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=RS485+TTL+3.3V+Modul+automatische+Richtungsumschaltung&rh=p_85%3A20943776031)\* — optional for the WT32-ETH01 and Waveshare ESP32-P4.
 - [Search for USB-to-serial adapters with 3.3 V logic (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=USB+UART+TTL+3.3V+Adapter&rh=p_85%3A20943776031)\* — for flashing the WT32-ETH01.
 - [Search for WT32-ETH01 PoE adapter boards (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=WT32-ETH01+PoE+Adapterplatine&rh=p_85%3A20943776031)\* — check the connection and enclosure dimensions before buying.
 - [Search for step-down modules with 12–24 V input and 5 V output (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=DC+DC+Step+Down+12V+24V+auf+5V+Modul&rh=p_85%3A20943776031)\* — for the WT32-ETH01 RS485 enclosure variant; check the input voltage range and dimensions.
 - [Search for Tasmota optical readers for electricity meters (Prime filter)](https://www.amazon.de/s?tag=atomi23-21&k=Tasmota+Lesekopf+Stromz%C3%A4hler&rh=p_85%3A20943776031)\* — check compatibility with your meter before buying.
+
+**PoE and wiring**
+
+- [Search for active IEEE PoE injectors with a power supply](https://www.amazon.de/s?k=aktiver+IEEE+PoE+Injektor+mit+Netzteil&tag=atomi23-21)\* — for setups without a PoE switch. Match the PoE standard and power requirements to the manufacturer's specifications for the T-POE-Pro, Waveshare board or separate WT32-ETH01 adapter board. Do not connect passive PoE unless explicitly supported.
+- [Search for Cat 5e RJ45 patch cables](https://www.amazon.de/s?k=RJ45+Cat+5e+Ethernet+Patchkabel&tag=atomi23-21)\* — for wired Ethernet, including between the PoE source and the board.
+- [Search for USB data cables](https://www.amazon.de/s?k=USB+Datenkabel+zur+Daten%C3%BCbertragung&tag=atomi23-21)\* — for flashing over USB, e.g. on the T-Connect-Pro. Choose connectors that match the board and computer, not a charge-only cable.
+- [Search for Dupont jumper wires](https://www.amazon.de/s?k=Dupont+Jumperkabel+Stecker+Buchse&tag=atomi23-21)\* — for temporarily connecting a USB-to-serial adapter to the WT32-ETH01; choose connectors that fit the pin headers.
 
 \*As an Amazon Associate I earn from qualifying purchases. Links marked * are affiliate/advertising links.
 
