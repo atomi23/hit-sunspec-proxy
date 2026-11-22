@@ -49,7 +49,7 @@ function build(){
   let col=null;
   [...nav.children].forEach(el=>{
     if(el.classList.contains('nav-grp')){col=document.createElement('div');menu.append(col);col.append(el);}
-    else if(col&&el.getAttribute('href')!=='/debug')col.append(el);
+    else if(col&&el.getAttribute('href')!=='debug.html')col.append(el);
   });
   const btn=document.createElement('a');btn.href='#';btn.className='bp-btn';
   btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg> <span></span>';
@@ -94,8 +94,8 @@ function live(s){
 // Menüpunkt nur auf Boards mit Bluetooth; so muss er nicht in jeder Seitenleiste stehen
 function bleNav(s){
   if(!s||!s.hasBleLed||document.getElementById('navBle'))return;
-  const knx=document.querySelector('.side nav a[href="/config#knx"]');if(!knx)return;
-  const a=document.createElement('a');a.id='navBle';a.href='/bluetooth.html';
+  const knx=document.querySelector('.side nav a[href="config.html#knx"]');if(!knx)return;
+  const a=document.createElement('a');a.id='navBle';a.href='bluetooth.html';
   a.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg> Bluetooth';
   if(location.pathname.endsWith('/bluetooth.html')){a.className='on';a.setAttribute('aria-current','page');}
   knx.after(a);

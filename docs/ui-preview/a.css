@@ -1,6 +1,6 @@
 
-@font-face{font-family:Barlow;font-weight:400;font-display:swap;src:url(/f/barlow-400.woff) format("woff")}
-@font-face{font-family:Barlow;font-weight:600;font-display:swap;src:url(/f/barlow-600.woff) format("woff")}
+@font-face{font-family:Barlow;font-weight:400;font-display:swap;src:url(f/barlow-400.woff) format("woff")}
+@font-face{font-family:Barlow;font-weight:600;font-display:swap;src:url(f/barlow-600.woff) format("woff")}
 :root,:root[data-theme=mint]{
   --bg:#15191b;--side:#111416;--plate:#1d2225;--plate2:#232a2d;--well:#191d1f;--rule:#2c3337;--rule2:#3a4247;
   --ink:#edefec;--dim:#8f9893;--acc:#8ed8b4;--on-acc:#0d2419;

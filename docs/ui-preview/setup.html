@@ -3,7 +3,7 @@
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="color-scheme" content="dark"/><title>Einrichtung · HIT Proxy</title>
-<link rel="stylesheet" href="/a.css"/>
+<link rel="stylesheet" href="a.css"/>
 <style>
 .card{margin-top:14px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -25,14 +25,45 @@
 </head><body>
 <script>
 const CFG={"knxEnabled": false, "knxPa": "1.1.240", "knxPublishMs": 10000, "knxOnlyOnChange": true, "knxMinDeltaW": 50, "knxCh": [{"ena": true, "ga": "1/2/10", "dpt": 14056}, {"ena": true, "ga": "1/2/11", "dpt": 14056}, {"ena": true, "ga": "1/2/12", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/23", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/26", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": true, "ga": "1/2/28", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": true, "ga": "1/2/32", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14027}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": false, "ga": "", "dpt": 14019}, {"ena": true, "ga": "1/2/38", "dpt": 14033}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 14056}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 13010}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 9001}, {"ena": false, "ga": "", "dpt": 9001}, {"ena": false, "ga": "", "dpt": 9020}, {"ena": false, "ga": "", "dpt": 9020}, {"ena": false, "ga": "", "dpt": 9020}, {"ena": false, "ga": "", "dpt": 12001}, {"ena": false, "ga": "", "dpt": 13013}, {"ena": false, "ga": "", "dpt": 1005}, {"ena": false, "ga": "", "dpt": 1001}, {"ena": false, "ga": "", "dpt": 1001}, {"ena": false, "ga": "", "dpt": 5001}, {"ena": false, "ga": "", "dpt": 232600}], "deviceName": "HIT-SunSpec-Proxy", "demoMode": true, "hitHost": "", "hitPort": 502, "hitUnitId": 1, "hitPollMs": 30000, "wifiSsid": "HIT-Proxy", "wifiEnabled": true, "useEthernet": true, "sunspecPort": 1502, "sunspecUnitId": 1, "displayEnabled": true, "displayBrightness": 80, "displayPageS": 8, "displayTimeoutS": 300, "displayScheduleEnabled": true, "displayWeek": [{"enabled": true, "start": 420, "end": 1320}, {"enabled": true, "start": 420, "end": 1320}, {"enabled": true, "start": 420, "end": 1320}, {"enabled": true, "start": 420, "end": 1320}, {"enabled": true, "start": 420, "end": 1320}, {"enabled": false, "start": 420, "end": 1320}, {"enabled": false, "start": 420, "end": 1320}], "bleLedEnabled": true, "bleLedName": "ELK-BLEDOM-DEMO", "bleLedAddr": "02:00:00:00:00:01", "gatewayEnabled": false, "gatewayPort": 502, "mqttEnabled": false, "cloudEnabled": false, "tasmotaEnabled": false, "hitWriteEnabled": false, "setupComplete": false, "webUser": "admin", "httpsEnabled": true, "httpsRedirect": true, "wifiApMode": false, "invertPowerSign": false, "hitMode": 0, "hitRtuBaud": 9600, "mqttDiscovery": true, "mqttHost": "", "mqttPort": 1883, "mqttUser": "", "mqttPass": "", "mqttBase": "hitproxy", "mqttPublishMs": 15000, "mqttIngestEnabled": false, "mqttIngestTopic": "", "mqttIngestMaxAgeMs": 120000, "cloudHost": "", "cloudUser": "", "cloudPass": "", "cloudStationId": "", "cloudPollMs": 60000, "cloudMaxAgeMs": 180000, "tasmotaMeterSpoof": false, "tasmotaHost": "", "tasmotaPort": 80, "tasmotaPollMs": 5000, "tasmotaUser": "", "tasmotaPass": "", "batMaxChargePct": 100, "batMaxDischargePct": 100, "batMaxSoc": 100, "batMinSoc": 10, "apcPwrLmtPct10": 1000, "apcEnabled": false, "sunspecWriteToHit": false, "sunspecEnabled": true, "inverterType": 0, "displayCode": "K7Q2-M9XD"};
-const STATUS={"version": "0.6.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok", "board": "T-Connect-Pro", "hasDisplay": true, "hasBleLed": true, "features": {"sunspec": true, "mqtt": false, "gateway": true, "knx": true, "tasmota": false, "cloud": false}};
+const STATUS={"version": "0.7.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok", "board": "T-Connect-Pro", "hasDisplay": true, "hasBleLed": true, "features": {"sunspec": true, "mqtt": false, "gateway": true, "knx": true, "tasmota": false, "cloud": false}};
 STATUS.uiLang=new URLSearchParams(location.search).get('lang')==='en'?'en':'de';
+STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
+CFG.uiLang=STATUS.uiLang;
 const _f=window.fetch;
 window.fetch=async(u,o)=>{
   u=String(u);
   if(u.includes('/api/config') && (!o || !o.method || o.method==='GET')) return {ok:true,json:async()=>CFG};
   if(u.includes('/api/status')) return {ok:true,json:async()=>STATUS};
   return {ok:true,json:async()=>({ok:true})};
+};
+</script>
+
+<script>
+const previewParams=new URLSearchParams(location.search);
+function previewLink(path){
+  const url=new URL(path,location.href);
+  for(const key of ['lang','theme'])if(previewParams.has(key))url.searchParams.set(key,previewParams.get(key));
+  return url.href;
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('a[href]');
+  if(a&&a.getAttribute('href').match(/^\w+\.html(?:#|$)/)&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){
+    e.preventDefault();
+    location.href=previewLink(a.href);
+  }
+});
+const previewFetch=window.fetch;
+window.fetch=async(u,o)=>{
+  if(u==='/api/config'&&o?.method==='POST'&&typeof o.body==='string'){
+    const prefs=JSON.parse(o.body);
+    if('uiLang' in prefs&&('uiTheme' in prefs||prefs.setupComplete===false)){
+      previewParams.set('lang',prefs.uiLang);
+      if('uiTheme' in prefs)previewParams.set('theme',prefs.uiTheme);
+      history.replaceState(null,'',location.pathname+'?'+previewParams+location.hash);
+      return {ok:true};
+    }
+  }
+  return previewFetch(u,o);
 };
 </script>
 <div class="wizard">
@@ -392,14 +423,14 @@ async function finish(){
   const r=await post('/api/setup/finish',b).then(x=>x.json()).catch(()=>null);
   if(!r||!r.ok){fin.innerHTML='<span class="bad">'+T(r&&r.error==='password'?'ePass':'eSave')+'</span>';if(r&&r.error==='password'){step='s_access';paint();}return;}
   const viaAp=location.hostname==='192.168.4.1',host=(viaAp&&r.ip&&r.ip!=='-')?r.ip:location.hostname;
-  const dest=r.https?`https://${host}/`:(host===location.hostname?'/':`http://${host}/`);
+  const dest=r.https?`https://${host}/`:(host===location.hostname?previewLink('index.html'):`http://${host}/`);
   fin.innerHTML='<span class="ok">'+(b.webPass?T('finPass',b.webUser):T('fin'))+'</span>'+
     (viaAp&&host===location.hostname&&C.ownPassOnly?'<br>'+T('finAp'):'')+(r.https?'<br>'+T('finTls'):'')+`<br><a href="${dest}">${dest}</a>`;
   setTimeout(()=>location.href=dest,4000);
 }
 async function boot(){
   [C,S]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch('/api/status').then(r=>r.json())]);
-  if(C.setupComplete){location.href='/';return;}
+  if(C.setupComplete){location.href='index.html';return;}
   document.documentElement.dataset.theme=S.uiTheme||'mint';
   for(const [k,key] of FEATS)F[k]=key?!!C[key]:C.batCloud===1;
   F.mqtt=!!(C.mqttEnabled||C.mqttIngestEnabled);

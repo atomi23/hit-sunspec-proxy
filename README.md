@@ -1,6 +1,6 @@
 # HIT → Consolinno SunSpec Proxy (ESP32)
 
-**Deutsch** · [English](README.en.md)
+**Deutsch** · [English](./README.en.md)
 
 Autarker Modbus-Proxy: **Hoymiles HIT** → **Consolinno HEMS** (SunSpec GEN24 auf Port **1502**).
 Der ESP hält die einzige HIT-Verbindung und verteilt die Daten an Consolinno, Home Assistant, KNX und
@@ -9,277 +9,20 @@ lässt sich auch ganz ohne Consolinno nutzen, z. B. nur als Modbus-Gateway mit K
 
 Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pro) (ESP32-S3, Ethernet W5500, Display, Touch, RS485). **Kein PoE**, 12–24 V DC.
 
-Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
+Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](docs/hardware.md#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
 Aktuelle Firmware: **v0.7.0** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.7.0)
 
-### Neu in v0.7.0
-- **Bluetooth-Einstellungen auf der Seite „Bluetooth“ (nur T-Connect-Pro):** Strip-Suche, Name, Adresse und Einschaltbefehl stehen jetzt dort, wo der Strip auch bedient wird, statt unter *Einstellungen → KNX*. Dort bleiben nur die Gruppenadressen.
-- **Seite „Übersicht“:** Zeigt Hardware (Board, Chip, Speicher, Flash), Software (Firmware, Baudatum, Arduino/ESP-IDF, Laufzeit, letzter Start), Netzwerk und Dienste sowie die Auslastung: CPU-Last je Kern, Arbeitsspeicher, PSRAM und Dateisystem.
-- **HTTPS trotz Bluetooth:** Seit v0.5.23 fehlten dem T-Connect-Pro rund 40 KB interner RAM für HTTPS („zu wenig RAM für HTTPS, nur HTTP“). Auf Boards mit PSRAM liegt TLS jetzt im PSRAM.
+## Schnelllinks
 
-<details>
-<summary><b>Ältere Versionen</b> (v0.6.0 bis v0.5.6)</summary>
+- [Inbetriebnahme](docs/setup.md#inbetriebnahme) · [Firmware bauen und flashen](docs/hardware.md#build)
+- [Hardware und Verkabelung](docs/hardware.md) · [Bezugsquellen](docs/hardware.md#bezugsquellen)
+- [Weboberfläche und Display](docs/web-ui.md) · [HTTPS-Zertifikat einrichten](docs/web-ui.md#https)
+- [Integrationen und Datenwege](docs/integrations.md#architektur) · [Bluetooth-LED-Strip](docs/integrations.md#bluetooth)
+- [Übersicht und CPU-Last](docs/web-ui.md#übersicht) · [Funktionen](#funktionen) · [Versionsverlauf](docs/changelog.md)
 
-### v0.6.0
-- **Seite „Bluetooth“ (nur T-Connect-Pro):** Zeigt den Verbindungszustand des LED-Strips und den letzten Fehler, schaltet den Strip ein und aus und stellt Helligkeit und Farbe ein. Angezeigt wird, was das Gateway zuletzt gesendet hat; der Strip meldet nichts zurück.
-- **Bluetooth-Protokoll:** Jeder an den Strip gesendete Befehl steht mit seinen Bytes im Ereignisprotokoll, ebenso jeder Verbindungsaufbau. Fehlermeldungen nennen jetzt den Grund (nicht erreichbar oder kein passender Schreibkanal).
-
-### v0.5.23
-- **Bluetooth-LED-Strip per KNX (nur T-Connect-Pro):** LED-Strips der App *Lotus Lantern* lassen sich über drei KNX-Objekte schalten (DPT 1.001), dimmen (DPT 5.001) und färben (DPT 232.600). Einrichtung mit Strip-Suche und Test unter *Einstellungen → KNX*. Die Befehle stammen aus öffentlichen Protokollbeschreibungen und sind noch nicht an einem echten Strip erprobt.
-- **Weboberfläche:** Dezimalzahlen folgen der gewählten Sprache (Komma oder Punkt).
-- **HIT-Wechselrichter:** Eine abgeschnittene RS485-Antwort wird als Fehler gemeldet.
-- **Datenherkunft:** Wird zurückgesetzt, wenn alle Datenquellen abgelaufen sind.
-
-### v0.5.22
-- **HTTPS unter Windows:** CA-Installationsschritte mit manueller Auswahl des Stammzertifikatsspeichers ergänzt, damit Chrome der Geräte-CA vertraut.
-- **Abmelden:** Schaltfläche auf den Hauptseiten der Weboberfläche, auch über HTTPS. Falls der Browser die Anmeldung behält, hilft der Hinweis zum Schließen des Browsers.
-
-### v0.5.20
-- **Weboberfläche:** Lädt das Layout mit der Seite, statt es nach einem Neustart separat anfordern zu müssen.
-
-### v0.5.19
-- **Deutsch und Englisch:** Fehlende Texte in Sicherung und Wiederherstellung, HTTPS, Downloads und Statusmeldungen ergänzt. Neue Protokolleinträge folgen der gewählten Sprache.
-
-### v0.5.18
-- **CA-Download:** Liefert jetzt die Zertifikatsdatei statt der Zertifikatsinformationen als JSON.
-
-### v0.5.17
-- **HTTPS ohne Browserwarnung:** Die Geräte-CA signiert das Serverzertifikat; ihr CA-Zertifikat einmal als vertrauenswürdige Stamm-CA installieren.
-- **CA-Zertifikat herunterladen:** Öffentlich und ohne Anmeldung unter `/api/tls/ca.crt`, auch über HTTP erreichbar.
-- **Weboberfläche und OTA bleiben erreichbar:** Scheitert die CA-Umstellung, wird ein passendes gespeichertes oder ein selbst signiertes Ersatz-Zertifikat verwendet. Der nächste Start versucht die Umstellung erneut.
-
-### v0.5.16
-- **Protokolle und Verlauf:** Ereignis- und Debug-Protokoll als Textdatei, Verlaufsdaten als CSV herunterladen.
-- **Display am T-Connect-Pro:** Wochenplan mit eigenen An- und Aus-Zeiten pro Wochentag. Ein optionales KNX-Objekt (DPT 1.001) schaltet die Beleuchtung ein oder aus.
-- **Firmware und Reset:** Einstellungen als JSON sichern und wiederherstellen. Passwörter und Zugangscode lassen sich beim Export abwählen.
-
-### v0.5.15
-- **HIT-Abfragen:** Starten erst, wenn Netzwerk und IP-Adresse bereit sind. Dadurch landen keine netzwerkbedingten Fehlversuche beim Boot mehr in der Statistik. RS485 und Demo bleiben unverändert.
-- **Abfrageintervall:** Standard jetzt 30 s. Bestehende Einstellungen bleiben erhalten; bei Bedarf unter **HIT-Wechselrichter** den Wert **Poll (ms)** auf `30000` setzen.
-
-### v0.5.14
-- Die englische Weboberfläche umfasst jetzt auch alle Einstellungs-Untermenüs, Protokolle sowie Firmware und Reset.
-- Der Verlauf hat englische Diagrammbeschriftungen für Screenreader. Auf kleinen oder flachen Bildschirmen überlappen die Diagrammbereiche nicht mehr.
-- Für OTA die zum Board passende Datei aus dem Release wählen. Beim **T-Connect-Pro mit Display** ist es `firmware.bin`, nicht `firmware-t-poe-pro.bin`.
-
-### v0.5.13
-- **Neuer Einrichtungsassistent** mit zwei Wegen: *Einfach* stellt Fragen („Hast du ein Consolinno HEMS?“,
-  „Hast du KNX im Haus?“ …) und schaltet die Dienste daraus selbst; *Experte* zeigt alle Felder (Ports,
-  Unit-IDs, RS485). Zugangsdaten für Hoymiles-Cloud, Dyness-Cloud, MQTT, Tasmota und Heim-WLAN werden gleich
-  im Assistenten eingegeben; die beiden Cloud-Zugänge lassen sich dort testen. Deutsch und Englisch
-- **Boards ohne Display:** Bis zur Einrichtung gilt das Standard-Passwort `hitproxy1` (Geräte-WLAN und
-  Anmeldung mit `admin`). Der Assistent verlangt ein eigenes Passwort mit mindestens 8 Zeichen; danach ist
-  das Standard-Passwort überall ungültig, auch das Geräte-WLAN nutzt dann das eigene Passwort
-- **Boards mit Display** wie bisher: zufälliger Zugangscode und QR-Code auf dem Display
-- Bereits eingerichtete Geräte behalten beim Update ihren bisherigen Zugangscode
-
-### v0.5.12
-- **Hoymiles-Cloud ohne Anlagen-ID:** Bleibt das Feld leer, nimmt der Proxy die erste Anlage des Kontos und
-  schreibt ihre Nummer ins Protokoll. Bisher passierte ohne ID nichts, auch keine Meldung
-- **Dyness-Cloud auf Boards ohne PSRAM:** Die Leistungsabfrage liefert über 50 KB und scheiterte am Speicher;
-  sie wird jetzt Eintrag für Eintrag gelesen. Antworten, die in Stücken ankommen, brechen nicht mehr ab
-- Akkuseite: Seriennummern und Fehlertext kamen als Zeichensalat an
-- Akku-Cloud: nach einem Verbindungsfehler wird nach 30 s neu versucht statt erst nach dem vollen Intervall
-
-### v0.5.11
-- **Geräte-WLAN folgt dem Schalter:** Ist *Geräte-WLAN zusätzlich anlassen* aus und das Gerät hängt am Kabel,
-  bleibt das WLAN jetzt wirklich aus (bisher lief es ohne Heim-WLAN immer). Als Notzugang geht es von selbst
-  an, wenn das Gerät am Kabel eine Minute lang keine Adresse hat, und wieder aus, wenn das Kabel zurück ist
-- **HTTPS nur mit genug Speicher:** Die Prüfung beim Start rechnet jetzt auch den Platz für parallele
-  Verbindungen eines Browsers ein. Der **WT32-ETH01** (ohne PSRAM) läuft damit immer über HTTP, auch mit
-  abgeschaltetem WLAN; Boards mit PSRAM nutzen weiter HTTPS
-
-### v0.5.10
-- **Boards ohne PSRAM (WT32-ETH01):** Die Einstellungsseite kam leer an, und HTTP leitete auf ein HTTPS um, das
-  aus Speichermangel jede Verbindung abbrach; die Oberfläche war damit nicht erreichbar. Seiten werden jetzt
-  direkt aus dem Flash gesendet. Reicht der RAM nicht für HTTPS, startet es nicht und die Oberfläche läuft
-  über HTTP (steht unter *Netzwerk und Zugang* und im Protokoll)
-- Diagnose-Ausgaben auf der seriellen Schnittstelle nur noch mit dem Build-Schalter `-DTLS_DIAG=1`
-
-### v0.5.9
-- Neues Design **Blaupause** mit eigener Bedienung: Menüleiste oben (am Handy unten), Einstellungen als
-  aufklappendes Blatt, auf der Live-Seite ein Energieband statt des Knotenbilds. Die Bandbreite entspricht
-  der Leistung; PV deckt dabei zuerst das Haus, dann den Akku, dann die Einspeisung
-- Neues Design **Stahl**: hell mit dunkler Seitenleiste
-- **Einrichtung am Handy:** Im Geräte-WLAN öffnet sich die Einrichtungsseite von selbst (Captive Portal)
-- Netzleistung auf der Live-Seite ist auch in hellen Designs lesbar
-- Neue Build-Variante **`p4-poe-eth`** für das [Waveshare ESP32-P4-WIFI6-POE-ETH](https://www.waveshare.com/esp32-p4-wifi6-poe-eth.htm):
-  Ethernet mit PoE, WLAN über den ESP32-C6; noch nicht auf Hardware getestet
-- Druckbare Hutschienengehäuse ohne Schrauben (Clip angedruckt, Deckel rastet ein):
-  [WT32-ETH01, 2 TE](hardware/wt32-din/) als Variante nur PoE oder mit RS485/Step-down,
-  [ESP32-P4-POE-ETH, 3,5 TE](hardware/p4-poe-din/)
-- **Akkudaten** unter *Datenquellen, Akku*: Zelltemperaturen, Zellspannungen, Lade- und Entladegrenzen und
-  Pack-Infos vom HIT, dazu optional SoC, SoH, Zyklen und Restenergie aus der **Dyness-Cloud**. Die Live-Seite
-  zeigt die zusammengeführten Werte, Home Assistant und KNX bekommen sie als eigene Datenpunkte.
-  Dyness: App-ID und Secret im Portal [ems.dyness.com](https://ems.dyness.com) unter *Entwicklerzentrum,
-  API-Verwaltung* anlegen (das Secret steht dort nur einmal) und unter *Akku* eintragen; nutzt die
-  Home-Assistant-Integration dieselbe App-ID, teilen sich beide die Abrufgrenze
-
-### v0.5.8
-- **Funktionsauswahl** im Einrichtungsassistenten und unter *Einstellungen, Funktionen*: Consolinno/SunSpec,
-  Modbus-Gateway, Home Assistant, KNX, Tasmota-Zähler und Hoymiles-Cloud einzeln wählbar
-- Nicht gewählte Dienste starten nicht und verschwinden aus Menü und Live-Seite; SunSpec (Port 1502) abschaltbar
-- Wechselrichter-Typ als Einstellung vorbereitet (bisher nur Hoymiles HIT)
-- Update per OTA von älteren Versionen: Einstellungen bleiben, kein erneuter Einrichtungsassistent
-
-### v0.5.7
-- **KNX:** Zuordnungstabelle nach Bereichen gruppiert, Zeilen hinterlegt, ungültige oder doppelte Adressen rot;
-  **Import/Export der Gruppenadressen im ETS-Format** (XML und CSV)
-- Neue Build-Variante **`wt32-eth01`**; `t-poe-pro` korrigiert (Takt, PHY-Reset, RS485-Pins, 16 MB Flash, PSRAM laut LilyGO)
-- Schutz gegen CSRF: fremde Webseiten können über ein gespeichertes Login nichts mehr auslösen
-- OTA-Update gehört genau einer Anfrage; Login wird vor dem Annehmen großer Anfragen geprüft
-- Home Assistant: keine Zählerstände 0 mehr vor den ersten Daten (verhinderte doppelt gezählte Energie)
-- Cloud: Zählerstände in Wh werden immer richtig umgerechnet, auch unter 10 kWh
-- „Jetzt an HIT schreiben“ schreibt die gerade gespeicherten Werte; „HIT testen“ im Setup wartet auf eine frische Abfrage
-- Tasmota: Absturz bei numerischer Zählernummer behoben, Zugangsdaten URL-kodiert
-- Verlauf übersteht einen Stromausfall beim Speichern; KNX-Typnummern für Strom/Frequenz korrigiert (14.019/14.033)
-- Ungültige Eingaben (Port 0, Unit-ID 0, leerer WLAN-Name …) werden nicht mehr gespeichert
-
-### v0.5.6
-- HIT-Poll in eigener FreeRTOS-Task (UI/Consolinno bleiben responsiv)
-- Tasmota wählbar als Live-Netzzähler; optional SunSpec **Model 203** (3ph-Spoof aus Summe + HIT-Spannungen)
-- KNX DPT9 korrekt skaliert; FC16 Power-Limit erst nach vollständigem Registersatz
-- Web-Callbacks (Poll, HIT-Schreiben, Tasmota-Probe) laufen in der Hauptschleife, nicht im Async-Task
-- Passwörter werden in `/api/config` nicht mehr im Klartext ausgeliefert
-- `millis()`-Rollover-fest; Platform `espressif32 @ 53.3.13` gepinnt; eigene 16‑MB-Partitionstabelle
-
-</details>
-
-## Display am Gerät
-
-Die drei Seiten auf dem T-Connect-Pro: Live, Strings und Netz, System. Demo-Daten.
-
-Unter **Einstellungen → Display** lässt sich optional ein Wochenplan mit einem Zeitfenster pro Wochentag
-einrichten. Eine frühere Aus-Zeit gilt am Folgetag, gleiche Zeiten bedeuten ganztägig an. Sobald die Uhr
-synchronisiert ist (mitteleuropäische Ortszeit inkl. Sommerzeit), ersetzt der Plan den Inaktivitäts-Timer
-und die automatische Beleuchtung bei HIT-Störungen. Die Web-Live-Ansicht läuft auch bei ausgeschalteter
-Beleuchtung weiter.
-
-Unter **Einstellungen → KNX** kann man dem Empfangsobjekt **Display schalten** eine eigene Gruppenadresse
-zuweisen. Ein GroupValueWrite mit DPT **1.001** schaltet bei `1` ein und bei `0` aus. Ein KNX-Befehl
-übersteuert den Wochenplan bis zum nächsten Wechsel zwischen An und Aus; ohne Plan gilt der letzte
-Befehl bis zum nächsten Schaltbefehl oder Neustart. Die Einrichtung mit QR-Code wird bei aktiviertem
-Display weiterhin beleuchtet.
-
-![Live](docs/screenshots/device-live.jpg)
-![Strings und Netz](docs/screenshots/device-strings.jpg)
-![System](docs/screenshots/device-system.jpg)
-
-### Bluetooth-LED-Strip per Weboberfläche und KNX (T-Connect-Pro)
-
-LED-Strips, die mit der App **Lotus Lantern** laufen (Bluetooth-Namen `ELK-BLEDOM…`, `MELK-…`, `LEDBLE…`), lassen
-sich über KNX schalten. Auf der Seite **Bluetooth** den Strip suchen, auswählen, speichern und mit **Ein/Aus**
-prüfen. Danach unter **Einstellungen → KNX** den Empfangsobjekten Gruppenadressen geben: **Schalten** (DPT 1.001), **Helligkeit** (DPT 5.001) und
-**Farbe RGB** (DPT 232.600). Der ESP verbindet sich nur zum Senden und gibt den Strip nach 10 Sekunden wieder frei,
-weil der Strip nur eine Bluetooth-Verbindung annimmt; die App am Handy muss dafür geschlossen sein. Das gibt es nur
-auf dem T-Connect-Pro (ESP32-S3): auf den ESP32-Boards reicht der Speicher für Bluetooth nicht, der ESP32-P4 hat kein
-Bluetooth. Der Befehlssatz stammt aus öffentlichen Protokollbeschreibungen (ELK-BLEDOM).
-
-Auch ohne KNX-Gruppenadressen lässt sich der eingerichtete Strip auf der Seite **Bluetooth** schalten,
-dimmen und färben. Die Seite zeigt den Verbindungszustand, den letzten Fehler, die zuletzt gesendeten
-Werte und die LED-Einträge des Ereignisprotokolls. Die gesendeten Werte sind keine Rückmeldung des Strips.
-
-## Architektur
-
-```
-                         ┌── SunSpec :1502 (optional) ──→ Consolinno HEMS
-Hoymiles HIT ──TCP/RS485─┤── Modbus-Gateway :502 ──→ Home Assistant, andere Modbus-Clients
-   (eine Verbindung)     ├── MQTT + Discovery ──→ Home Assistant
-          ESP32          ├── KNX IP Routing ──→ KNX-Bus
-                         └── Display, Web-UI, optional Tasmota-Zähler
-```
-
-| Pfad | Pflicht? | Rolle |
-|------|----------|--------|
-| HIT (Modbus TCP oder RS485) | für direkten HIT-Zugriff | Primäre Datenquelle, einzige Verbindung zum HIT; für Live-Daten sind MQTT und Hoymiles-Cloud als Ersatzquellen möglich |
-| SunSpec :1502 | nur für Consolinno | Standardport für die GEN24-Emulation (Modelle 1/103/120–124/160; optional Meter 203); Dienst abschaltbar |
-| Modbus-Gateway | nein | Andere Modbus-Clients lesen den HIT über den ESP |
-| MQTT | nein | HA-Sensoren per Discovery, optional MQTT als Ersatzquelle |
-| KNX IP | nein | Multicast-Routing wählbarer Live-Werte; empfängt auf dem T-Connect-Pro auch Schaltbefehle für Display und LED-Strip |
-| Tasmota | nein | Netzzähler für Live-View und optional SunSpec Model 203 |
-| Hoymiles-Cloud | nein | S-Miles nur lesen, Ersatzquelle wenn HIT und MQTT ausfallen |
-| HIT-Schreiben | nein | Akku-Grenzen 306–309, APC 279/280, standardmäßig aus |
-
-## Screenshots
-
-> Beispielaufnahmen aus früheren Firmware-Versionen mit Demo-Daten und RFC‑5737-Adressen. Die aktuelle Oberfläche kann davon abweichen.
-
-Die statischen Web-Vorschauen unter `docs/ui-preview/` zeigen Beispieldaten. Zum lokalen Ansehen
-`python3 -m http.server --bind 127.0.0.1 --directory docs/ui-preview` starten und z. B.
-`http://127.0.0.1:8000/bluetooth.html` öffnen. Mit `?lang=en` schaltet die Vorschau auf Englisch um.
-
-### Live
-
-![Live](docs/screenshots/live-dashboard.jpg)
-
-### Design Blaupause
-
-Wählbar wie die anderen Designs, aber mit eigener Menüführung und einem Energieband auf der Live-Seite.
-
-![Live, Design Blaupause](docs/screenshots/live-blueprint.jpg)
-
-![Einstellungsmenü, Design Blaupause](docs/screenshots/blueprint-menu.jpg)
-
-### Verlauf
-
-Leistung der letzten 24 Stunden: PV, Netzbezug und Akkuentladung erscheinen als Flächen, Hausverbrauch
-und Akkuladung als Linien oberhalb der Null-Linie. Nur die Einspeisung liegt in der Ansicht **Bilanz**
-unterhalb der Null-Linie; mit **Alles positiv** erscheint auch sie oberhalb. Darunter steht die Energie
-je Tag, Monat, Jahr und gesamt. Die Verlaufsdaten lassen sich als CSV herunterladen.
-
-![Verlauf](docs/screenshots/history.jpg)
-
-![Verlauf, helles Design](docs/screenshots/history-light.jpg)
-
-### Protokoll
-
-Systemprotokoll mit HIT-Ausfällen samt Ursache, Wiederkehr, Cloud-Status, OTA und Neustarts sowie
-Bluetooth-Verbindungen und gesendeten LED-Befehlen auf dem T-Connect-Pro. Die §14a-Schreibzugriffe
-von Consolinno stehen im zweiten Reiter. Beide Protokolle lassen sich als Textdatei herunterladen.
-
-![Systemprotokoll](docs/screenshots/system-log.jpg)
-
-### HTTPS
-
-Die Geräte-CA signiert das Serverzertifikat mit IP-Adressen und `<gerätename>.local` (820 Tage).
-Die CA wird einmal erzeugt, für etwa zehn Jahre ausgestellt und bleibt bei IP-Wechseln und
-„Selbst signiertes neu erzeugen“ erhalten; nur ein Werksreset löscht sie. Alte selbst signierte
-Serverzertifikate werden automatisch umgestellt; hochgeladene eigene Zertifikate bleiben unverändert.
-Bei einem Fehler der CA-Umstellung bleibt ein passendes gespeichertes Zertifikat in Betrieb;
-fehlt es, wird ein selbst signiertes Ersatz-Zertifikat erzeugt. Der nächste Start versucht die CA erneut.
-Der Ersatz kann eine Browserwarnung auslösen. Ohne laufenden HTTPS-Server erfolgt keine HTTP-Umleitung.
-
-Für HTTPS ohne Browserwarnung unter *Netzwerk und Zugang* **CA-Zertifikat herunterladen** wählen
-(`/api/tls/ca.crt`, öffentlich und auch über HTTP erreichbar; enthält keinen privaten Schlüssel). Den angezeigten CA-SHA-256-Fingerabdruck
-über eine vertrauenswürdige Verbindung vergleichen und die CA einmal pro Client als Stamm-CA installieren:
-- Windows:
-  1. Doppelklick auf `hit-proxy-ca.crt` → **Zertifikat installieren** → **Aktueller Benutzer**.
-  2. **Alle Zertifikate in folgendem Speicher speichern** → **Durchsuchen** → **Vertrauenswürdige Stammzertifizierungsstellen** wählen; Installation abschließen und die Sicherheitsabfrage mit **Ja** bestätigen.
-  3. Browser komplett neu starten.
-  **Wichtig:** Die automatische Speicherauswahl legt das Zertifikat im falschen Speicher ab; Chrome zeigt dann `NET::ERR_CERT_AUTHORITY_INVALID`.
-- macOS: **Schlüsselbund**, **Immer vertrauen**
-- iOS: **Profil installieren**, danach unter **Zertifikatsvertrauenseinstellungen** aktivieren
-- Android: **CA-Zertifikat** installieren
-- Firefox: ggf. zusätzlich in den eigenen Zertifikatsspeicher importieren
-
-Danach `https://<ip>` oder `https://<name>.local` öffnen. Bei einem IP-Wechsel wird nur das
-Serverzertifikat erneuert; die CA muss nicht erneut installiert werden. Die CA darf nur Namen unter
-`.local` / `.home.arpa` und private IPv4-Netze (10/8, 172.16/12, 192.168/16, 169.254/16) signieren.
-Eigene Zertifikate (PEM, auch mit Zwischenzertifikaten) können weiterhin hochgeladen werden.
-
-![HTTPS](docs/screenshots/https.jpg)
-
-### Einstellungen: HIT-Wechselrichter und KNX
-
-![HIT-Wechselrichter](docs/screenshots/web-config.jpg)
-
-KNX: je Messwert Gruppenadresse und Datenpunkttyp, nach Bereichen gruppiert. Die Adressen lassen sich als
-ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importieren, oder aus einem ETS-Export
-übernehmen. Zugeordnet wird über die Beschreibung `hit-sunspec-proxy:<id>`, sonst über den Namen.
-
-![KNX](docs/screenshots/web-config-knx.jpg)
+\*Als Amazon-Partner verdiene ich an qualifizierten Verkäufen. Mit * markierte Links sind Werbe-/Affiliate-Links.
 
 ## Funktionen
 
@@ -289,6 +32,9 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **Akkudaten** vom HIT (Zellen, Temperaturen, Grenzen, Packs) und optional aus der Dyness-Cloud,
   zusammengeführt auf Live-Seite, Home Assistant und KNX
 - **Live-Seite** mit Energiefluss (PV, Akku, HIT, Netz, Haus), Ladestand-Ring, Strings, Phasen, Zählern
+- **Übersicht** mit CPU-Last je Kern, Speicherauslastung, Geräteinformationen, Netzwerk und Diensten.
+- **Bluetooth-LED-Strip** (nur T-Connect-Pro): Suche, Einstellungen und Bedienung auf der Bluetooth-Seite;
+  die Gruppenadressen bleiben unter *Einstellungen → KNX*.
 - **Verlauf** im ESP gespeichert (LittleFS): 24 h in 5-Minuten-Schritten, Tage, Monate, Jahre
 - **Zwei Protokolle:** System (HIT, Cloud, OTA, Neustarts) und §14a-Schreibzugriffe von Consolinno;
   das Display zeigt HIT-Fehler als Fehler/Abfragen
@@ -302,7 +48,8 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **Schutz des Netzschutz-Bereichs:** FC6 auf HIT-Register 101–299 wird nie gesendet
   (laut Hoymiles V2.8 lädt das alle Netzschutz-Werkswerte)
 - **HTTPS** auf Port 443, HTTP leitet um (außer während der Einrichtung). Auf Boards ohne PSRAM reicht der
-  Speicher dafür nicht; dort läuft die Oberfläche über HTTP. Von der Geräte-CA signiertes Zertifikat mit
+  Speicher dafür nicht; dort läuft die Oberfläche über HTTP. Auf unterstützten Boards nutzt TLS verfügbaren
+  PSRAM. Von der Geräte-CA signiertes Zertifikat mit
   IP-Adresse und `<gerätename>.local`, wird bei neuer IP oder vor Ablauf selbst erneuert; eigenes Zertifikat
   (PEM, auch mit Zwischenzertifikaten) hochladbar, der ESP prüft ob Schlüssel und Zertifikat zusammenpassen
 - **Werksreset**, **Neustart** (mit letztem Neustartgrund) und **OTA-Update** in der Weboberfläche
@@ -315,85 +62,6 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **Live-Ansicht des Displays** in der Weboberfläche; Live-Seite bleibt stehen, automatisches Blättern optional
 - Designs Mint, Ocean, Ember, Hell, Stahl und Blaupause (mit eigener Menüleiste und Energieband);
   Deutsch und Englisch (Web und Display)
-
-## Inbetriebnahme
-
-1. Erstes Flashen per USB: `pio run -e t-connect-pro -t upload`  
-   (oder Release-`firmware.bin` unter *Firmware und Reset* per OTA — bei hängendem OTA vorher neu starten)
-2. Mit dem Geräte-WLAN `HIT-Proxy-XXXX` verbinden. Mit Display: WLAN-Name, Zugangscode und QR-Code stehen
-   auf dem Display. Ohne Display: Passwort `hitproxy1`, Anmeldung mit `admin` und `hitproxy1`.
-3. Die Einrichtung öffnet sich am Handy von selbst, sonst Browser `http://192.168.4.1/`. Der Assistent
-   fragt ab, was gebraucht wird; ohne Display ist dabei ein eigenes Passwort Pflicht.
-4. Consolinno: Gerät als Fronius Hybrid / SunSpec, **Proxy-IP**, Port **1502**, Unit-ID **1**  
-   (Scan nur auf 502 findet den Proxy nicht, solange SunSpec auf 1502 lauscht)
-5. Wenn HTTPS aktiv ist, läuft die Oberfläche über `https://<esp-ip>/`, sonst über HTTP (z. B. auf dem
-   WT32-ETH01). Für einen HTTPS-Aufruf ohne Warnung die Geräte-CA
-   unter *Netzwerk und Zugang* herunterladen und einmal als vertrauenswürdige Stamm-CA installieren
-   (siehe [HTTPS](#https)). Alternativ ein eigenes Zertifikat hochladen.
-
-Gibt es schon eine andere SunSpec-Quelle, lassen sich beide vergleichen:
-`python tools/sunspec_check.py <alte-quelle> --compare <esp-ip>`. Andere Programme, die den HIT per Modbus
-lesen, tragen danach `<esp-ip>:502` ein (Modbus-Gateway einschalten).
-
-Pins: [`PINS.md`](PINS.md)
-
-## Werkzeuge
-
-| Skript | Zweck |
-|--------|-------|
-| `tools/sunspec_check.py` | SunSpec-Kette lesen, zwei Geräte vergleichen (Registerversatz) |
-| `tools/parity_check.py` | Eine bestehende SunSpec-Karte gegen die ESP-Umrechnung derselben HIT-Daten prüfen (nur lesend) |
-| `tools/make_vlw.py` | Display-Schriften (VLW) aus Barlow erzeugen |
-| `tools/embed_fonts.py` | Web-Schriften (WOFF) einbetten |
-| `tools/https_check.py` | HTTPS prüfen: Umleitung, Speichern, Zertifikat hochladen/ablehnen, optional OTA |
-| `tools/esp_soak.py` | Lasttest der Weboberfläche über HTTP oder HTTPS, auch mit offen gehaltener Verbindung |
-| `tools/modbus_watch.py` | SunSpec-Kennung laufend lesen, langsame Antworten und Ausfälle melden |
-| `tools/serial_log.py` | Seriellen Log mitschreiben |
-| `tools/battery_check.py` | Akkudaten über `/api/battery` prüfen und als Tabelle zeigen; `--sign-selftest` prüft die Dyness-Signatur |
-
-Zugangsdaten für die Werkzeuge kommen aus `ESP_USER` / `ESP_PASS`, nie aus dem Repo.
-
-## Build
-
-```bash
-cd hit-sunspec-proxy
-pio run -e t-connect-pro
-pio run -e t-connect-pro -t upload
-```
-
-Platform und Partitionen sind im Repo festgelegt (`espressif32 @ 53.3.13`, `partitions_16MB.csv`:
-2× ~4 MB OTA + ~8 MB LittleFS). Nach einem Partitionstabellen-Wechsel einmal per USB flashen;
-OTA zwischen App-Slots bleibt danach möglich.
-
-| Env | Board | Hinweise |
-|-----|-------|----------|
-| `t-connect-pro` (Standard) | LILYGO T-Connect-Pro, ESP32-S3, 16 MB | Display, Touch, W5500, RS485 TX 17 / RX 18 |
-| `wt32-eth01` | WT32-ETH01, ESP32, 4 MB | ohne Display; ohne PSRAM, deshalb Oberfläche über HTTP statt HTTPS; LAN8720 (PHY 1, Takt GPIO0, Enable GPIO16); RS485 über externen Wandler mit Auto-Richtung an IO17 (TX) / IO5 (RX) |
-| `t-poe-pro` | [LILYGO T-POE-Pro](https://lilygo.cc/products/t-poe-pro), ESP32-WROVER-E, 16 MB, 8 MB PSRAM | ohne Display; LAN8720 mit PoE; RS485 auf der Platine (TX 32 / RX 33) |
-| `p4-poe-eth` | [Waveshare ESP32-P4-WIFI6-POE-ETH](https://www.waveshare.com/esp32-p4-wifi6-poe-eth.htm), ESP32-P4, 32 MB, 32 MB PSRAM | ohne Display; IP101 mit PoE (MDC 31, MDIO 52, Reset 51); WLAN über den ESP32-C6; RS485 über externen Wandler an GPIO4 (TX) / GPIO5 (RX). Noch nicht auf Hardware getestet |
-
-### Bezugsquellen
-
-- [LILYGO T-Connect-Pro auf Amazon.de suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=LILYGO+T-Connect-Pro&rh=p_85%3A20943776031)\*
-- [LILYGO T-POE-Pro auf Amazon.de suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=LILYGO+T-POE-Pro&rh=p_85%3A20943776031)\*
-- [LILYGO T-POE-Pro auf Amazon.de (Alternativangebot)](https://www.amazon.de/dp/B0CR3JMCVX?tag=atomi23-21)\* — ca. 14 € Versand.
-- [WT32-ETH01 auf Amazon.de](https://www.amazon.de/dp/B0CW3DDWZ4?tag=atomi23-21)\*
-- [Waveshare ESP32-P4-WIFI6-POE-ETH auf Amazon.de](https://www.amazon.de/dp/B0G62SNY9S?tag=atomi23-21)\*
-- [Bluetooth-LED-Strips mit Lotus Lantern auf Amazon.de suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=Lotus+Lantern+Bluetooth+LED+Strip&rh=p_85%3A20943776031)\* — vor dem Kauf prüfen, ob das Angebot die App **Lotus Lantern** nennt; einzelne Modelle wurden nicht getestet.
-- [RS485-Wandlermodule mit 3,3-V-Logik und automatischer Richtungsumschaltung suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=RS485+TTL+3.3V+Modul+automatische+Richtungsumschaltung&rh=p_85%3A20943776031)\* — optional für WT32-ETH01 und Waveshare ESP32-P4.
-- [USB-Seriell-Adapter mit 3,3-V-Logik suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=USB+UART+TTL+3.3V+Adapter&rh=p_85%3A20943776031)\* — zum Flashen des WT32-ETH01.
-- [PoE-Adapterplatinen für WT32-ETH01 suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=WT32-ETH01+PoE+Adapterplatine&rh=p_85%3A20943776031)\* — vor dem Kauf Anschluss und Gehäusemaße prüfen.
-- [Step-down-Module mit 12–24 V Eingang und 5 V Ausgang suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=DC+DC+Step+Down+12V+24V+auf+5V+Modul&rh=p_85%3A20943776031)\* — für die RS485-Gehäusevariante des WT32-ETH01; Eingangsspannungsbereich und Maße prüfen.
-- [Tasmota-Leseköpfe für Stromzähler suchen (Prime-Filter)](https://www.amazon.de/s?tag=atomi23-21&k=Tasmota+Lesekopf+Stromz%C3%A4hler&rh=p_85%3A20943776031)\* — vor dem Kauf prüfen, ob der Lesekopf zum eigenen Zähler passt.
-
-\*Als Amazon-Partner verdiene ich an qualifizierten Verkäufen. Mit * markierte Links sind Werbe-/Affiliate-Links.
-
-Der WT32-ETH01 nutzt `min_spiffs.csv` (2× 1,9 MB OTA), der T-POE-Pro wie der T-Connect-Pro `partitions_16MB.csv`.
-Der WT32-ETH01 wird über einen USB-Seriell-Adapter an TX0/RX0 geflasht (IO0 beim Einschalten auf GND):
-
-```bash
-pio run -e wt32-eth01 -t upload
-```
 
 ## Privatsphäre
 

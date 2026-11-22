@@ -3,14 +3,14 @@
 <html lang="de"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="color-scheme" content="dark"/><title data-en="Log · HIT Proxy">Protokoll · HIT Proxy</title>
-<link rel="stylesheet" href="/a.css"/>
+<link rel="stylesheet" href="a.css"/>
 <style>.card{margin-bottom:12px}</style>
 </head><body>
 <script>
-const STATUS={"version": "0.6.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok", "board": "T-Connect-Pro", "hasDisplay": true, "hasBleLed": true, "features": {"sunspec": true, "mqtt": false, "gateway": true, "knx": true, "tasmota": false, "cloud": false}};
+const STATUS={"version": "0.7.0", "setupComplete": true, "demoMode": true, "ipShown": "192.0.2.80", "ipEth": "192.0.2.80", "ipWifi": "192.0.2.81", "hitOk": true, "sunspecClient": true, "mqttOk": false, "mqttIngestOk": false, "cloudOk": false, "knxOk": true, "ethOk": true, "wifiOk": true, "dataOrigin": "NATIVE", "pvW": 4820, "pv1W": 1210, "pv2W": 1180, "pv3W": 1240, "pv4W": 1190, "batW": -620, "batV": 51.2, "batA": -12.1, "soc": 74, "soh": 98, "gridW": 210, "gridW1": 70, "gridW2": 68, "gridW3": 72, "v1": 231.2, "v2": 230.8, "v3": 231.5, "i1": 1.1, "i2": 1.0, "i3": 1.2, "freqHz": 50.01, "energyPvKwh": 12840.5, "energyImpKwh": 210.2, "energyExpKwh": 8420.1, "tasmotaOk": false, "tasmotaPowerW": 0, "tasmotaTotalKwh": 0, "tasmotaExportKwh": 0, "tasmotaSensorKey": "", "wMaxLimPct": 10000, "wMaxLimEna": false, "lastWriteNote": "", "lastHitAgeMs": 1200, "status": "ok", "board": "T-Connect-Pro", "hasDisplay": true, "hasBleLed": true, "features": {"sunspec": true, "mqtt": false, "gateway": true, "knx": true, "tasmota": false, "cloud": false}};
 STATUS.uiLang=new URLSearchParams(location.search).get('lang')==='en'?'en':'de';
 STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
-const EV={uptimeMs:34920000,hitPolls:1394,hitFails:27,hitErr:"Verbindungsaufbau fehlgeschlagen",events:[{"t": 0, "ts": 0, "lv": "I", "src": "System", "msg": "Start v0.6.0, Grund: Neustart per Software"}, {"t": 7000, "ts": 0, "lv": "I", "src": "HTTPS", "msg": "Port 443 aktiv, von Ger\u00e4te-CA signiertes Zertifikat"}, {"t": 4200, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}, {"t": 7200000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 1804: keine Antwort (Timeout)"}, {"t": 7226000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 1 Fehlversuch (25 s)"}, {"t": 18000000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 27: vom HIT getrennt"}, {"t": 18500000, "ts": 0, "lv": "E", "src": "HIT", "msg": "seit 500 s keine Daten (20 Versuche): Verbindungsaufbau fehlgeschlagen"}, {"t": 18640000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 26 Fehlversuchen (640 s)"}, {"t": 28800000, "ts": 0, "lv": "W", "src": "Cloud", "msg": "Datenabruf fehlgeschlagen (HTTP 502)"}, {"t": 28861000, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}, {"t": 34885000, "ts": 0, "lv": "I", "src": "LED", "msg": "verbunden mit ELK-BLEDOM-DEMO (02:00:00:00:00:01), Schreibkanal fff3"}, {"t": 34885000, "ts": 0, "lv": "I", "src": "LED", "msg": "gesendet: ein (7e 04 04 f0 00 01 ff 00 ef)"}]};
+const EV={uptimeMs:34920000,hitPolls:1394,hitFails:27,hitErr:"Verbindungsaufbau fehlgeschlagen",events:[{"t": 0, "ts": 0, "lv": "I", "src": "System", "msg": "Start v0.7.0, Grund: Neustart per Software"}, {"t": 7000, "ts": 0, "lv": "I", "src": "HTTPS", "msg": "Port 443 aktiv, von Ger\u00e4te-CA signiertes Zertifikat"}, {"t": 4200, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}, {"t": 7200000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 1804: keine Antwort (Timeout)"}, {"t": 7226000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 1 Fehlversuch (25 s)"}, {"t": 18000000, "ts": 0, "lv": "W", "src": "HIT", "msg": "Abfrage fehlgeschlagen bei Reg 27: vom HIT getrennt"}, {"t": 18500000, "ts": 0, "lv": "E", "src": "HIT", "msg": "seit 500 s keine Daten (20 Versuche): Verbindungsaufbau fehlgeschlagen"}, {"t": 18640000, "ts": 0, "lv": "I", "src": "HIT", "msg": "wieder erreichbar nach 26 Fehlversuchen (640 s)"}, {"t": 28800000, "ts": 0, "lv": "W", "src": "Cloud", "msg": "Datenabruf fehlgeschlagen (HTTP 502)"}, {"t": 28861000, "ts": 0, "lv": "I", "src": "Cloud", "msg": "Daten kommen an"}, {"t": 34885000, "ts": 0, "lv": "I", "src": "LED", "msg": "verbunden mit ELK-BLEDOM-DEMO (02:00:00:00:00:01), Schreibkanal fff3"}, {"t": 34885000, "ts": 0, "lv": "I", "src": "LED", "msg": "gesendet: ein (7e 04 04 f0 00 01 ff 00 ef)"}]};
 const WR={uptimeMs:34920000,wMaxLimPct:6000,wMaxLimEna:true,sunspecClient:true,hitWriteEnabled:false,sunspecWriteToHit:false,
   count:2,lastAddr:40238,lastVal:6000,lastNote:"WMaxLimPct 60 %",events:[{t:34620000,fc:16,addr:40238,val:6000,note:"WMaxLimPct 60 %"},{t:34621000,fc:6,addr:40242,val:1,note:"WMaxLim_Ena an"}]};
 const _f=window.fetch;
@@ -22,29 +22,58 @@ window.fetch=async(u,o)=>{
   return _f(u,o);
 };
 </script>
+
+<script>
+const previewParams=new URLSearchParams(location.search);
+function previewLink(path){
+  const url=new URL(path,location.href);
+  for(const key of ['lang','theme'])if(previewParams.has(key))url.searchParams.set(key,previewParams.get(key));
+  return url.href;
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('a[href]');
+  if(a&&a.getAttribute('href').match(/^\w+\.html(?:#|$)/)&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){
+    e.preventDefault();
+    location.href=previewLink(a.href);
+  }
+});
+const previewFetch=window.fetch;
+window.fetch=async(u,o)=>{
+  if(u==='/api/config'&&o?.method==='POST'&&typeof o.body==='string'){
+    const prefs=JSON.parse(o.body);
+    if('uiLang' in prefs&&('uiTheme' in prefs||prefs.setupComplete===false)){
+      previewParams.set('lang',prefs.uiLang);
+      if('uiTheme' in prefs)previewParams.set('theme',prefs.uiTheme);
+      history.replaceState(null,'',location.pathname+'?'+previewParams+location.hash);
+      return {ok:true};
+    }
+  }
+  return previewFetch(u,o);
+};
+</script>
 <div class="app">
 <aside class="side">
   <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
   <nav>
-    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
-    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a href="history.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
     <div class="nav-grp" data-en="Data sources">Datenquellen</div>
-    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
-    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
-    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
-    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <a href="config.html#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="config.html#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="config.html#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="config.html#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
     <div class="nav-grp" data-en="Outputs">Ausgänge</div>
-    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
-    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
-    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
-    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <a href="config.html#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="config.html#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="config.html#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
+    <a href="config.html#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp" data-en="Device">Gerät</div>
-    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
-    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
-    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
-    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
-    <a class="on" aria-current="page" href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
-    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
+    <a href="system.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
+    <a href="config.html#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="config.html#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
+    <a href="config.html#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="config.html#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a class="on" aria-current="page" href="debug.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
   </nav>
   <div class="foot">
     <div class="online"><span class="dot ok"></span> Online</div>
@@ -136,7 +165,7 @@ async function saveUiPrefs(){
   location.reload();
 }
 </script>
-<script src="/b.js"></script>
+<script src="b.js"></script>
 <script>
 function age(ms){const s=Math.floor((Date.now()-window._boot-ms)/1000);if(s<0)return ms+'ms';if(s<60)return s+'s';return Math.floor(s/60)+'m';}
 let TAB=location.hash==='#writes'?'w':'sys';
