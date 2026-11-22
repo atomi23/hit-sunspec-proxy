@@ -927,7 +927,7 @@ const char BLE_HTML[] PROGMEM = R"HTML(
     <button type="button" class="sec ctl" onclick="bSet('on=0')" data-en="Off">Aus</button>
   </div>
   <label for="bBri" style="display:block;margin-top:18px"><span data-en="Brightness">Helligkeit</span> <b id="bBriV">—</b></label>
-  <input class="ctl" id="bBri" type="range" min="1" max="100" value="100" oninput="bBriV.textContent=this.value+' %'" onchange="bSet('bri='+this.value)"/>
+  <input class="ctl" id="bBri" type="range" min="1" max="100" value="100" oninput="bBriV.textContent=this.value+' %'" onchange="bBriSet()" onpointerup="bBriSet()" onkeyup="bBriSet()"/>
   <label for="bCol" style="display:block;margin-top:18px" data-en="Color">Farbe</label>
   <input class="ctl" id="bCol" type="color" value="#ffffff" onchange="bSet('rgb='+this.value.slice(1))"/>
   <div class="sw" id="bSw"></div>
@@ -977,6 +977,9 @@ function when(e,up){
   const s=Math.max(0,Math.round((up-e.t)/1000));
   return uiText('vor '+s+' s',s+' s ago');
 }
+// Der Regler steht anfangs schon auf 100 %: "change" allein würde diese erste Wahl nie senden.
+let briSent=null;
+function bBriSet(){const v=$('bBri').value;if(v===briSent)return;briSent=v;bSet('bri='+v);}
 async function bLoad(){
   const r=await fetch('/api/bleled').catch(()=>null);const j=r&&r.ok?await r.json():null;
   if(j){
@@ -992,7 +995,7 @@ async function bLoad(){
     $('bOff').hidden=!!j.enabled;
     document.querySelectorAll('.ctl').forEach(b=>b.disabled=!j.enabled);
     if(!busy){
-      if('bri' in j&&document.activeElement!==$('bBri')){$('bBri').value=j.bri;$('bBriV').textContent=j.bri+' %';}
+      if('bri' in j&&document.activeElement!==$('bBri')){briSent=String(j.bri);$('bBri').value=j.bri;$('bBriV').textContent=j.bri+' %';}
       if(j.rgb&&document.activeElement!==$('bCol'))$('bCol').value=j.rgb;
     }
   }
