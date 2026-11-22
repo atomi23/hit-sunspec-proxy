@@ -12,14 +12,19 @@ Target board: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect
 Without a display it also runs on the **WT32-ETH01** (ESP32 + LAN8720, 4 MB flash) and the LilyGO T-POE-Pro, see [Build](#build).
 There is a [printable DIN rail enclosure (2 modules)](hardware/wt32-din/) for the WT32-ETH01, and one with [3.5 modules](hardware/p4-poe-din/) for the Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`).
 
-Current firmware: **v0.6.0** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.6.0)
+Current firmware: **v0.7.0** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.7.0)
 
-### New in v0.6.0
-- **"Bluetooth" page (T-Connect-Pro only):** Shows the connection state of the LED strip and the last error, switches the strip on and off and sets brightness and color. It shows what the gateway sent last; the strip reports nothing back.
-- **Bluetooth log:** Every command sent to the strip is in the event log with its bytes, as is every connection. Error messages now name the reason (not reachable or no matching write channel).
+### New in v0.7.0
+- **Bluetooth settings on the "Bluetooth" page (T-Connect-Pro only):** Strip search, name, address and power-on command now sit where the strip is controlled, instead of under *Settings → KNX*. Only the group addresses stay there.
+- **"Overview" page:** Shows hardware (board, chip, memory, flash), software (firmware, build date, Arduino/ESP-IDF, uptime, last start), network and services, and the load: CPU load per core, memory, PSRAM and file system.
+- **HTTPS despite Bluetooth:** Since v0.5.23 the T-Connect-Pro was about 40 KB of internal RAM short for HTTPS ("Not enough RAM for HTTPS; HTTP only"). On boards with PSRAM, TLS now lives in PSRAM.
 
 <details>
-<summary><b>Older versions</b> (v0.5.23 to v0.5.6)</summary>
+<summary><b>Older versions</b> (v0.6.0 to v0.5.6)</summary>
+
+### v0.6.0
+- **"Bluetooth" page (T-Connect-Pro only):** Shows the connection state of the LED strip and the last error, switches the strip on and off and sets brightness and color. It shows what the gateway sent last; the strip reports nothing back.
+- **Bluetooth log:** Every command sent to the strip is in the event log with its bytes, as is every connection. Error messages now name the reason (not reachable or no matching write channel).
 
 ### v0.5.23
 - **Bluetooth LED strip via KNX (T-Connect-Pro only):** LED strips driven by the *Lotus Lantern* app can be switched (DPT 1.001), dimmed (DPT 5.001) and colored (DPT 232.600) through three KNX objects. Set up with strip search and test under *Settings → KNX*. The commands come from public protocol descriptions and have not yet been tried on a real strip.
@@ -165,8 +170,8 @@ display is enabled.
 ### Bluetooth LED strip via the web UI and KNX (T-Connect-Pro)
 
 LED strips driven by the **Lotus Lantern** app (Bluetooth names `ELK-BLEDOM…`, `MELK-…`, `LEDBLE…`) can be switched
-by KNX. Under **Settings → KNX**, search for the strip, select it, save, and check it with **Test: on/off**. Then
-assign group addresses to the receive objects: **switch** (DPT 1.001), **brightness** (DPT 5.001) and **RGB color**
+by KNX. On the **Bluetooth** page, search for the strip, select it, save, and check it with **On/Off**. Then
+assign group addresses under **Settings → KNX** to the receive objects: **switch** (DPT 1.001), **brightness** (DPT 5.001) and **RGB color**
 (DPT 232.600). The ESP connects only to send and releases the strip after 10 seconds, because the strip accepts a
 single Bluetooth connection; the app on the phone must be closed. Available on the T-Connect-Pro (ESP32-S3) only: the
 ESP32 boards lack the memory for Bluetooth and the ESP32-P4 has no Bluetooth. The command set comes from public
