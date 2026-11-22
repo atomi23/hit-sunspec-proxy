@@ -7,6 +7,7 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC = (ROOT / "src" / "WebConfig.cpp").read_text(encoding="utf-8")
 OUT = pathlib.Path(__file__).resolve().parent
+VERSION = re.search(r'PROXY_VERSION=\\"([^"]+)\\"', (ROOT / "platformio.ini").read_text()).group(1)
 
 
 def extract(name: str) -> str:
@@ -27,7 +28,7 @@ idx = extract("INDEX_HTML")
 (OUT / "b.js").write_text(extract("UI_JS"), encoding="utf-8")
 
 mock_status = {
-    "version": "0.5.14",
+    "version": VERSION,
     "setupComplete": True,
     "demoMode": True,
     "ipShown": "192.0.2.80",
@@ -142,6 +143,8 @@ cfg = {
     "displayBrightness": 80,
     "displayPageS": 8,
     "displayTimeoutS": 300,
+    "displayScheduleEnabled": True,
+    "displayWeek": [{"enabled": day < 5, "start": 420, "end": 1320} for day in range(7)],
     "gatewayEnabled": True,
     "gatewayPort": 502,
     "mqttEnabled": False,
@@ -196,7 +199,8 @@ const CFG={json.dumps(cfg)};
 const STATUS={json.dumps(mock_status)};
 const TLS={{subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
   sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
-  chain:1,source:"self",running:true,enabled:true}};
+  chain:1,source:"self",running:true,enabled:true,caSigned:true,caValidTo:"2036-02-08",
+  caSha256:"19:5C:89:4A:03:36:5E:B0:A1:C8:17:F9:68:B9:21:54:94:05:BB:41:AA:6C:71:19:90:D2:BF:34:88:E1:B2:E5"}};
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
@@ -281,8 +285,8 @@ window.fetch=async(u,o)=>{{
 dbg = extract("DEBUG_HTML")
 up = 9 * 3600 * 1000 + 42 * 60 * 1000
 ev = [
-    (0, "I", "System", "Start v0.5.0, Grund: Neustart per Software"),
-    (7000, "I", "HTTPS", "Port 443 aktiv, selbst signiertes Zertifikat"),
+    (0, "I", "System", f"Start v{VERSION}, Grund: Neustart per Software"),
+    (7000, "I", "HTTPS", "Port 443 aktiv, von Geräte-CA signiertes Zertifikat"),
     (4200, "I", "Cloud", "Daten kommen an"),
     (2 * 3600e3, "W", "HIT", "Abfrage fehlgeschlagen bei Reg 1804: keine Antwort (Timeout)"),
     (2 * 3600e3 + 26e3, "I", "HIT", "wieder erreichbar nach 1 Fehlversuch (25 s)"),

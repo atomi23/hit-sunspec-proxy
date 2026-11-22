@@ -34,8 +34,10 @@ void setup() {
 
   Watchdog::begin(45);
   Serial.printf("Letzter Neustart: %s\n", Watchdog::lastResetReason());
-  EventLog::add('I', "System", "Start v%s, Grund: %s", PROXY_VERSION, Watchdog::lastResetReason());
-  if (Watchdog::hungIn()[0]) EventLog::add('E', "System", "vorher hing die Hauptschleife in: %s", Watchdog::hungIn());
+  EventLog::add('I', "System", ConfigStore::uiText("Start v%s, Grund: %s", "Started v%s, reason: %s"),
+                PROXY_VERSION, Watchdog::lastResetReason(ConfigStore::uiEnglish()));
+  if (Watchdog::hungIn()[0]) EventLog::add('E', "System", ConfigStore::uiText(
+      "vorher hing die Hauptschleife in: %s", "Main loop previously stalled in: %s"), Watchdog::hungIn());
 
   NetBoot::begin(cfg);
   StatusDisplay::begin(cfg);

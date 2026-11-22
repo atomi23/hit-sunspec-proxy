@@ -41,7 +41,7 @@ void noteForAddr(uint16_t addr, uint16_t value, char *out, size_t n) {
   } else if (addr >= M123 && addr < M123 + 26) {
     snprintf(out, n, "M123 off+%u", unsigned(addr - M123));
   } else {
-    snprintf(out, n, "Holding");
+    strlcpy(out, ConfigStore::uiText("Halteregister", "Holding register"), n);
   }
 }
 

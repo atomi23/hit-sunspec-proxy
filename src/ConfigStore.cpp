@@ -431,22 +431,23 @@ String exportBackup(bool withSecrets) {
 }
 
 bool importBackup(const char *json, String &err) {
+  const bool en = uiEnglish();
   JsonDocument d;
   if (deserializeJson(d, json)) {
-    err = "bad json";
+    err = en ? "Invalid JSON file." : "Ungültige JSON-Datei.";
     return false;
   }
   if (strcmp(d["format"] | "", BACKUP_FORMAT) != 0) {
-    err = "not a HIT-Proxy backup";
+    err = en ? "This is not a HIT-Proxy backup." : "Keine Sicherung des HIT-Proxy.";
     return false;
   }
   if ((d["formatVersion"] | 0) != BACKUP_FORMAT_VERSION) {
-    err = "unsupported backup version";
+    err = en ? "Unsupported backup version." : "Diese Sicherungsversion wird nicht unterstützt.";
     return false;
   }
   JsonObjectConst s = d["settings"];
   if (s.isNull() || !s["ok"].is<JsonObjectConst>()) {
-    err = "no settings";
+    err = en ? "The backup contains no settings." : "Die Sicherung enthält keine Einstellungen.";
     return false;
   }
   // erst alles prüfen, damit eine kaputte Datei nichts halb überschreibt
@@ -456,7 +457,7 @@ bool importBackup(const char *json, String &err) {
     const size_t n = strlen(k);
     const EntryType t = entryType(kv.value()["t"] | "");
     if (!n || n > 15 || t == EntryType::Bad || !valueFits(t, kv.value()["v"])) {
-      err = String("invalid entry ") + k;
+      err = String(en ? "Invalid setting: " : "Ungültige Einstellung: ") + k;
       return false;
     }
     entries++;
@@ -464,7 +465,7 @@ bool importBackup(const char *json, String &err) {
   }
   // die NVS-Partition ist nur 20 KB groß; eine echte Sicherung bleibt weit darunter
   if (entries > BACKUP_MAX_ENTRIES || strBytes > BACKUP_MAX_STR_TOTAL) {
-    err = "backup too large";
+    err = en ? "The backup is too large." : "Die Sicherung ist zu groß.";
     return false;
   }
   for (JsonPairConst kv : s) {
@@ -473,7 +474,8 @@ bool importBackup(const char *json, String &err) {
     if (!HAS_DISPLAY && strcmp(k, "dcode") == 0) continue;
     if (!writeEntry(k, entryType(kv.value()["t"]), kv.value()["v"])) {
       load();
-      err = String("write failed at ") + k + ", settings partly restored";
+      err = String(en ? "Could not save " : "Fehler beim Speichern von ") + k +
+            (en ? ". Settings were only partly restored." : ". Die Einstellungen wurden nur teilweise wiederhergestellt.");
       return false;
     }
   }

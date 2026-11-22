@@ -1,4 +1,5 @@
 #include "History.h"
+#include "AppConfig.h"
 #include "LiveData.h"
 #include <LittleFS.h>
 #include <time.h>
@@ -342,7 +343,8 @@ void downloadCsv(AsyncWebServerRequest *req) {
   };
   auto snap = std::shared_ptr<Snapshot>(new (std::nothrow) Snapshot);
   if (!snap) {
-    req->send(503, "text/plain; charset=utf-8", "Nicht genug Speicher für den Download.\n");
+    req->send(503, "text/plain; charset=utf-8",
+              ConfigStore::uiText("Nicht genug Speicher für den Download.\n", "Not enough memory for the download.\n"));
     return;
   }
   {

@@ -158,6 +158,8 @@ struct AppConfig {
 namespace ConfigStore {
   void begin();
   AppConfig &get();
+  inline bool uiEnglish() { return get().uiLang == UiLang::En; }
+  inline const char *uiText(const char *de, const char *en) { return uiEnglish() ? en : de; }
   bool load();
   bool save();
   void resetDefaults();

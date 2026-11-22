@@ -17,6 +17,7 @@ constexpr uint32_t TIMEOUT_MS = 1500;
 char lastErr[40] = "";
 
 void setErr(const char *s) { strlcpy(lastErr, s, sizeof(lastErr)); }
+void setErr(const char *de, const char *en) { setErr(ConfigStore::uiText(de, en)); }
 
 // ---- TCP: eine Verbindung, nur bei Fehler neu -------------------------------
 WiFiClient conn;
@@ -28,11 +29,11 @@ bool tcpConnect() {
   if (conn.connected() && connPort == local.hitPort && strcmp(connHost, local.hitHost) == 0) return true;
   conn.stop();
   if (!local.hitHost[0]) {
-    setErr("kein HIT-Host eingetragen");
+    setErr("kein HIT-Host eingetragen", "No HIT host configured");
     return false;
   }
   if (!conn.connect(local.hitHost, local.hitPort, int32_t(TIMEOUT_MS))) {
-    setErr("Verbindungsaufbau fehlgeschlagen");
+    setErr("Verbindungsaufbau fehlgeschlagen", "Connection failed");
     return false;
   }
   conn.setNoDelay(true);
@@ -57,14 +58,15 @@ bool tcpTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, si
           respLen = n - 1;
           return true;
         }
-        setErr("Antwort unvollständig");
+        setErr("Antwort unvollständig", "Incomplete response");
       } else if (got == 7) {
-        setErr("Antwort zu falscher Anfrage");
+        setErr("Antwort zu falscher Anfrage", "Response to wrong request");
       } else {
-        setErr(conn.connected() ? "keine Antwort (Timeout)" : "vom HIT getrennt");
+        if (conn.connected()) setErr("keine Antwort (Timeout)", "No response (timeout)");
+        else setErr("vom HIT getrennt", "Disconnected from HIT");
       }
     } else {
-      setErr("Senden fehlgeschlagen");
+      setErr("Senden fehlgeschlagen", "Could not send request");
     }
     conn.stop(); // halbe Antwort oder vom HIT getrennt: einmal neu verbinden
   }
@@ -117,7 +119,8 @@ bool rtuTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, si
   size_t got = rtuRead(buf, 2);
   lastFrameUs = micros();
   if (got != 2 || buf[0] != unit) {
-    setErr(got ? "RS485: falsche Unit-ID" : "RS485: keine Antwort");
+    if (got) setErr("RS485: falsche Unit-ID", "RS485: wrong unit ID");
+    else setErr("RS485: keine Antwort", "RS485: no response");
     return false;
   }
   size_t body;
@@ -133,14 +136,14 @@ bool rtuTransact(uint8_t unit, const uint8_t *pdu, size_t len, uint8_t *resp, si
   }
   size_t need = body + 2; // + CRC
   if (got + need > sizeof(buf) || rtuRead(buf + got, need) != need) {
-    setErr("RS485: Antwort unvollständig");
+    setErr("RS485: Antwort unvollständig", "RS485: incomplete response");
     return false;
   }
   got += need;
   lastFrameUs = micros();
   uint16_t rc = crc16(buf, got - 2);
   if ((rc & 0xFF) != buf[got - 2] || (rc >> 8) != buf[got - 1]) {
-    setErr("RS485: CRC-Fehler");
+    setErr("RS485: CRC-Fehler", "RS485: CRC error");
     return false;
   }
   respLen = got - 3; // ohne Unit und CRC
@@ -157,12 +160,12 @@ bool readRegs(uint8_t fc, uint16_t addr, uint16_t qty, uint16_t *out) {
   if (!HitBus::transact(local.hitUnitId, pdu, 5, resp, sizeof(resp), n)) return false;
   if (n >= 2 && resp[0] == (fc | 0x80)) {
     char e[32];
-    snprintf(e, sizeof(e), "Modbus-Exception %u", resp[1]);
+    snprintf(e, sizeof(e), ConfigStore::uiText("Modbus-Ausnahme %u", "Modbus exception %u"), resp[1]);
     setErr(e);
     return false;
   }
   if (resp[0] != fc || n < 2 || resp[1] != qty * 2 || n < size_t(2 + qty * 2)) {
-    setErr("Antwort hat falsche Länge");
+    setErr("Antwort hat falsche Länge", "Invalid response length");
     return false;
   }
   for (uint16_t i = 0; i < qty; i++) out[i] = (uint16_t(resp[2 + i * 2]) << 8) | resp[3 + i * 2];
@@ -197,11 +200,11 @@ const char *lastError() { return lastErr; }
 bool transact(uint8_t unit, const uint8_t *pdu, size_t pduLen, uint8_t *resp, size_t respMax, size_t &respLen) {
   if (local.demoMode || !lock) return false;
   if (forbidden(pdu, pduLen)) {
-    setErr("FC6 auf Schutzregister gesperrt");
+    setErr("FC6 auf Schutzregister gesperrt", "FC6 blocked on protection registers");
     return false;
   }
   if (xSemaphoreTake(lock, pdMS_TO_TICKS(4000)) != pdTRUE) {
-    setErr("Leitung belegt (Gateway/Steuerung)");
+    setErr("Leitung belegt (Gateway/Steuerung)", "Link busy (gateway/control)");
     return false;
   }
   bool ok = local.hitMode == HitLinkMode::RtuRs485 ? rtuTransact(unit, pdu, pduLen, resp, respMax, respLen)

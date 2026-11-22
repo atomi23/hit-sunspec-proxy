@@ -168,7 +168,8 @@ bool ensureCa(bool &created) {
       p.end();
       return false;
     }
-    EventLog::add('W', "HTTPS", "unvollständige oder ungültige Geräte-CA, erzeuge sie neu");
+    EventLog::add('W', "HTTPS", ConfigStore::uiText("unvollständige oder ungültige Geräte-CA, erzeuge sie neu",
+                                                  "Device CA incomplete or invalid; regenerating it"));
     p.remove("cacrt");
     p.remove("cakey");
     p.remove("caLeaf");
@@ -289,8 +290,10 @@ bool makeCertificate(bool plain = false) {
                      p.putString("crt", certPem) > 0 && p.putString("key", keyPem) > 0 &&
                      p.putString("ips", currentIps()) > 0 && p.putBool("caLeaf", !plain) > 0;
   p.end();
-  if (!saved) EventLog::add('W', "HTTPS", "Serverzertifikat nur im RAM, Speichern fehlgeschlagen");
-  EventLog::add('I', "HTTPS", "%s Zertifikat erzeugt (%s, %s %s)", plain ? "selbst signiertes" : "von Geräte-CA signiertes", host.c_str(), gLive.ipEth,
+  if (!saved) EventLog::add('W', "HTTPS", ConfigStore::uiText("Serverzertifikat nur im RAM, Speichern fehlgeschlagen",
+                                                            "Could not save server certificate; it is only in RAM"));
+  EventLog::add('I', "HTTPS", ConfigStore::uiText("%s Zertifikat erzeugt (%s, %s %s)", "Generated %s certificate (%s, %s %s)"),
+                plain ? ConfigStore::uiText("selbst signiertes", "self-signed") : ConfigStore::uiText("von Geräte-CA signiertes", "device CA-signed"), host.c_str(), gLive.ipEth,
                 strcmp(gLive.ipWifi, "-") ? gLive.ipWifi : "");
   return true;
 }
@@ -407,7 +410,8 @@ bool loadStoredLeaf(bool requireCa) {
 }
 
 bool fallbackCertificate() {
-  EventLog::add('W', "HTTPS", "Geräte-CA fehlgeschlagen, nutze Ersatz-Zertifikat; neuer Versuch beim nächsten Start");
+  EventLog::add('W', "HTTPS", ConfigStore::uiText("Geräte-CA fehlgeschlagen, nutze Ersatz-Zertifikat; neuer Versuch beim nächsten Start",
+                                                "Device CA failed; using fallback certificate and retrying at next startup"));
   return loadStoredLeaf(false) || makeCertificate(true);
 }
 
@@ -425,7 +429,8 @@ bool loadCert(bool regenerate) {
       ownCert = true;
       return true;
     }
-    EventLog::add('W', "HTTPS", "eigenes Zertifikat nicht lesbar, nehme selbst signiertes");
+    EventLog::add('W', "HTTPS", ConfigStore::uiText("eigenes Zertifikat nicht lesbar, nutze Gerätezertifikat",
+                                                  "Could not read custom certificate; using device certificate"));
   }
   bool created = false;
   if (!ensureCa(created)) return fallbackCertificate();
@@ -636,14 +641,15 @@ void start(bool regenerate) {
   // Ohne PSRAM reicht der interne RAM oft nicht; ein Port, der jede Verbindung abbricht, sperrt die Oberfläche aus
   lowRam = !tlsFits();
   if (lowRam) {
-    EventLog::add('W', "HTTPS", "zu wenig RAM für HTTPS (frei %u, größter Block %u), nur HTTP",
+    EventLog::add('W', "HTTPS", ConfigStore::uiText("zu wenig RAM für HTTPS (frei %u, größter Block %u), nur HTTP",
+                                                  "Not enough RAM for HTTPS (free %u, largest block %u); HTTP only"),
                   unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
                   unsigned(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
     buildInfo();
     return;
   }
   if (!loadCert(regenerate)) {
-    EventLog::add('E', "HTTPS", "kein Zertifikat, nur HTTP");
+    EventLog::add('E', "HTTPS", ConfigStore::uiText("kein Zertifikat, nur HTTP", "No certificate; HTTP only"));
     buildInfo();
     return;
   }
@@ -664,7 +670,8 @@ void start(bool regenerate) {
   conf.httpd.send_wait_timeout = 10;
   if (httpd_ssl_start(&server, &conf) != ESP_OK) {
     server = nullptr;
-    EventLog::add('E', "HTTPS", "Start fehlgeschlagen (freier RAM %u), nur HTTP",
+    EventLog::add('E', "HTTPS", ConfigStore::uiText("Start fehlgeschlagen (freier RAM %u), nur HTTP",
+                                                  "Startup failed (free RAM %u); HTTP only"),
                   unsigned(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)));
     buildInfo();
     return;
@@ -676,7 +683,10 @@ void start(bool regenerate) {
     u.handler = proxy;
     httpd_register_uri_handler(server, &u);
   }
-  EventLog::add('I', "HTTPS", "Port 443 aktiv, %s Zertifikat", ownCert ? "eigenes" : caSigned ? "von Geräte-CA signiertes" : "selbst signiertes");
+  EventLog::add('I', "HTTPS", ConfigStore::uiText("Port 443 aktiv, %s Zertifikat", "Port 443 active, %s certificate"),
+                ownCert ? ConfigStore::uiText("eigenes", "custom") :
+                caSigned ? ConfigStore::uiText("von Geräte-CA signiertes", "device CA-signed") :
+                ConfigStore::uiText("selbst signiertes", "self-signed"));
   buildInfo();
 }
 
@@ -795,7 +805,7 @@ bool installCustom(const char *crtPem, const char *kPem, String &err, bool engli
     err = english ? "Could not save the certificate and key" : "Speichern fehlgeschlagen";
     return false;
   }
-  EventLog::add('I', "HTTPS", "eigenes Zertifikat hochgeladen");
+  EventLog::add('I', "HTTPS", ConfigStore::uiText("eigenes Zertifikat hochgeladen", "Custom certificate uploaded"));
   pending = P_RESTART;
   return true;
 }
