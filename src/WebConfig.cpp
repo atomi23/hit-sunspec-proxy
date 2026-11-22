@@ -1218,6 +1218,15 @@ und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich
 <label data-en="HTTPS certificate">HTTPS-Zertifikat</label>
 <table><tbody id="tlsInfo"><tr><td class="muted" data-en="Loading…">Lade…</td></tr></tbody></table>
 <button class="sec" type="button" onclick="location.href='/api/tls/ca.crt'" data-en="Download CA certificate">CA-Zertifikat herunterladen</button>
+<details class="hint">
+<summary data-en="Windows: install the CA certificate">Windows: CA-Zertifikat installieren</summary>
+<ol>
+<li data-en="Double-click hit-proxy-ca.crt → “Install Certificate” → “Current User”.">Doppelklick auf hit-proxy-ca.crt → „Zertifikat installieren“ → „Aktueller Benutzer“.</li>
+<li data-en="Select “Place all certificates in the following store” → “Browse” → “Trusted Root Certification Authorities”; finish the installation and confirm the security warning with “Yes”.">„Alle Zertifikate in folgendem Speicher speichern“ → „Durchsuchen“ → „Vertrauenswürdige Stammzertifizierungsstellen“ wählen; Installation abschließen und die Sicherheitsabfrage mit „Ja“ bestätigen.</li>
+<li data-en="Completely restart the browser.">Browser komplett neu starten.</li>
+</ol>
+<p data-en="Automatic store selection puts the certificate in the wrong store; Chrome then shows NET::ERR_CERT_AUTHORITY_INVALID.">Die automatische Speicherauswahl legt das Zertifikat im falschen Speicher ab; Chrome zeigt dann NET::ERR_CERT_AUTHORITY_INVALID.</p>
+</details>
 <label data-en="Custom certificate (PEM, followed by intermediate certificates)">Eigenes Zertifikat (PEM, Zwischenzertifikate dahinter)</label>
 <textarea id="tlsCrt" rows="5" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
 <input type="file" id="tlsCrtFile" accept=".pem,.crt,.cer,.txt" onchange="tlsFile(this,'tlsCrt')"/>
