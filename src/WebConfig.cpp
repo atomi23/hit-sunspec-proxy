@@ -113,7 +113,7 @@ void downloadLog(AsyncWebServerRequest *req, const char *type,
   req->send(response);
 }
 
-// Shared UI — sidebar + mint accents (all pages link /a.css)
+// Shared UI, stored once in flash and streamed into every page.
 const char UI_CSS[] PROGMEM = R"CSS(
 @font-face{font-family:Barlow;font-weight:400;font-display:swap;src:url(/f/barlow-400.woff) format("woff")}
 @font-face{font-family:Barlow;font-weight:600;font-display:swap;src:url(/f/barlow-600.woff) format("woff")}
@@ -2678,6 +2678,41 @@ void applyJson(JsonObjectConst o, AppConfig &c) {
 
 namespace WebConfig {
 
+void sendPage(AsyncWebServerRequest *req, const char *html) {
+  static constexpr char link[] = "<link rel=\"stylesheet\" href=\"/a.css\"/>";
+  static constexpr char openStyle[] = "<style>";
+  static constexpr char closeStyle[] = "</style>";
+  const char *tag = strstr(html, link);
+  if (!tag) {
+    req->send(200, "text/html; charset=utf-8", reinterpret_cast<const uint8_t *>(html), strlen(html));
+    return;
+  }
+  const char *tail = tag + sizeof(link) - 1;
+  const size_t headLen = tag - html;
+  const size_t tailLen = strlen(tail);
+  const size_t total = headLen + sizeof(openStyle) - 1 + sizeof(UI_CSS) - 1 + sizeof(closeStyle) - 1 + tailLen;
+  req->send("text/html; charset=utf-8", total,
+      [html, headLen, tail, tailLen](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+        struct Part { const char *data; size_t len; };
+        const Part parts[] = {{html, headLen}, {openStyle, sizeof(openStyle) - 1},
+                              {UI_CSS, sizeof(UI_CSS) - 1}, {closeStyle, sizeof(closeStyle) - 1},
+                              {tail, tailLen}};
+        size_t written = 0;
+        for (const auto &part : parts) {
+          if (index >= part.len) {
+            index -= part.len;
+            continue;
+          }
+          const size_t n = min(part.len - index, maxLen - written);
+          memcpy(buffer + written, part.data + index, n);
+          written += n;
+          index = 0;
+          if (written == maxLen) break;
+        }
+        return written;
+      });
+}
+
 void begin() {
   // Von außen auf HTTPS umleiten; der HTTPS-Server selbst fragt über 127.0.0.1 an.
   // Während der Einrichtung nicht, da steht man mit dem Handy im Geräte-WLAN.
@@ -2716,7 +2751,7 @@ void begin() {
     next();
   });
 
-  // Public stylesheet (no auth) — pages stay readable right after login
+  // Retain the public stylesheet for clients with HTML cached from older firmware.
   server.on("/a.css", HTTP_GET, [](AsyncWebServerRequest *req) {
     req->send(200, "text/css", (const uint8_t *)UI_CSS, strlen(UI_CSS));
   });
@@ -2740,7 +2775,7 @@ void begin() {
       req->redirect("/setup");
       return;
     }
-    req->send(200, "text/html", (const uint8_t *)DASH_HTML, strlen(DASH_HTML));
+    sendPage(req, DASH_HTML);
   });
 
   server.on("/config", HTTP_GET, [](AsyncWebServerRequest *req) {
@@ -2749,17 +2784,17 @@ void begin() {
       req->redirect("/setup");
       return;
     }
-    req->send(200, "text/html", (const uint8_t *)INDEX_HTML, strlen(INDEX_HTML));
+    sendPage(req, INDEX_HTML);
   });
 
   server.on("/setup", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send(200, "text/html", (const uint8_t *)SETUP_HTML, strlen(SETUP_HTML));
+    sendPage(req, SETUP_HTML);
   });
 
   server.on("/debug", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send(200, "text/html", (const uint8_t *)DEBUG_HTML, strlen(DEBUG_HTML));
+    sendPage(req, DEBUG_HTML);
   });
 
   server.on(AsyncURIMatcher::exact("/api/debug"), HTTP_GET, [](AsyncWebServerRequest *req) {
@@ -3205,7 +3240,7 @@ void begin() {
 
   server.on("/history", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send(200, "text/html", (const uint8_t *)HISTORY_HTML, strlen(HISTORY_HTML));
+    sendPage(req, HISTORY_HTML);
   });
 
   server.on("/api/history/day", HTTP_GET, [](AsyncWebServerRequest *req) {

@@ -4,6 +4,7 @@
 #include "AppConfig.h"
 #include "EventLog.h"
 #include "HttpsServer.h"
+#include "WebConfig.h"
 
 namespace {
 bool busy = false;
@@ -213,7 +214,7 @@ const char *lastError() { return errBuf; }
 void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRequest *)) {
   server.on("/ota", HTTP_GET, [requireAuth](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    req->send(200, "text/html", (const uint8_t *)OTA_HTML, strlen(OTA_HTML));
+    WebConfig::sendPage(req, OTA_HTML);
   });
 
   server.on("/api/restart", HTTP_POST, [requireAuth](AsyncWebServerRequest *req) {
