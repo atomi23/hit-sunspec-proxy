@@ -72,9 +72,11 @@ bool doPoll() {
     failStreak++;
     if (failStreak == 1) {
       failSince = millis();
-      EventLog::add('W', "HIT", "Abfrage fehlgeschlagen bei Reg %u: %s", failAddr, HitBus::lastError());
+      EventLog::add('W', "HIT", ConfigStore::uiText("Abfrage fehlgeschlagen bei Reg %u: %s",
+                                                  "Poll failed at register %u: %s"), failAddr, HitBus::lastError());
     } else if (failStreak % 20 == 0) {
-      EventLog::add('E', "HIT", "seit %lu s keine Daten (%lu Versuche): %s",
+      EventLog::add('E', "HIT", ConfigStore::uiText("seit %lu s keine Daten (%lu Versuche): %s",
+                                                  "No data for %lu s (%lu attempts): %s"),
                     (unsigned long)((millis() - failSince) / 1000), (unsigned long)failStreak,
                     HitBus::lastError());
     }
@@ -82,8 +84,10 @@ bool doPoll() {
     return false;
   }
   if (failStreak) {
-    EventLog::add('I', "HIT", "wieder erreichbar nach %lu Fehlversuch%s (%lu s)", (unsigned long)failStreak,
-                  failStreak == 1 ? "" : "en", (unsigned long)((millis() - failSince) / 1000));
+    EventLog::add('I', "HIT", ConfigStore::uiText("wieder erreichbar nach %lu Fehlversuch%s (%lu s)",
+                                                "Reachable again after %lu failed attempt%s (%lu s)"),
+                  (unsigned long)failStreak, failStreak == 1 ? "" : ConfigStore::uiText("en", "s"),
+                  (unsigned long)((millis() - failSince) / 1000));
     failStreak = 0;
   }
   const bool socAltOk = rd(30020, 1, batSocAlt);
@@ -174,7 +178,8 @@ void pollBattery() {
   uint16_t regs[12] = {};
   BatteryHit h;
   if (!rd(1916, 12, regs)) {
-    if (!batFailLogged) EventLog::add('W', "Akku", "HIT liefert keine Akkudetails: %s", HitBus::lastError());
+    if (!batFailLogged) EventLog::add('W', "BAT", ConfigStore::uiText("HIT liefert keine Akkudetails: %s",
+                                                                    "HIT returned no battery details: %s"), HitBus::lastError());
     batFailLogged = true;
     BatteryData::updateHit(h);
     return;

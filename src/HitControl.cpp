@@ -10,7 +10,7 @@ bool started = false;
 
 bool wr(uint16_t addr, uint16_t val) {
   bool ok = HitBus::writeSingle(addr, val);
-  if (!ok) err = String("Write Reg ") + addr + " fail";
+  if (!ok) err = String(ConfigStore::uiText("Schreiben fehlgeschlagen, Register ", "Write failed, register ")) + addr;
   delay(80);
   return ok;
 }
@@ -38,14 +38,14 @@ String lastError() { return err; }
 
 bool applyBatteryLimits() {
   if (local.demoMode) {
-    err = "DEMO: Write nur simuliert (kein HIT)";
+    err = ConfigStore::uiText("DEMO: Schreiben nur simuliert (kein HIT)", "DEMO: simulated write only (no HIT)");
     gLive.ctrlChargePct = local.batMaxChargePct;
     gLive.ctrlDischargePct = local.batMaxDischargePct;
     strlcpy(gLive.status, "DEMO write ok", sizeof(gLive.status));
     return true;
   }
   if (!local.hitWriteEnabled) {
-    err = "Steuerung aus (Web: hitWriteEnabled)";
+    err = ConfigStore::uiText("Steuerung aus (Web: hitWriteEnabled)", "Control disabled (web: hitWriteEnabled)");
     return false;
   }
   err = "";
@@ -68,13 +68,13 @@ bool applyBatteryLimits() {
 
 bool applyApcLimit() {
   if (local.demoMode) {
-    err = "DEMO: APC nur simuliert";
+    err = ConfigStore::uiText("DEMO: APC nur simuliert", "DEMO: simulated APC only");
     gLive.ctrlApcEna = local.apcEnabled;
     gLive.ctrlApcPct10 = local.apcPwrLmtPct10;
     return true;
   }
   if (!local.hitWriteEnabled) {
-    err = "Steuerung aus";
+    err = ConfigStore::uiText("Steuerung aus", "Control disabled");
     return false;
   }
   err = "";
@@ -82,7 +82,7 @@ bool applyApcLimit() {
   uint16_t lim = clampU(local.apcPwrLmtPct10, 0, 1000);
   const uint16_t vals[2] = {uint16_t(local.apcEnabled ? 1 : 0), lim};
   bool ok = HitBus::writeMulti(279, 2, vals);
-  if (!ok) err = "Write APC 279/280 fail";
+  if (!ok) err = ConfigStore::uiText("Schreiben von APC 279/280 fehlgeschlagen", "APC write to 279/280 failed");
   delay(80);
   if (ok) {
     gLive.ctrlApcEna = local.apcEnabled;

@@ -44,16 +44,19 @@ void handle(WiFiClient &c) {
   if (isWrite(fc)) {
     const uint16_t addr = pduLen >= 3 ? (uint16_t(pdu[1]) << 8) | pdu[2] : 0;
     if (HitBus::forbidden(pdu, pduLen)) {
-      DebugLog::add(fc, addr, 0, "Gateway: FC6 auf Netzschutz 101-299 gesperrt");
+      DebugLog::add(fc, addr, 0, ConfigStore::uiText("Gateway: FC6 auf Netzschutz 101-299 gesperrt",
+                                                  "Gateway: FC6 blocked on regs 101-299"));
       exception(c, mbap, fc, 0x01);
       return;
     }
     if (!local.hitWriteEnabled) {
-      DebugLog::add(fc, addr, 0, "Gateway-Write abgelehnt (Schreiben aus)");
+      DebugLog::add(fc, addr, 0, ConfigStore::uiText("Gateway-Write abgelehnt (Schreiben aus)",
+                                                  "Gateway write rejected (disabled)"));
       exception(c, mbap, fc, 0x01);
       return;
     }
-    DebugLog::add(fc, addr, pduLen >= 5 ? (uint16_t(pdu[3]) << 8) | pdu[4] : 0, "Gateway-Write an HIT");
+    DebugLog::add(fc, addr, pduLen >= 5 ? (uint16_t(pdu[3]) << 8) | pdu[4] : 0,
+                  ConfigStore::uiText("Gateway-Write an HIT", "Gateway write to HIT"));
   }
 
   uint8_t resp[256];

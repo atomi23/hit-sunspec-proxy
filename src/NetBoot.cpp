@@ -163,8 +163,9 @@ void loop(const AppConfig &cfg) {
   } else if (millis() - since > 60000) {
     since = 0;
     rescueAp = !ethUp;
-    EventLog::add(rescueAp ? 'W' : 'I', "Netz", rescueAp ? "Kabel ohne Adresse, Geräte-WLAN als Notzugang an"
-                                                          : "Kabel wieder da, Notzugang über Geräte-WLAN aus");
+    EventLog::add(rescueAp ? 'W' : 'I', "NET", rescueAp ?
+        ConfigStore::uiText("Kabel ohne Adresse, Geräte-WLAN als Notzugang an", "No Ethernet address; emergency device Wi-Fi enabled") :
+        ConfigStore::uiText("Kabel wieder da, Notzugang über Geräte-WLAN aus", "Ethernet restored; emergency device Wi-Fi disabled"));
     if ((cfg.wifiEnabled && apWanted(cfg)) != activeAp) startWifi(cfg);
   }
   updateDns(cfg);

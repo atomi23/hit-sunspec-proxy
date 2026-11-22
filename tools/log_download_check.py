@@ -7,7 +7,8 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 source = (ROOT / "src/WebConfig.cpp").read_text()
 formatters = source[source.index("size_t logLine("):source.index("template <typename Event")]
-filler = source[source.index("[snapshot](uint8_t"):source.index("\n      });", source.index("[snapshot](uint8_t"))] + "}"
+filler_start = source.index("[snapshot, en](uint8_t")
+filler = source[filler_start:source.index("\n      });", filler_start)] + "}"
 structs = "\n".join(
     (ROOT / f"include/{name}.h").read_text().split("struct ", 1)[1].split("};", 1)[0].join(["struct ", "};"])
     for name in ("EventLog", "DebugLog")
@@ -26,15 +27,16 @@ size_t strlcpy(char *out, const char *in, size_t n) {
   return std::strlen(in);
 }
 ''' + structs + formatters + r'''
-template <typename Event> void check(size_t count) {
+template <typename Event> void check(size_t count, bool en) {
   struct Snapshot { Event events[80]; size_t count; };
   auto snapshot = std::make_shared<Snapshot>();
   snapshot->count = count;
-  std::string expected = "HIT-Proxy Protokoll (älteste Einträge zuerst; ms seit Start, ts Unixzeit oder 0)\n";
+  std::string expected = en ? "HIT-Proxy log (oldest entries first; ms since startup, ts Unix time or 0)\n"
+                            : "HIT-Proxy Protokoll (älteste Einträge zuerst; ms seit Start, ts Unixzeit oder 0)\n";
   for (size_t i = 0; i < count; i++) {
     snapshot->events[i].ms = i + 1;
     char line[256];
-    expected.append(line, logLine(line, sizeof(line), snapshot->events[i]));
+    expected.append(line, logLine(line, sizeof(line), snapshot->events[i], en));
   }
   auto fill = ''' + filler + r''';
   for (size_t chunk : {1, 7, 64, 256, 4096}) {
@@ -54,9 +56,15 @@ template <typename Event> void check(size_t count) {
   }
 }
 int main() {
-  check<SysEvt>(0); check<SysEvt>(1); check<SysEvt>(80);
-  check<DebugEvt>(0); check<DebugEvt>(1); check<DebugEvt>(48);
-  std::cout << "PASS: empty, single and full logs; chunk boundaries, retries and EOF\n";
+  for (bool en : {false, true}) {
+    check<SysEvt>(0, en); check<SysEvt>(1, en); check<SysEvt>(80, en);
+    check<DebugEvt>(0, en); check<DebugEvt>(1, en); check<DebugEvt>(48, en);
+    DebugEvt event{};
+    char line[128];
+    logLine(line, sizeof(line), event, en);
+    assert(std::strstr(line, en ? " Value=" : " Wert="));
+  }
+  std::cout << "PASS: both languages, empty/single/full logs, chunk boundaries, retries and EOF\n";
 }
 '''
 with tempfile.TemporaryDirectory() as directory:

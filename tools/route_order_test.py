@@ -33,7 +33,7 @@ class RouteOrderTest(unittest.TestCase):
         handler = self.web[start:end]
         self.assertNotIn("requireAuth", handler)
         self.assertIn('req->url() != "/api/tls/ca.crt" && c.httpsRedirect', self.web)
-        self.assertIn('req->send(404, "text/plain"', handler)
+        self.assertIn('req->send(404, "text/plain; charset=utf-8"', handler)
         self.assertIn('beginResponse(200, "application/x-x509-ca-cert", ca)', handler)
         self.assertIn('filename=\\"hit-proxy-ca.crt\\"', handler)
 

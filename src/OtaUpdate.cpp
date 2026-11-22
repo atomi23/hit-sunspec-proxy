@@ -155,6 +155,7 @@ async function go(){
       xhr.upload.onprogress=e=>{if(e.lengthComputable){fill.style.width=Math.round(e.loaded/e.total*100)+'%';}};
       xhr.onload=()=>{
         let body=xhr.responseText||'';
+        try{body=JSON.parse(body).error||body;}catch(e){}
         if(xhr.status>=200&&xhr.status<300) resolve(body);
         else reject(new Error(body||('HTTP '+xhr.status)));
       };
@@ -178,7 +179,9 @@ async function backup(){
 async function restoreCfg(){
   const m=document.getElementById('wmsg'),f=document.getElementById('bf').files[0];
   if(!f){m.textContent=uiText('Bitte Sicherungsdatei wählen.','Select a backup file.');return;}
-  const text=await f.text();let j=null;try{j=JSON.parse(text);}catch(e){}
+  const text=await f.text().catch(()=>null);
+  if(text===null){m.textContent=uiText('Sicherungsdatei konnte nicht gelesen werden.','Could not read the backup file.');return;}
+  let j=null;try{j=JSON.parse(text);}catch(e){}
   if(!j||j.format!=='hit-sunspec-proxy-config'){m.textContent=uiText('Keine Sicherung des HIT-Proxy.','This is not a HIT-Proxy backup.');return;}
   if(!confirm(uiText(`Einstellungen aus der Sicherung von „${j.deviceName||'?'}“ (v${j.firmware||'?'}) übernehmen? Das Gerät startet danach neu.`,`Restore the settings from the backup of "${j.deviceName||'?'}" (v${j.firmware||'?'})? The device restarts afterwards.`)))return;
   const r=await fetch('/api/backup/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:text}).catch(()=>null);
@@ -235,14 +238,16 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
       [requireAuth](AsyncWebServerRequest *req) {
         if (!requireAuth(req)) return;
         if (req != owner) {
-          req->send(409, "application/json", "{\"ok\":false,\"error\":\"anderes Update läuft oder nicht angemeldet\"}");
+          req->send(409, "application/json", ConfigStore::uiText(
+              "{\"ok\":false,\"error\":\"Ein anderes Update läuft oder du bist nicht angemeldet.\"}",
+              "{\"ok\":false,\"error\":\"Another update is running or you are not signed in.\"}"));
           return;
         }
         owner = nullptr;
         busy = false;
         if (!uploadOk || Update.hasError() || errBuf[0]) {
           String e = errBuf[0] ? String(errBuf) : String(Update.errorString());
-          if (!e.length()) e = "Update fehlgeschlagen";
+          if (!e.length()) e = ConfigStore::uiText("Update fehlgeschlagen", "Update failed");
           // JSON escape grob
           e.replace("\"", "'");
           req->send(500, "application/json", String("{\"ok\":false,\"error\":\"") + e + "\"}");
@@ -277,7 +282,9 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
           // Multipart: Content-Length ≠ Bin-Größe → UNKNOWN
           if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
             const char *why = Update.errorString();
-            if (!why || !why[0] || strcmp(why, "No Error") == 0) why = "OTA-Slot belegt — Gerät neu starten und erneut versuchen";
+            if (!why || !why[0] || strcmp(why, "No Error") == 0) why = ConfigStore::uiText(
+                "OTA-Slot belegt — Gerät neu starten und erneut versuchen",
+                "OTA slot busy — restart the device and try again");
             snprintf(errBuf, sizeof(errBuf), "begin: %s", why);
             busy = false;
             return;
@@ -310,7 +317,8 @@ void registerRoutes(AsyncWebServer &server, bool (*requireAuth)(AsyncWebServerRe
           }
           uploadOk = true;
           Serial.printf("OTA OK %u bytes\n", (unsigned)written);
-          EventLog::add('I', "OTA", "Firmware übertragen (%u Bytes), Neustart folgt", (unsigned)written);
+          EventLog::add('I', "OTA", ConfigStore::uiText("Firmware übertragen (%u Bytes), Neustart folgt",
+                                                       "Firmware uploaded (%u bytes); restarting"), (unsigned)written);
         }
       });
 }

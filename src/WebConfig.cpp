@@ -51,41 +51,44 @@
 namespace {
 AsyncWebServer server(80);
 
-size_t logLine(char *line, size_t size, const SysEvt &e) {
+size_t logLine(char *line, size_t size, const SysEvt &e, bool) {
   return snprintf(line, size, "ms=%lu ts=%lu [%c] %s: %s\n",
                   (unsigned long)e.ms, (unsigned long)e.epoch, e.level, e.src, e.msg);
 }
 
-size_t logLine(char *line, size_t size, const DebugEvt &e) {
-  return snprintf(line, size, "ms=%lu FC=%u Addr=%u Wert=%u %s\n",
+size_t logLine(char *line, size_t size, const DebugEvt &e, bool en) {
+  return snprintf(line, size, en ? "ms=%lu FC=%u Addr=%u Value=%u %s\n" : "ms=%lu FC=%u Addr=%u Wert=%u %s\n",
                   (unsigned long)e.ms, e.fc, e.addr, e.value, e.note);
 }
 
 template <typename Event, size_t Capacity>
 void downloadLog(AsyncWebServerRequest *req, const char *type,
                  size_t (*copyTo)(Event *, size_t)) {
+  const bool en = ConfigStore::uiEnglish();
   struct Snapshot {
     Event events[Capacity];
     size_t count;
   };
   auto snapshot = std::shared_ptr<Snapshot>(new (std::nothrow) Snapshot);
   if (!snapshot) {
-    req->send(503, "text/plain; charset=utf-8", "Nicht genug Speicher für den Download.\n");
+    req->send(503, "text/plain; charset=utf-8",
+              en ? "Not enough memory for the download.\n" : "Nicht genug Speicher für den Download.\n");
     return;
   }
   snapshot->count = copyTo(snapshot->events, Capacity);
   auto *response = req->beginChunkedResponse("text/plain; charset=utf-8",
-      [snapshot](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+      [snapshot, en](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
         size_t written = 0;
         char line[256];
         // Der Byte-Index macht auch kleine Chunks und wiederholte Aufrufe unabhängig.
         for (size_t i = 0; i <= snapshot->count && written < maxLen; i++) {
           size_t len;
           if (i == 0) {
-            strlcpy(line, "HIT-Proxy Protokoll (älteste Einträge zuerst; ms seit Start, ts Unixzeit oder 0)\n", sizeof(line));
+            strlcpy(line, en ? "HIT-Proxy log (oldest entries first; ms since startup, ts Unix time or 0)\n"
+                             : "HIT-Proxy Protokoll (älteste Einträge zuerst; ms seit Start, ts Unixzeit oder 0)\n", sizeof(line));
             len = strlen(line);
           } else {
-            len = logLine(line, sizeof(line), snapshot->events[i - 1]);
+            len = logLine(line, sizeof(line), snapshot->events[i - 1], en);
             if (len >= sizeof(line)) len = sizeof(line) - 1;
           }
           if (index >= len) {
@@ -1223,10 +1226,10 @@ und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich
 <input type="file" id="tlsKeyFile" accept=".pem,.key,.txt" onchange="tlsFile(this,'tlsKey')"/>
 <div class="row">
 <button class="sec" type="button" onclick="tlsUpload()" data-en="Apply custom certificate">Eigenes Zertifikat übernehmen</button>
-<button class="sec" type="button" onclick="tlsSelf()" data-en="Generate a new self-signed certificate">Selbst signiertes neu erzeugen</button>
+<button class="sec" type="button" onclick="tlsSelf()" data-en="Renew the server certificate">Serverzertifikat erneuern</button>
 <span id="tlsMsg" class="hint" style="margin:0"></span>
 </div>
-<p class="hint" data-en="Custom certificates remain supported. The ESP checks that certificate and key match, then restarts HTTPS. Regeneration deletes the custom certificate and renews only the server certificate with the current IP addresses; the device CA and its trust remain unchanged.">Eigene Zertifikate werden weiterhin unterstützt. Der ESP prüft, ob Schlüssel und Zertifikat zusammenpassen, und startet HTTPS neu. „Selbst signiertes neu erzeugen“ löscht das eigene Zertifikat und erneuert nur das Serverzertifikat mit aktuellen IP-Adressen; Geräte-CA und Vertrauen bleiben erhalten.</p>
+<p class="hint" data-en="Custom certificates remain supported. The ESP checks that certificate and key match, then restarts HTTPS. Renewal removes the custom certificate and generates a server certificate with the current IP addresses. The device CA and its trust remain unchanged.">Eigene Zertifikate werden weiterhin unterstützt. Der ESP prüft, ob Schlüssel und Zertifikat zusammenpassen, und startet HTTPS neu. Beim Erneuern wird das eigene Zertifikat durch ein Serverzertifikat mit den aktuellen IP-Adressen ersetzt. Geräte-CA und Vertrauen bleiben erhalten.</p>
 </div>
 </div>
 <div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite." data-en-sub="On-device display. Tap to change pages."><strong>Display</strong>
@@ -1271,8 +1274,8 @@ und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich
 <label><input name="tasmotaMeterSpoof" type="checkbox"/> <span data-en="Emulate a meter for Consolinno (optional)">Meter-Spoof für Consolinno (optional)</span></label>
 <label>Tasmota IP</label><input name="tasmotaHost" placeholder="192.0.2.60"/>
 <label>Port</label><input name="tasmotaPort" type="number"/>
-<label>Poll (ms)</label><input name="tasmotaPollMs" type="number"/>
-<label data-en="Username (optional)">User (optional)</label><input name="tasmotaUser"/>
+<label data-en="Poll interval (ms)">Abfrageintervall (ms)</label><input name="tasmotaPollMs" type="number"/>
+<label data-en="Username (optional)">Benutzername (optional)</label><input name="tasmotaUser"/>
 <label data-en="Password (optional)">Passwort (optional)</label><input name="tasmotaPass" type="password" placeholder="leer = unverändert" data-en-placeholder="Blank = unchanged"/>
 <p class="hint" data-en="The E320 reports totals only (power / E_in / E_out), not individual phases. Meter emulation adds three-phase SunSpec Model 203. Power per phase is approximately one third of the total; voltages come from the HIT.">E320 liefert nur die Summe (Power / E_in / E_out), keine Phasen.
 Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spannungen vom HIT.</p>
@@ -1280,14 +1283,14 @@ Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spann
 <div id="probeBox"><div id="probeSum"></div><pre id="probeRaw"></pre></div>
 </div>
 <div class="card" id="mqtt" data-sub="Messwerte per MQTT an Home Assistant, optional auch als Datenquelle." data-en-sub="Send measurements to Home Assistant over MQTT, optionally also using it as a data source."><strong>Home Assistant</strong>
-<label><input name="mqttEnabled" type="checkbox"/> <span data-en="Enable publishing">Publish aktiv</span></label>
+<label><input name="mqttEnabled" type="checkbox"/> <span data-en="Enable publishing">Messwerte veröffentlichen</span></label>
 <label><input name="mqttDiscovery" type="checkbox"/> HA Discovery</label>
 <label>Broker IP</label><input name="mqttHost" placeholder="192.0.2.10"/>
 <label>Port</label><input name="mqttPort" type="number"/>
-<label data-en="Username">User</label><input name="mqttUser"/>
+<label data-en="Username">Benutzername</label><input name="mqttUser"/>
 <label data-en="Password">Passwort</label><input name="mqttPass" type="password" placeholder="leer = unverändert" data-en-placeholder="Blank = unchanged"/>
 <label data-en="Base topic">Topic-Basis</label><input name="mqttBase" placeholder="hitproxy"/>
-<label>Publish (ms)</label><input name="mqttPublishMs" type="number"/>
+<label data-en="Publish interval (ms)">Sendeintervall (ms)</label><input name="mqttPublishMs" type="number"/>
 <p class="hint">State: &lt;<span data-en="base">basis</span>&gt;<span data-en="/state · includes data_origin">/state · inkl. data_origin</span></p>
 <label><input name="mqttIngestEnabled" type="checkbox"/> <b data-en="MQTT input fallback">Ingest-Fallback</b> <span data-en="(if the HIT is unavailable)">(wenn HIT tot)</span></label>
 <label data-en="Ingest topic (JSON)">Ingest-Topic (JSON)</label><input name="mqttIngestTopic" placeholder="hitproxy/in"/>
@@ -1297,10 +1300,10 @@ Meter-Spoof hängt SunSpec Model 203 (3ph) an; Phasenleistung ≈ Summe/3, Spann
 <div class="card" id="cloud" data-sub="Ersatzquelle, wenn HIT und MQTT-Eingang ausfallen. Nur lesen." data-en-sub="Read-only fallback when both the HIT and MQTT input are unavailable."><strong data-en="Hoymiles Cloud">Hoymiles-Cloud</strong>
 <label><input name="cloudEnabled" type="checkbox"/> <span data-en="Enabled (when both the HIT and MQTT input are unavailable)">aktiv (wenn HIT &amp; MQTT-in tot)</span></label>
 <label>API Host</label><input name="cloudHost" placeholder="neapi.hoymiles.com"/>
-<label data-en="Cloud username / email">Cloud User / E-Mail</label><input name="cloudUser"/>
+<label data-en="Cloud username / email">Cloud-Benutzername / E-Mail</label><input name="cloudUser"/>
 <label data-en="Password">Passwort</label><input name="cloudPass" type="password" placeholder="leer = unverändert" data-en-placeholder="Blank = unchanged"/>
-<label data-en="Station / plant ID (sid)">Station / Plant ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567" data-en-placeholder="e.g. 1234567"/>
-<label>Poll (ms)</label><input name="cloudPollMs" type="number"/>
+<label data-en="Station / plant ID (sid)">Stations- / Anlagen-ID (sid)</label><input name="cloudStationId" placeholder="z.B. 1234567" data-en-placeholder="e.g. 1234567"/>
+<label data-en="Poll interval (ms)">Abfrageintervall (ms)</label><input name="cloudPollMs" type="number"/>
 <label data-en="Max. age (ms)">Max Alter (ms)</label><input name="cloudMaxAgeMs" type="number"/>
 <p class="hint" data-en="Unofficial S-Miles API, read-only. §14a writes are supported only over HIT Modbus.">Inoffizielle S-Miles API — nur Lesen. Schreiben (§14a) nur über HIT Modbus.</p>
 </div>
@@ -1339,7 +1342,7 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <div id="knxRows">
 <div class="knx-tools">
 <button type="button" class="sec" onclick="knxExport('xml')" title="Gruppenadressen-Export im ETS-Format, in ETS 5/6 importierbar" data-en-title="Export group addresses in a format ETS 5/6 can import">Export ETS (XML)</button>
-<button type="button" class="sec" onclick="knxExport('csv')" title="ETS-CSV (1/1, Semikolon)" data-en-title="ETS CSV (1/1, semicolon delimited)">Export CSV</button>
+<button type="button" class="sec" onclick="knxExport('csv')" title="ETS-CSV (1/1, Semikolon)" data-en-title="ETS CSV (1/1, semicolon delimited)" data-en="Export CSV">CSV exportieren</button>
 <button type="button" class="sec" onclick="document.getElementById('knxFile').click()" title="ETS-Gruppenadressen-Export (XML oder CSV)" data-en-title="ETS group address export (XML or CSV)">Import XML/CSV</button>
 <input type="file" id="knxFile" accept=".xml,.csv,.txt" hidden onchange="knxImport(this)"/>
 <span class="meta" id="knxMsg"></span>
@@ -1754,7 +1757,7 @@ async function applyCtrl(){
   const start=await(await fetch('/api/control/apply',{method:'POST'})).json();
   let r=start;
   for(let i=0;i<40&&(r.pending||!r.done);i++){await new Promise(x=>setTimeout(x,250));r=await(await fetch('/api/control/result')).json();}
-  alert(r.ok?uiText('An HIT geschrieben',"Written to the HIT"):(uiText('Fehler: ',"Error: ")+(r.error||'timeout')));
+  alert(r.ok?uiText('An HIT geschrieben',"Written to the HIT"):(uiText('Fehler: ',"Error: ")+(r.error||uiText('Zeitüberschreitung','Timeout'))));
 }
 async function probeTas(){
   const f=document.getElementById('f');
@@ -2257,7 +2260,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
 </div>
 <div class="ltabs">
   <button type="button" id="tSys" class="on" onclick="tab('sys')">System</button>
-  <button type="button" id="tW" onclick="tab('w')" data-en="§14a writes">§14a-Writes</button>
+  <button type="button" id="tW" onclick="tab('w')" data-en="§14a writes">§14a-Schreibzugriffe</button>
 </div>
 
 <div id="pSys">
@@ -2350,10 +2353,10 @@ async function refresh(){
   const ena=d.wMaxLimEna;
   document.getElementById('sum').innerHTML=`
     <div class="big">${ena?uiText('BEGRENZT','LIMITED'):uiText('Frei','Unrestricted')} · ${pct} %</div>
-    <div class="muted">WMaxLimPct_Ena=${ena?1:0} · raw=${d.wMaxLimPct} (SF-2) · ${uiText('HEMS-Client','HEMS client')} ${d.sunspecClient?uiText('verbunden','connected'):'—'} · Writes ${d.count}
+    <div class="muted">WMaxLimPct_Ena=${ena?1:0} · ${uiText('Rohwert','raw')}=${d.wMaxLimPct} (SF-2) · ${uiText('HEMS-Client','HEMS client')} ${d.sunspecClient?uiText('verbunden','connected'):'—'} · ${uiText('Schreibzugriffe','Writes')} ${d.count}
     <br>${d.lastNote?uiText('Zuletzt: ','Last: ')+esc(d.lastNote)+' (Addr '+d.lastAddr+' = '+d.lastVal+')':uiText(
       'Noch kein Write empfangen — in Consolinno §14a/LPP testen.','No writes received yet. Test §14a/LPP in Consolinno.')}</div>
-    <div class="muted" style="margin-top:8px">${uiText('HIT-Weiterleitung','HIT forwarding')}: ${d.sunspecWriteToHit?uiText('an','on'):uiText('aus','off')} · Write-Enable: ${d.hitWriteEnabled?uiText('an','on'):uiText('aus','off')}</div>`;
+    <div class="muted" style="margin-top:8px">${uiText('HIT-Weiterleitung','HIT forwarding')}: ${d.sunspecWriteToHit?uiText('an','on'):uiText('aus','off')} · ${uiText('Schreibfreigabe','Write access')}: ${d.hitWriteEnabled?uiText('an','on'):uiText('aus','off')}</div>`;
   const tb=document.getElementById('tb'); tb.innerHTML='';
   (d.events||[]).slice().reverse().forEach(e=>{
     const tr=document.createElement('tr');
@@ -2388,7 +2391,9 @@ bool crossSite(AsyncWebServerRequest *req) {
 
 bool requireAuth(AsyncWebServerRequest *req) {
   if (crossSite(req)) {
-    req->send(403, "application/json", "{\"ok\":false,\"error\":\"cross-site request\"}");
+    req->send(403, "application/json", ConfigStore::uiText(
+        "{\"ok\":false,\"error\":\"Anfrage von einer anderen Website abgelehnt.\"}",
+        "{\"ok\":false,\"error\":\"Request from another website rejected.\"}"));
     return false;
   }
   auto &c = ConfigStore::get();
@@ -2407,7 +2412,9 @@ bool requireAuth(AsyncWebServerRequest *req) {
 const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index, size_t total,
                      size_t maxBody = 16384) {
   if (total > maxBody) {
-    if (index == 0) req->send(413, "application/json", "{\"ok\":false,\"error\":\"body too large\"}");
+    if (index == 0) req->send(413, "application/json", ConfigStore::uiText(
+        "{\"ok\":false,\"error\":\"Die Anfrage ist zu groß.\"}",
+        "{\"ok\":false,\"error\":\"The request is too large.\"}"));
     return nullptr;
   }
   if (index == 0) {
@@ -2415,7 +2422,9 @@ const char *fullBody(AsyncWebServerRequest *req, uint8_t *data, size_t len, size
     if (!requireAuth(req)) return nullptr;
     req->_tempObject = calloc(total + 1, 1);
     if (!req->_tempObject) {
-      req->send(500, "application/json", "{\"ok\":false,\"error\":\"no memory\"}");
+      req->send(500, "application/json", ConfigStore::uiText(
+          "{\"ok\":false,\"error\":\"Nicht genug Arbeitsspeicher.\"}",
+          "{\"ok\":false,\"error\":\"Not enough memory.\"}"));
       return nullptr;
     }
   }
@@ -2813,7 +2822,8 @@ void begin() {
   server.on("/api/tls/ca.crt", HTTP_GET, [](AsyncWebServerRequest *req) {
     const String ca = HttpsServer::caCertificate();
     if (!ca.length()) {
-      req->send(404, "text/plain", "No device CA available");
+      req->send(404, "text/plain; charset=utf-8",
+                ConfigStore::uiText("Kein Geräte-CA-Zertifikat verfügbar.", "No device CA certificate available."));
       return;
     }
     AsyncWebServerResponse *res = req->beginResponse(200, "application/x-x509-ca-cert", ca);
@@ -2829,7 +2839,9 @@ void begin() {
               if (!requireAuth(req)) return;
               JsonDocument doc;
               if (deserializeJson(doc, body)) {
-                req->send(400, "application/json", "{\"ok\":false,\"error\":\"bad json\"}");
+                req->send(400, "application/json", ConfigStore::uiText(
+                    "{\"ok\":false,\"error\":\"Ungültige JSON-Daten.\"}",
+                    "{\"ok\":false,\"error\":\"Invalid JSON data.\"}"));
                 return;
               }
               String err;
@@ -2873,7 +2885,9 @@ void begin() {
                 req->send(400, "application/json", s);
                 return;
               }
-              EventLog::add('I', "WEB", "Einstellungen aus Sicherung wiederhergestellt, Neustart folgt");
+              EventLog::add('I', "WEB", ConfigStore::uiText(
+                  "Einstellungen aus Sicherung wiederhergestellt, Neustart folgt",
+                  "Settings restored from backup; restarting"));
               req->send(200, "application/json", "{\"ok\":true,\"reboot\":true}");
               OtaUpdate::restartSoon();
             });

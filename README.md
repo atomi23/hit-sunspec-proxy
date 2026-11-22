@@ -10,7 +10,10 @@ Zielboard: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect-Pr
 Ohne Display auch auf **WT32-ETH01** (ESP32 + LAN8720, 4 MB Flash) und LilyGO T-POE-Pro, siehe [Build](#build).
 Für den WT32-ETH01 gibt es ein [Hutschienengehäuse (2 TE) zum Drucken](hardware/wt32-din/), für den Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`) eines mit [3,5 TE](hardware/p4-poe-din/).
 
-Aktuelle Firmware: **v0.5.18** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.18)
+Aktuelle Firmware: **v0.5.19** — [Release mit Firmware für jedes Board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.5.19)
+
+### Neu in v0.5.19
+- **Deutsch und Englisch:** Fehlende Texte in Sicherung und Wiederherstellung, HTTPS, Downloads und Statusmeldungen ergänzt. Neue Protokolleinträge folgen der gewählten Sprache.
 
 ### Neu in v0.5.18
 - **CA-Download:** Liefert jetzt die Zertifikatsdatei statt der Zertifikatsinformationen als JSON.
@@ -184,7 +187,7 @@ Verbraucher (Haus, Einspeisung, Akku laden) darunter. Darunter Energie je Tag, M
 ### Protokoll
 
 Systemprotokoll mit HIT-Ausfällen samt Ursache, Wiederkehr, Cloud-Status, OTA und Neustarts.
-Die §14a-Writes von Consolinno stehen im zweiten Reiter.
+Die §14a-Schreibzugriffe von Consolinno stehen im zweiten Reiter.
 
 ![Systemprotokoll](docs/screenshots/system-log.jpg)
 
@@ -233,7 +236,7 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
   zusammengeführt auf Live-Seite, Home Assistant und KNX
 - **Live-Seite** mit Energiefluss (PV, Akku, HIT, Netz, Haus), Ladestand-Ring, Strings, Phasen, Zählern
 - **Verlauf** im ESP gespeichert (LittleFS): 24 h in 5-Minuten-Schritten, Tage, Monate, Jahre
-- **Zwei Protokolle:** System (HIT, Cloud, OTA, Neustarts) und §14a-Writes von Consolinno;
+- **Zwei Protokolle:** System (HIT, Cloud, OTA, Neustarts) und §14a-Schreibzugriffe von Consolinno;
   das Display zeigt HIT-Fehler als Fehler/Abfragen
 - Oberfläche nutzt die volle Browserbreite
 - **Menü nach Datenweg:** Datenquellen, Ausgänge, Gerät; ein Bereich pro Menüpunkt

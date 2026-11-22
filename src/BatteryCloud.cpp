@@ -29,7 +29,7 @@ uint32_t intervalMs(const AppConfig &cfg) {
 
 void fail(const char *msg) {
   BatteryData::setCloudError(msg);
-  if (!failing) EventLog::add('W', "Akku", "Akku-Cloud: %s", msg);
+  if (!failing) EventLog::add('W', "BAT", ConfigStore::uiText("Akku-Cloud: %s", "Battery cloud: %s"), msg);
   failing = true;
 }
 } // namespace
@@ -84,7 +84,7 @@ void step(const AppConfig &cfg) {
   switch (r) {
     case CloudResult::Data:
       BatteryData::updateCloud(work);
-      if (failing) EventLog::add('I', "Akku", "Akku-Cloud liefert wieder Daten");
+      if (failing) EventLog::add('I', "BAT", ConfigStore::uiText("Akku-Cloud liefert wieder Daten", "Battery cloud is reporting data again"));
       failing = false;
       nextPoll = (millis() + intervalMs(cfg)) | 1;
       break;

@@ -136,7 +136,8 @@ bool login() {
       return true;
     }
     Serial.printf("Cloud login abgelehnt: %.160s\n", resp.c_str()); // ohne Token, nur Fehlermeldung
-    EventLog::add('W', "Cloud", "Login abgelehnt (HTTP %d), nächster Versuch in 5 min", lastHttpCode);
+    EventLog::add('W', "Cloud", ConfigStore::uiText("Login abgelehnt (HTTP %d), nächster Versuch in 5 min",
+                                                   "Sign-in rejected (HTTP %d); retrying in 5 min"), lastHttpCode);
   }
   token[0] = 0;
   // nur sperren, wenn Hoymiles geantwortet und abgelehnt hat; Netzwerkfehler sofort wieder versuchen
@@ -180,7 +181,8 @@ bool findStation() {
   const String host = local.cloudHost[0] ? local.cloudHost : "neapi.hoymiles.com";
   String resp;
   if (!httpsPost("https://" + host + "/pvm/api/0/station/select_by_page", "{\"page\":1,\"page_size\":10}", token, resp)) {
-    EventLog::add('W', "Cloud", "Anlagenliste nicht abrufbar (HTTP %d)", lastHttpCode);
+    EventLog::add('W', "Cloud", ConfigStore::uiText("Anlagenliste nicht abrufbar (HTTP %d)",
+                                                   "Could not retrieve plant list (HTTP %d)"), lastHttpCode);
     return false;
   }
   JsonDocument filter, doc;
@@ -190,11 +192,12 @@ bool findStation() {
   JsonVariantConst st = doc["data"]["list"][0];
   const long id = st["sid"].isNull() ? st["id"].as<long>() : st["sid"].as<long>();
   if (id <= 0) {
-    EventLog::add('W', "Cloud", "keine Anlage im Hoymiles-Konto gefunden");
+    EventLog::add('W', "Cloud", ConfigStore::uiText("keine Anlage im Hoymiles-Konto gefunden",
+                                                   "No plant found in the Hoymiles account"));
     return false;
   }
   snprintf(local.cloudStationId, sizeof(local.cloudStationId), "%ld", id);
-  EventLog::add('I', "Cloud", "Anlage %ld im Konto gefunden", id);
+  EventLog::add('I', "Cloud", ConfigStore::uiText("Anlage %ld im Konto gefunden", "Found plant %ld in the account"), id);
   return true;
 }
 
@@ -281,15 +284,17 @@ bool fetchRealtime() {
     if (!isnan(eImp)) gLive.energyImpKwh = eImp / 1000.0;
     if (!isnan(eExp)) gLive.energyExpKwh = eExp / 1000.0;
 
-    if (!gLive.cloudOk) EventLog::add('I', "Cloud", "Daten kommen an");
+    if (!gLive.cloudOk) EventLog::add('I', "Cloud", ConfigStore::uiText("Daten kommen an", "Receiving data"));
     gLive.cloudOk = true;
     gLive.lastCloudMs = millis();
     return true;
   }
 
   if (gLive.cloudOk) {
-    if (firstCode > 0) EventLog::add('W', "Cloud", "Datenabruf fehlgeschlagen (HTTP %d)", firstCode);
-    else EventLog::add('W', "Cloud", "Datenabruf fehlgeschlagen (keine Verbindung, Fehler %d)", firstCode);
+    if (firstCode > 0) EventLog::add('W', "Cloud", ConfigStore::uiText("Datenabruf fehlgeschlagen (HTTP %d)",
+                                                                     "Could not retrieve data (HTTP %d)"), firstCode);
+    else EventLog::add('W', "Cloud", ConfigStore::uiText("Datenabruf fehlgeschlagen (keine Verbindung, Fehler %d)",
+                                                       "Could not retrieve data (no connection, error %d)"), firstCode);
   }
   gLive.cloudOk = false;
   return false;
