@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Check relative Markdown destinations and GitHub heading anchors."""
+"""Check relative Markdown and static web preview destinations."""
 import re
 import subprocess
 import unicodedata
 from functools import lru_cache
 from html import unescape
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -80,6 +81,43 @@ def target_error(source, destination):
     return None
 
 
+class PreviewPage(HTMLParser):
+    def __init__(self, path):
+        super().__init__()
+        self.anchors = set()
+        self.links = []
+        self.feed(path.read_text(encoding="utf-8"))
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if attrs.get("id"):
+            self.anchors.add(attrs["id"])
+        key = {"a": "href", "link": "href", "script": "src", "img": "src"}.get(tag)
+        if key and attrs.get(key):
+            self.links.append((self.getpos()[0], attrs[key]))
+
+
+def check_preview_links():
+    pages = {path: PreviewPage(path) for path in (ROOT / "docs" / "ui-preview").glob("*.html")}
+    failures = []
+    checked = 0
+    for source, page in sorted(pages.items()):
+        for line, destination in page.links:
+            link = urlsplit(destination)
+            if link.scheme or link.netloc:
+                continue
+            checked += 1
+            target = (source.parent / unquote(link.path)).resolve() if link.path else source
+            error = None
+            if link.path.startswith("/") or not target.is_relative_to(ROOT) or not target.is_file():
+                error = "missing relative preview target"
+            elif target in pages and link.fragment and unquote(link.fragment) not in pages[target].anchors:
+                error = "missing preview anchor"
+            if error:
+                failures.append(f"{source.relative_to(ROOT)}:{line}: {error}: {destination}")
+    return checked, failures
+
+
 def main():
     files = subprocess.check_output(
         ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "*.md"], cwd=ROOT
@@ -98,10 +136,13 @@ def main():
                 checked += 1
                 if error := target_error(source, destination):
                     failures.append(f"{relative}:{lineno}: {error}: {destination}")
+    preview_checked, preview_failures = check_preview_links()
+    failures.extend(preview_failures)
     if failures:
         print("\n".join(failures))
         return 1
     print(f"PASS: {checked} relative links and anchors in {len(set(files))} Markdown files")
+    print(f"PASS: {preview_checked} relative links and assets in static web previews")
     return 0
 
 

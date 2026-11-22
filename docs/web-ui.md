@@ -28,7 +28,15 @@ Display weiterhin beleuchtet.
 
 Die statischen Web-Vorschauen unter `docs/ui-preview/` zeigen Beispieldaten. Zum lokalen Ansehen
 `python3 -m http.server --bind 127.0.0.1 --directory docs/ui-preview` starten und z. B.
-`http://127.0.0.1:8000/bluetooth.html` öffnen. Mit `?lang=en` schaltet die Vorschau auf Englisch um.
+`http://127.0.0.1:8000/system.html` für die Übersicht oder `http://127.0.0.1:8000/bluetooth.html`
+für Bluetooth öffnen. Mit `?lang=en` schaltet die Vorschau auf Englisch um.
+
+### Übersicht
+
+Unter **Gerät → Übersicht** stehen Board, Chip, Flash, Firmwareversion, Baudatum, Laufzeit und letzter
+Start sowie Netzwerkadressen und der Status der Dienste. Die Seite zeigt außerdem die CPU-Last je Kern
+als Anteil der Zeit außerhalb des Leerlaufs, gemittelt über zwei Sekunden. Balken zeigen die Belegung
+von internem Arbeitsspeicher, vorhandenem PSRAM und LittleFS.
 
 ### Live
 
@@ -62,6 +70,10 @@ von Consolinno stehen im zweiten Reiter. Beide Protokolle lassen sich als Textda
 ![Systemprotokoll](screenshots/system-log.jpg)
 
 ### HTTPS
+
+Auf unterstützten Boards nutzt TLS verfügbaren PSRAM für seine Speicherzuweisungen. Das entlastet
+den internen RAM insbesondere beim T-Connect-Pro mit Bluetooth. Auf dem WT32-ETH01 ohne PSRAM bleibt
+die Oberfläche bei HTTP.
 
 Die Geräte-CA signiert das Serverzertifikat mit IP-Adressen und `<gerätename>.local` (820 Tage).
 Die CA wird einmal erzeugt, für etwa zehn Jahre ausgestellt und bleibt bei IP-Wechseln und

@@ -12,7 +12,7 @@ Target board: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect
 Without a display it also runs on the **WT32-ETH01** (ESP32 + LAN8720, 4 MB flash) and the LilyGO T-POE-Pro, see [Build](docs/hardware.en.md#build).
 There is a [printable DIN rail enclosure (2 modules)](hardware/wt32-din/) for the WT32-ETH01, and one with [3.5 modules](hardware/p4-poe-din/) for the Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`).
 
-Current firmware: **v0.6.0** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.6.0)
+Current firmware: **v0.7.0** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.7.0)
 
 ## Quick links
 
@@ -20,7 +20,9 @@ Current firmware: **v0.6.0** — [release with firmware for every board](https:/
 - [Hardware and wiring](docs/hardware.en.md) · [Where to buy](docs/hardware.en.md#where-to-buy)
 - [Web UI and display](docs/web-ui.en.md) · [Set up the HTTPS certificate](docs/web-ui.en.md#https)
 - [Integrations and data paths](docs/integrations.en.md#architecture) · [Bluetooth LED strip](docs/integrations.en.md#bluetooth)
-- [Features](#features) · [Release history](docs/changelog.en.md)
+- [Overview and CPU load](docs/web-ui.en.md#overview) · [Features](#features) · [Release history](docs/changelog.en.md)
+
+\*As an Amazon Associate I earn from qualifying purchases. Links marked * are affiliate/advertising links.
 
 ## Features
 
@@ -30,6 +32,9 @@ Current firmware: **v0.6.0** — [release with firmware for every board](https:/
 - **Battery data** from the HIT (cells, temperatures, limits, packs) and optionally from the Dyness cloud,
   merged on the live page, Home Assistant and KNX
 - **Live page** with energy flow (PV, battery, HIT, grid, house), state-of-charge ring, strings, phases, meters
+- **Overview** with CPU load per core, memory usage, and device, network and service information.
+- **Bluetooth LED strip** (T-Connect-Pro only): search, settings and controls on the Bluetooth page;
+  the group addresses stay under *Settings → KNX*.
 - **History** stored on the ESP (LittleFS): 24 h in 5-minute steps, days, months, years
 - **Two logs:** system (HIT, cloud, OTA, restarts) and Consolinno's §14a write accesses;
   the display shows HIT errors as errors/polls
@@ -43,7 +48,8 @@ Current firmware: **v0.6.0** — [release with firmware for every board](https:/
 - **Protection of the grid protection range:** FC6 to HIT registers 101–299 is never sent
   (according to Hoymiles V2.8 this loads all factory grid protection values)
 - **HTTPS** on port 443, HTTP redirects (except during setup). On boards without PSRAM there is not enough
-  memory for it; the UI runs over HTTP there. Certificate signed by the device CA with
+  memory for it; the UI runs over HTTP there. On supported boards, TLS uses PSRAM when available.
+  Certificate signed by the device CA with
   IP address and `<devicename>.local`, renewed automatically on a new IP or before expiry; a custom certificate
   (PEM, also with intermediate certificates) can be uploaded, and the ESP checks that key and certificate match
 - **Factory reset**, **restart** (with the last restart reason) and **OTA update** in the web UI

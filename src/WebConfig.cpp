@@ -15,6 +15,7 @@
 #include "HoyCloud.h"
 #include "KnxIp.h"
 #include "BleLed.h"
+#include "SysInfo.h"
 #include "KnxPoints.h"
 #include "DataSource.h"
 #include "UiFonts.h"
@@ -564,6 +565,7 @@ const char DASH_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
     <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
@@ -835,6 +837,170 @@ refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
 </script></body></html>
 )HTML";
 
+const char SYS_HTML[] PROGMEM = R"HTML(
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title data-en="Overview · HIT Proxy">Übersicht · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>
+.sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:20px;align-items:start}
+.sys dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
+.sys dt{color:var(--dim)}
+.sys dd{margin:0;word-break:break-word}
+.sys .bar{margin:4px 0 2px}
+.sys .bar i{display:block;height:100%;background:var(--acc);border-radius:999px;transition:width .4s}
+.sys .bar i.hi{background:var(--warn)}
+</style>
+</head><body><div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
+  <nav>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a class="on" aria-current="page" href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
+      </select>
+    </div>
+  </div>
+</aside>
+<main class="main">
+<div class="page-head">
+  <div>
+    <h1 data-en="Overview">Übersicht</h1>
+    <p class="sub" data-en="Hardware, software and load of this device.">Hardware, Software und Auslastung dieses Geräts.</p>
+  </div>
+</div>
+<div class="sys">
+<section class="panel">
+  <h2 data-en="Load">Auslastung</h2>
+  <dl id="sLoad"></dl>
+  <p class="hint" data-en="CPU load: share of time a core was not idle, averaged over 2 seconds. Memory bars show the used share.">CPU-Last: Anteil der Zeit, in der ein Kern nicht im Leerlauf war, gemittelt über 2 Sekunden. Die Speicherbalken zeigen den belegten Anteil.</p>
+</section>
+<section class="panel">
+  <h2>Hardware</h2>
+  <dl id="sHw"></dl>
+</section>
+<section class="panel">
+  <h2>Software</h2>
+  <dl id="sSw"></dl>
+</section>
+<section class="panel">
+  <h2 data-en="Network and services">Netzwerk und Dienste</h2>
+  <dl id="sNet"></dl>
+</section>
+</div>
+</main></div>
+
+<script>
+const I18N={de:{},en:{}};
+let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script src="/b.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mb=b=>b>=1048576?(b/1048576).toFixed(b>=10485760?0:1)+' MB':Math.round(b/1024)+' KB';
+const row=(k,v)=>`<dt>${esc(k)}</dt><dd>${v}</dd>`;
+const bar=p=>`<div class="bar"><i class="${p>=85?'hi':''}" style="width:${Math.max(0,Math.min(100,p))}%"></i></div>`;
+const used=(free,total)=>total?esc(mb(total-free)+uiText(' von ',' of ')+mb(total)+uiText(' belegt',' used'))+bar((total-free)*100/total):'—';
+function dur(s){const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return (d?d+' d ':'')+h+' h '+m+' min';}
+const yes=b=>b?uiText('ja','yes'):uiText('nein','no');
+const onoff=b=>b?uiText('ein','on'):uiText('aus','off');
+async function sLoad(){
+  const r=await fetch('/api/system').catch(()=>null);const j=r&&r.ok?await r.json():null;if(!j)return;
+  $('sLoad').innerHTML=((j.cpu||[]).length?j.cpu.map((p,i)=>row(uiText('CPU Kern ','CPU core ')+i,esc(p)+' %'+bar(p))).join(''):row('CPU',uiText('wird gemessen …','measuring …')))
+    +row(uiText('Arbeitsspeicher','Memory'),used(j.heapFree,j.heapBytes))
+    +row(uiText('Frei (kleinster Wert seit Start)','Free (lowest since start)'),esc(mb(j.heapFree)+' ('+mb(j.heapMin)+')'))
+    +row(uiText('Größter freier Block','Largest free block'),esc(mb(j.heapBlock)))
+    +(j.psramBytes?row('PSRAM',used(j.psramFree,j.psramBytes)):'')
+    +row(uiText('Dateisystem','File system'),used(j.fsBytes-j.fsUsed,j.fsBytes))
+    +row('Tasks',esc(j.tasks));
+  $('sHw').innerHTML=row('Board',esc(j.board))
+    +row('Chip',esc(j.chip+' Rev. '+j.chipRev))
+    +row('CPU',esc(j.cores+uiText(' Kerne, ',' cores, ')+j.cpuMhz+' MHz'))
+    +row(uiText('Arbeitsspeicher','Memory'),esc(mb(j.heapBytes)))
+    +row('PSRAM',j.psramBytes?esc(mb(j.psramBytes)):uiText('keiner','none'))
+    +row('Flash',esc(mb(j.flashBytes)))
+    +row('Display',yes(j.hasDisplay))
+    +row('Bluetooth',yes(j.hasBleLed));
+  $('sSw').innerHTML=row('Firmware','v'+esc(j.version))
+    +row(uiText('Gebaut am','Built'),esc(j.build))
+    +row(uiText('Firmwaregröße','Firmware size'),esc(mb(j.sketchBytes)+uiText(' von ',' of ')+mb(j.sketchFree)))
+    +row('Arduino-ESP32',esc(j.arduino))
+    +row('ESP-IDF',esc(j.sdk))
+    +row(uiText('Läuft seit','Uptime'),esc(dur(j.uptimeS)))
+    +row(uiText('Letzter Start','Last start'),esc(j.resetReason));
+  $('sNet').innerHTML=row('LAN',j.ipEth&&j.ipEth!=='-'?esc(j.ipEth):uiText('nicht verbunden','not connected'))
+    +row(uiText('WLAN','Wi-Fi'),j.ipWifi&&j.ipWifi!=='-'?esc(j.ipWifi):uiText('nicht verbunden','not connected'))
+    +row('MAC',esc(j.mac))
+    +row('HTTPS',j.https?uiText('läuft','running'):uiText('aus','off'))
+    +Object.entries({'Consolinno (SunSpec)':'sunspec','Home Assistant (MQTT)':'mqtt','Modbus-Gateway':'gateway','KNX':'knx',
+      [uiText('Tasmota-Zähler','Tasmota meter')]:'tasmota',[uiText('Hoymiles-Cloud','Hoymiles Cloud')]:'cloud',[uiText('Akku','Battery')]:'akku'})
+      .map(([k,f])=>row(k,onoff(j.features[f]))).join('');
+}
+async function boot(){
+  const s=await(await fetch('/api/status')).json();applyThemeLang(s);
+  await sLoad();
+}
+boot();
+setInterval(()=>{if(!document.hidden)sLoad();},2000);
+</script></body></html>
+)HTML";
+
 #ifdef HAS_BLE_LED
 const char BLE_HTML[] PROGMEM = R"HTML(
 <!doctype html>
@@ -874,6 +1040,7 @@ const char BLE_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
     <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
@@ -904,7 +1071,7 @@ const char BLE_HTML[] PROGMEM = R"HTML(
 <div class="page-head">
   <div>
     <h1>Bluetooth</h1>
-    <p class="sub" data-en="LED strip of the Lotus Lantern app: state, control and sent commands.">LED-Strip der App „Lotus Lantern“: Zustand, Bedienung und gesendete Befehle.</p>
+    <p class="sub" data-en="LED strip of the Lotus Lantern app: state, control, settings and sent commands.">LED-Strip der App „Lotus Lantern“: Zustand, Bedienung, Einstellungen und gesendete Befehle.</p>
   </div>
 </div>
 <div class="ble">
@@ -917,7 +1084,7 @@ const char BLE_HTML[] PROGMEM = R"HTML(
     <dt data-en="Last sent">Zuletzt gesendet</dt><dd id="bLast">—</dd>
     <dt data-en="Last error">Letzter Fehler</dt><dd id="bErr">—</dd>
   </dl>
-  <p class="hint" id="bOff" hidden><span data-en="The LED strip is not enabled yet. Search for the strip and enable it under ">Der LED-Strip ist noch nicht aktiviert. Strip suchen und aktivieren unter </span><a href="/config#knx" data-en="Settings → KNX">Einstellungen → KNX</a>.</p>
+  <p class="hint" id="bOff" hidden><span data-en="The LED strip is not enabled yet. Search for the strip and enable it under ">Der LED-Strip ist noch nicht aktiviert. Strip suchen und aktivieren unter </span><a href="#bCfg" data-en="Settings">Einstellungen</a>.</p>
   <p class="hint" data-en="The strip reports nothing back: shown is what the gateway sent last, not what the strip really does. The gateway connects only to send and releases the strip after 10 seconds, so the Lotus Lantern app can connect again.">Der Strip meldet nichts zurück: angezeigt wird, was das Gateway zuletzt gesendet hat, nicht was der Strip wirklich tut. Das Gateway verbindet sich nur zum Senden und gibt den Strip nach 10 Sekunden wieder frei, damit die App „Lotus Lantern“ wieder verbinden kann.</p>
 </section>
 <section class="panel">
@@ -931,6 +1098,21 @@ const char BLE_HTML[] PROGMEM = R"HTML(
   <label for="bCol" style="display:block;margin-top:18px" data-en="Color">Farbe</label>
   <input class="ctl" id="bCol" type="color" value="#ffffff" onchange="bSet('rgb='+this.value.slice(1))"/>
   <div class="sw" id="bSw"></div>
+</section>
+<section class="panel wide" id="bCfg">
+  <h2 data-en="Settings">Einstellungen</h2>
+  <form id="bF" onsubmit="bSave();return false">
+  <label><input name="bleLedEnabled" type="checkbox"/> <span data-en="Use the Bluetooth LED strip (Lotus Lantern app)">Bluetooth-LED-Strip (App „Lotus Lantern“) verwenden</span></label>
+  <div class="knx-tools"><button type="button" class="sec" onclick="bScan()" data-en="Search for LED strip">LED-Strip suchen</button>
+  <span class="meta" id="bScanState"></span></div>
+  <div id="bFound" class="meta"></div>
+  <label data-en="Bluetooth name">Bluetooth-Name</label><input name="bleLedName" maxlength="23" autocomplete="off" placeholder="ELK-BLEDOM"/>
+  <label data-en="Bluetooth address">Bluetooth-Adresse</label><input name="bleLedAddr" maxlength="17" autocomplete="off" placeholder="be:16:f8:1d:d6:66"/>
+  <label data-en="Address type">Adresstyp</label><select name="bleLedAddrType"><option value="0">public</option><option value="1">random</option></select>
+  <label data-en="Power-on command">Einschaltbefehl</label><select name="bleLedVariant"><option value="0" data-en="automatic (by name)">automatisch (nach Name)</option><option value="1">7e 04 04 f0 …</option><option value="2">7e 07 04 ff …</option><option value="3">7e 00 04 01 …</option></select>
+  <div class="row"><button type="submit" data-en="Save">Speichern</button><span class="meta" id="bSaved"></span></div>
+  </form>
+  <p class="hint"><span data-en="Close the Lotus Lantern app first: the strip accepts only one Bluetooth connection. Search for the strip, pick it from the list and save; after that the controls above work. If the strip does not react, try another power-on command. To switch the strip by KNX, assign group addresses to the LED strip rows under ">Vorher die App „Lotus Lantern“ schließen: der Strip nimmt nur eine Bluetooth-Verbindung an. Strip suchen, in der Liste auswählen und speichern; danach funktioniert die Bedienung oben. Reagiert der Strip nicht, einen anderen Einschaltbefehl wählen. Zum Schalten über KNX den LED-Strip-Zeilen Gruppenadressen geben unter </span><a href="/config#knx" data-en="Settings → KNX">Einstellungen → KNX</a>.</p>
 </section>
 <section class="panel wide">
   <h2 data-en="Bluetooth log">Bluetooth-Protokoll</h2>
@@ -1007,6 +1189,45 @@ async function bLoad(){
     $('bLog').innerHTML=rows.map(x=>`<tr class="${esc(x.lv)}"><td>${esc(when(x,ev.uptimeMs))}</td><td>${esc(x.msg)}</td></tr>`).join('')
       ||`<tr><td colspan="2">${uiText('Noch keine Einträge.','No entries yet.')}</td></tr>`;
   }
+  return j;
+}
+let found=[];
+function bShowFound(j,done){
+  found=j.found||[];
+  $('bFound').innerHTML=found.map((d,i)=>`<button type="button" class="sec" onclick="bPick(${i})">${esc(d.name)} · ${esc(d.addr)} · ${esc(d.rssi)} dBm</button>`).join(' ')
+    ||(done?uiText('Kein passender LED-Strip gefunden. Strip einschalten und die App am Handy schließen.','No matching LED strip found. Power the strip and close the app on the phone.'):'');
+}
+function bPick(i){
+  const d=found[i],f=$('bF');if(!d)return;
+  f.bleLedAddr.value=d.addr;f.bleLedName.value=d.name;f.bleLedAddrType.value=d.type;f.bleLedEnabled.checked=true;
+  $('bSaved').textContent=uiText('Ausgewählt, noch nicht gespeichert','Selected, not saved yet');$('bSaved').style.color='';
+}
+async function bScan(){
+  busy++;
+  $('bScanState').textContent=uiText('sucht …','scanning …');$('bFound').textContent='';
+  await fetch('/api/bleled/scan',{method:'POST'}).catch(()=>null);
+  for(let n=0;n<40;n++){
+    await new Promise(x=>setTimeout(x,700));
+    const r=await fetch('/api/bleled').catch(()=>null);const j=r&&r.ok?await r.json():null;
+    if(j&&!j.scanning){bShowFound(j,true);break;}
+  }
+  $('bScanState').textContent='';
+  busy--;bLoad();
+}
+async function bCfg(){
+  const r=await fetch('/api/config').catch(()=>null);const c=r&&r.ok?await r.json():null;if(!c)return;
+  const f=$('bF');
+  f.bleLedEnabled.checked=!!c.bleLedEnabled;f.bleLedName.value=c.bleLedName||'';f.bleLedAddr.value=c.bleLedAddr||'';
+  f.bleLedAddrType.value=c.bleLedAddrType||0;f.bleLedVariant.value=c.bleLedVariant||0;
+}
+async function bSave(){
+  const f=$('bF'),m=$('bSaved');
+  const body={bleLedEnabled:f.bleLedEnabled.checked,bleLedName:f.bleLedName.value.trim(),bleLedAddr:f.bleLedAddr.value.trim(),
+    bleLedAddrType:Number(f.bleLedAddrType.value),bleLedVariant:Number(f.bleLedVariant.value)};
+  const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>null);
+  const ok=!!(r&&r.ok);
+  m.textContent=ok?uiText('Gespeichert','Saved'):uiText('Speichern fehlgeschlagen','Could not save settings');m.style.color=ok?'var(--acc)':'var(--fault)';
+  if(ok){await new Promise(x=>setTimeout(x,800));await bCfg();await bLoad();}
 }
 async function bSet(q){
   busy++;
@@ -1016,7 +1237,8 @@ async function bSet(q){
 }
 async function boot(){
   const s=await(await fetch('/api/status')).json();applyThemeLang(s);
-  await bLoad();
+  await bCfg();
+  const j=await bLoad();if(j)bShowFound(j,false);
 }
 boot();
 setInterval(()=>{if(!document.hidden&&!busy)bLoad();},3000);
@@ -1079,6 +1301,7 @@ const char HISTORY_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
     <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
@@ -1342,6 +1565,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
     <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
@@ -1566,19 +1790,7 @@ sonst bekommt der Client eine Modbus-Fehlermeldung. Jeder Schreibzugriff steht i
 <label data-en="Interval (ms)">Intervall (ms)</label><input name="knxPublishMs" type="number"/>
 <label><input name="knxOnlyOnChange" type="checkbox"/> <span data-en="Only when the value changes">nur bei Änderung</span></label>
 <label data-en="Min. power change (W)">Min. Δ Leistung (W)</label><input name="knxMinDeltaW" type="number"/>
-<div id="bleLedBox" hidden>
-<label><input name="bleLedEnabled" type="checkbox"/> <span data-en="Switch a Bluetooth LED strip (Lotus Lantern app) by KNX">Bluetooth-LED-Strip (App „Lotus Lantern“) über KNX schalten</span></label>
-<div class="knx-tools"><button type="button" class="sec" onclick="bleLed('scan')" data-en="Search for LED strip">LED-Strip suchen</button>
-<button type="button" class="sec" onclick="bleLed('test?on=1')" data-en="Test: on">Test: an</button>
-<button type="button" class="sec" onclick="bleLed('test?on=0')" data-en="Test: off">Test: aus</button>
-<span class="meta" id="bleLedState"></span></div>
-<div id="bleLedFound" class="meta"></div>
-<label data-en="Bluetooth name">Bluetooth-Name</label><input name="bleLedName" maxlength="23" autocomplete="off" placeholder="ELK-BLEDOM"/>
-<label data-en="Bluetooth address">Bluetooth-Adresse</label><input name="bleLedAddr" maxlength="17" autocomplete="off" placeholder="be:16:f8:1d:d6:66"/>
-<label data-en="Address type">Adresstyp</label><select name="bleLedAddrType"><option value="0">public</option><option value="1">random</option></select>
-<label data-en="Power-on command">Einschaltbefehl</label><select name="bleLedVariant"><option value="0" data-en="automatic (by name)">automatisch (nach Name)</option><option value="1">7e 04 04 f0 …</option><option value="2">7e 07 04 ff …</option><option value="3">7e 00 04 01 …</option></select>
-<p class="hint" data-en="Close the Lotus Lantern app first: the strip accepts only one Bluetooth connection. Save before testing. Then enable the LED strip rows below: switch (1.001), brightness (5.001) and RGB color (232.600). The ESP connects only to send and releases the strip after 10 seconds. If the test does nothing, try another power-on command.">Vorher die App „Lotus Lantern“ schließen: der Strip nimmt nur eine Bluetooth-Verbindung an. Vor dem Test speichern. Danach unten die LED-Strip-Zeilen aktivieren: Schalten (1.001), Helligkeit (5.001) und Farbe RGB (232.600). Der ESP verbindet sich nur zum Senden und gibt den Strip nach 10 Sekunden wieder frei. Reagiert der Strip beim Test nicht, einen anderen Einschaltbefehl wählen.</p>
-</div>
+<p class="hint" id="bleLedBox" hidden><span data-en="Bluetooth LED strip: enable the LED strip rows below: switch (1.001), brightness (5.001) and RGB color (232.600). Search for the strip and set it up under ">Bluetooth-LED-Strip: unten die LED-Strip-Zeilen aktivieren: Schalten (1.001), Helligkeit (5.001) und Farbe RGB (232.600). Strip suchen und einrichten unter </span><a href="/bluetooth">Bluetooth</a>.</p>
 <p class="hint" id="knxDisplayHint" hidden data-en="Display switch (receive): assign a separate group address. Group writes of 1 (on) or 0 (off) override the backlight until the next schedule transition, or until another command or restart without a schedule.">Display schalten (Empfang): eigene Gruppenadresse zuweisen. Gruppenschreibwerte 1 (an) und 0 (aus) übersteuern die Beleuchtung bis zum nächsten Wechsel im Wochenplan. Ohne Plan gilt der Befehl bis zum nächsten Schaltbefehl oder Neustart.</p>
 <p class="hint"><span data-en="For each row, tick the box and enter a three-level group address">Pro Zeile: Haken setzen, Gruppenadresse dreistufig</span> <code data-en="main/middle/sub">H/M/U</code> (<span data-en="e.g.">z.B.</span> <code>1/2/10</code><span data-en="), then adjust the datapoint type if needed. Red means invalid or duplicated.">), Datenpunkttyp ggf. anpassen. Rot markiert = ungültig oder doppelt.</span></p>
 <div id="knxRows">
@@ -1701,23 +1913,6 @@ function knxCheck(){
    // erste gültige Adresse in einer leeren Zeile setzt den Haken einmalig mit
    if(t.dataset.knx==='g'&&!t.defaultValue&&!t.dataset.auto&&gaParse(t.value)>=0){const cb=knxEl('e',t.dataset.i);if(cb&&!cb.checked)cb.checked=true;t.dataset.auto=1;}
    knxCheck();}));}
-async function bleLed(act){
-  const box=document.getElementById('bleLedBox'),st=document.getElementById('bleLedState');
-  if(act)await fetch('/api/bleled/'+act,{method:'POST'}).catch(()=>null);
-  for(let n=0;n<40;n++){
-    const r=await fetch('/api/bleled').catch(()=>null);const j=r&&r.ok?await r.json():null;
-    if(!j||!j.supported)return;
-    box.hidden=false;
-    st.textContent=(j.state||'')+(j.error?' – '+j.error:'');
-    const l=document.getElementById('bleLedFound');
-    l.innerHTML=(j.found||[]).map((d,i)=>`<button type="button" class="sec" data-i="${i}">${knxEsc(d.name)} · ${knxEsc(d.addr)} · ${d.rssi} dBm</button>`).join(' ')
-      ||(act==='scan'&&!j.scanning?uiText('Kein passender LED-Strip gefunden. Strip einschalten und die App am Handy schließen.','No matching LED strip found. Power the strip and close the app on the phone.'):'');
-    l.querySelectorAll('button').forEach(b=>b.onclick=()=>{const d=j.found[b.dataset.i],f=document.getElementById('f');
-      f.bleLedAddr.value=d.addr;f.bleLedName.value=d.name;f.bleLedAddrType.value=d.type;f.bleLedEnabled.checked=true;});
-    if(!act||(act==='scan'?!j.scanning:n>=12))return;
-    await new Promise(x=>setTimeout(x,700));
-  }
-}
 function collectKnx(){
   return KNX_META.map((m,i)=>{const e=knxEl('e',i),g=knxEl('g',i),d=knxEl('d',i);
     return {ena:!!(e&&e.checked),ga:g?g.value.trim():'',dpt:d?Number(d.value):0};});
@@ -1927,7 +2122,7 @@ async function load(){
   document.querySelectorAll('.has-code').forEach(e=>e.classList.toggle('hide',!!c.ownPassOnly));
   document.querySelectorAll('.own-only').forEach(e=>e.classList.toggle('hide',!c.ownPassOnly));
   renderDisplayWeek(c.displayWeek||[]);
-  bleLed();
+  fetch('/api/status').then(r=>r.json()).then(j=>{document.getElementById('bleLedBox').hidden=!j.hasBleLed;}).catch(()=>{});
   renderKnx(meta.points||[], c.knxCh||[]); CFG_LOADED=true; syncFeat(); refresh(); route(); loadTls(); batBox();
 }
 async function batBox(){
@@ -2479,6 +2674,7 @@ const char DEBUG_HTML[] PROGMEM = R"HTML(
     <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
     <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
     <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
     <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
     <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
     <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
@@ -3527,6 +3723,38 @@ void begin() {
     req->send(200, "application/json", "{\"ok\":true}");
   });
 
+  server.on("/system", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    sendPage(req, SYS_HTML);
+  });
+
+  server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!requireAuth(req)) return;
+    const auto &c = ConfigStore::get();
+    JsonDocument doc;
+    SysInfo::fill(doc.to<JsonObject>());
+    doc["board"] = BOARD_NAME;
+    doc["hasDisplay"] = BOARD_HAS_DISPLAY;
+    doc["hasBleLed"] = BleLed::SUPPORTED;
+    doc["version"] = PROXY_VERSION;
+    doc["uptimeS"] = millis() / 1000;
+    doc["resetReason"] = Watchdog::lastResetReason(c.uiLang == UiLang::En);
+    doc["ipEth"] = gLive.ipEth;
+    doc["ipWifi"] = gLive.ipWifi;
+    doc["mac"] = Network.macAddress();
+    doc["https"] = HttpsServer::running();
+    JsonObject f = doc["features"].to<JsonObject>();
+    f["sunspec"] = c.sunspecEnabled;
+    f["mqtt"] = c.mqttEnabled || c.mqttIngestEnabled;
+    f["gateway"] = c.gatewayEnabled;
+    f["knx"] = c.knxEnabled;
+    f["tasmota"] = c.tasmotaEnabled;
+    f["cloud"] = c.cloudEnabled;
+    f["akku"] = c.batEnabled;
+    String out; serializeJson(doc, out);
+    req->send(200, "application/json", out);
+  });
+
 #ifdef HAS_BLE_LED
   server.on("/bluetooth", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
@@ -3763,6 +3991,7 @@ void begin() {
 void loop() {
   runPendingApply();
   runDeferredWork();
+  SysInfo::loop();
   OtaUpdate::loop();
   HttpsServer::loop();
 }

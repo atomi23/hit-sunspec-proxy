@@ -2,7 +2,12 @@
 
 [Deutsch](./changelog.md) · **English** · [Back to overview](../README.en.md)
 
-## New in v0.6.0
+## New in v0.7.0
+- **Bluetooth settings on the "Bluetooth" page (T-Connect-Pro only):** Strip search, name, address and power-on command now sit where the strip is controlled, instead of under *Settings → KNX*. Only the group addresses stay there.
+- **"Overview" page:** Shows hardware (board, chip, memory, flash), software (firmware, build date, Arduino/ESP-IDF, uptime, last start), network and services, and the load: CPU load per core, memory, PSRAM and file system.
+- **HTTPS despite Bluetooth:** Since v0.5.23 the T-Connect-Pro was about 40 KB of internal RAM short for HTTPS ("Not enough RAM for HTTPS; HTTP only"). On boards with PSRAM, TLS now lives in PSRAM.
+
+## v0.6.0
 - **"Bluetooth" page (T-Connect-Pro only):** Shows the connection state of the LED strip and the last error, switches the strip on and off and sets brightness and color. It shows what the gateway sent last; the strip reports nothing back.
 - **Bluetooth log:** Every command sent to the strip is in the event log with its bytes, as is every connection. Error messages now name the reason (not reachable or no matching write channel).
 

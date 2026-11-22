@@ -21,13 +21,66 @@ def extract(name: str) -> str:
     return m.group(2)
 
 
-css = extract("UI_CSS")
+routes = {
+    "/": "index.html",
+    **{f"/{name}": f"{name}.html" for name in ("config", "setup", "history", "debug", "bluetooth", "system")},
+    "/a.css": "a.css",
+    "/b.js": "b.js",
+    "/f/barlow-600.woff": "f/barlow-600.woff",
+}
+
+
+def static_url(match):
+    path = match[2]
+    return match[1] + routes.get(path, path)
+
+
+def write_page(name, html, mock_js):
+    html = re.sub(r'^[ \t]*<a href="/ota">[^\n]*\n', "", html, flags=re.M)
+    html = re.sub(r"""((?:href|src)=["'])(/[^"'#]*)""", static_url, html)
+    html = re.sub(r"(location\.href=')(/[^']*)", static_url, html)
+    (OUT / routes[name]).write_text(html.replace("<body>", "<body>" + mock_js + preview_js, 1), encoding="utf-8")
+
+
+preview_js = r"""
+<script>
+const previewParams=new URLSearchParams(location.search);
+function previewLink(path){
+  const url=new URL(path,location.href);
+  for(const key of ['lang','theme'])if(previewParams.has(key))url.searchParams.set(key,previewParams.get(key));
+  return url.href;
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('a[href]');
+  if(a&&a.getAttribute('href').match(/^\w+\.html(?:#|$)/)&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey&&!e.altKey){
+    e.preventDefault();
+    location.href=previewLink(a.href);
+  }
+});
+const previewFetch=window.fetch;
+window.fetch=async(u,o)=>{
+  if(u==='/api/config'&&o?.method==='POST'&&typeof o.body==='string'){
+    const prefs=JSON.parse(o.body);
+    if('uiLang' in prefs&&('uiTheme' in prefs||prefs.setupComplete===false)){
+      previewParams.set('lang',prefs.uiLang);
+      if('uiTheme' in prefs)previewParams.set('theme',prefs.uiTheme);
+      history.replaceState(null,'',location.pathname+'?'+previewParams+location.hash);
+      return {ok:true};
+    }
+  }
+  return previewFetch(u,o);
+};
+</script>
+"""
+
+
+css = extract("UI_CSS").replace("url(/f/", "url(f/")
 dash = extract("DASH_HTML")
 idx = extract("INDEX_HTML")
 (OUT / "a.css").write_text(css, encoding="utf-8")
-ui_js = extract("UI_JS").replace("a.href='/bluetooth'", "a.href='/bluetooth.html'").replace(
+ui_js = re.sub(r"""(href=["'])(/[^"'#]*)""", static_url, extract("UI_JS")).replace(
     "location.pathname==='/bluetooth'", "location.pathname.endsWith('/bluetooth.html')"
-)
+).replace("getAttribute('href')!=='/debug'", "getAttribute('href')!=='debug.html'")
 (OUT / "b.js").write_text(ui_js, encoding="utf-8")
 
 mock_status = {
@@ -103,13 +156,13 @@ mock_ble = {
 
 def status_js(name):
     return (f"const {name}={json.dumps(mock_status)};\n"
-            f"{name}.uiLang=new URLSearchParams(location.search).get('lang')==='en'?'en':'de';")
+            f"{name}.uiLang=new URLSearchParams(location.search).get('lang')==='en'?'en':'de';\n"
+            f"{name}.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';")
 
 
 dash_js = f"""
 <script>
 {status_js("MOCK")}
-MOCK.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
@@ -119,7 +172,7 @@ window.fetch=async(u,o)=>{{
 }};
 </script>
 """
-(OUT / "index.html").write_text(dash.replace("<body>", "<body>" + dash_js, 1), encoding="utf-8")
+write_page("/", dash, dash_js)
 
 kp = (ROOT / "include" / "KnxPoints.h").read_text(encoding="utf-8")
 meta = []
@@ -222,7 +275,6 @@ cfg_js = f"""
 const META={json.dumps({"points": meta})};
 const CFG={json.dumps(cfg)};
 {status_js("STATUS")}
-const BLE={json.dumps(mock_ble)};
 const TLS={{subject:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",issuer:"CN=HIT-A1B2, O=HIT-SunSpec-Proxy",validTo:"2029-02-08",
   sha256:"3F:9A:0C:51:7E:D2:88:14:B6:29:4D:E0:73:1F:C5:A8:62:0B:9E:47:D3:15:8C:F1:2A:6E:B0:94:57:C3:0D:E9",
   chain:1,source:"self",running:true,enabled:true,caSigned:true,caValidTo:"2036-02-08",
@@ -231,7 +283,6 @@ const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
   if(u.includes('/api/knx/meta')) return {{ok:true,json:async()=>META}};
-  if(u==='/api/bleled') return {{ok:true,json:async()=>BLE}};
   if(u.includes('/api/tls')) return {{ok:true,json:async()=>TLS}};
   if(u.includes('/api/config') && (!o || !o.method || o.method==='GET'))
     return {{ok:true,json:async()=>CFG}};
@@ -243,16 +294,19 @@ window.fetch=async(u,o)=>{{
 window.alert=()=>{{}};
 </script>
 """
-idx = re.sub(r'(name="bleLedAddr"[^>]*placeholder=")[0-9a-f:]+', r'\g<1>02:00:00:00:00:01', idx)
-(OUT / "config.html").write_text(idx.replace("<body>", "<body>" + cfg_js, 1), encoding="utf-8")
+idx = idx.replace("getAttribute('href')==='/config#", "getAttribute('href')==='config.html#")
+write_page("/config", idx, cfg_js)
 
 # Einrichtungsassistent: Erststart, noch nichts eingerichtet
-setup = extract("SETUP_HTML")
+setup = extract("SETUP_HTML").replace(
+    ":(host===location.hostname?'/':", ":(host===location.hostname?previewLink('index.html'):"
+)
 setup_cfg = dict(cfg, setupComplete=False, hitHost="", displayCode="K7Q2-M9XD", knxEnabled=False, gatewayEnabled=False)
 setup_js = f"""
 <script>
 const CFG={json.dumps(setup_cfg)};
 {status_js("STATUS")}
+CFG.uiLang=STATUS.uiLang;
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
@@ -262,7 +316,7 @@ window.fetch=async(u,o)=>{{
 }};
 </script>
 """
-(OUT / "setup.html").write_text(setup.replace("<body>", "<body>" + setup_js, 1), encoding="utf-8")
+write_page("/setup", setup, setup_js)
 
 # Verlauf: synthetischer Tag (Sonne, Hausgrundlast, Akku lädt mittags und entlädt abends)
 import math
@@ -295,7 +349,6 @@ hist_js = f"""
 <script>
 const H={{day:{json.dumps(day)},bars:{{day:{json.dumps(days)},month:{json.dumps(months)},year:{json.dumps(years)}}},total:{json.dumps(total)}}};
 {status_js("STATUS")}
-STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
@@ -307,7 +360,7 @@ window.fetch=async(u,o)=>{{
 }};
 </script>
 """
-(OUT / "history.html").write_text(hist.replace("<body>", "<body>" + hist_js, 1), encoding="utf-8")
+write_page("/history", hist, hist_js)
 
 # Protokoll: erfundene Ereignisse, relative Zeiten ab Seitenaufruf
 dbg = extract("DEBUG_HTML")
@@ -330,7 +383,6 @@ events = [{"t": int(t), "ts": 0, "lv": lv, "src": s, "msg": m} for t, lv, s, m i
 dbg_js = f"""
 <script>
 {status_js("STATUS")}
-STATUS.uiTheme=new URLSearchParams(location.search).get('theme')||'mint';
 const EV={{uptimeMs:{up},hitPolls:1394,hitFails:27,hitErr:"Verbindungsaufbau fehlgeschlagen",events:{json.dumps(events)}}};
 const WR={{uptimeMs:{up},wMaxLimPct:6000,wMaxLimEna:true,sunspecClient:true,hitWriteEnabled:false,sunspecWriteToHit:false,
   count:2,lastAddr:40238,lastVal:6000,lastNote:"WMaxLimPct 60 %",events:[{{t:{up - 300000},fc:16,addr:40238,val:6000,note:"WMaxLimPct 60 %"}},{{t:{up - 299000},fc:6,addr:40242,val:1,note:"WMaxLim_Ena an"}}]}};
@@ -344,7 +396,7 @@ window.fetch=async(u,o)=>{{
 }};
 </script>
 """
-(OUT / "debug.html").write_text(dbg.replace("<body>", "<body>" + dbg_js, 1), encoding="utf-8")
+write_page("/debug", dbg, dbg_js)
 
 ble = extract("BLE_HTML").replace(
     '<div class="ble">',
@@ -352,21 +404,60 @@ ble = extract("BLE_HTML").replace(
     'Statische Vorschau mit Beispieldaten; kein Strip verbunden.</p><div class="ble">',
     1,
 )
+ble = re.sub(r'(name="bleLedAddr"[^>]*placeholder=")[^"]*', r'\g<1>02:00:00:00:00:01', ble)
 ble_js = f"""
 <script>
 {status_js("STATUS")}
 const BLE={json.dumps(mock_ble)};
+const BLE_CFG={{bleLedEnabled:BLE.enabled,bleLedName:BLE.name,bleLedAddr:BLE.addr,bleLedAddrType:0,bleLedVariant:0}};
 const EV={{uptimeMs:{up},events:{json.dumps(events)}}};
 const _f=window.fetch;
 window.fetch=async(u,o)=>{{
   u=String(u);
   if(u==='/api/status') return {{ok:true,json:async()=>STATUS}};
+  if(u==='/api/config'){{
+    if(o?.method==='POST'){{
+      Object.assign(BLE_CFG,JSON.parse(o.body));
+      Object.assign(BLE,{{enabled:BLE_CFG.bleLedEnabled,name:BLE_CFG.bleLedName,addr:BLE_CFG.bleLedAddr}});
+      return {{ok:true}};
+    }}
+    return {{ok:true,json:async()=>BLE_CFG}};
+  }}
   if(u==='/api/bleled') return {{ok:true,json:async()=>BLE}};
+  if(u==='/api/bleled/scan'){{
+    BLE.found=[{{name:'ELK-BLEDOM-DEMO',addr:'02:00:00:00:00:01',rssi:-48,type:0}}];
+    return {{ok:true}};
+  }}
   if(u.startsWith('/api/bleled/set?')) return {{ok:true}};
   if(u==='/api/events') return {{ok:true,json:async()=>EV}};
   return _f(u,o);
 }};
 </script>
 """
-(OUT / "bluetooth.html").write_text(ble.replace("<body>", "<body>" + ble_js, 1), encoding="utf-8")
+write_page("/bluetooth", ble, ble_js)
+
+system = extract("SYS_HTML")
+mock_system = {
+    **{key: mock_status[key] for key in ("board", "hasDisplay", "hasBleLed", "version", "ipEth", "ipWifi", "features")},
+    "chip": "ESP32-S3", "chipRev": 2, "cores": 2, "cpuMhz": 240, "cpu": [24, 11], "tasks": 22,
+    "heapBytes": 385024, "heapFree": 122880, "heapMin": 98304, "heapBlock": 65536,
+    "psramBytes": 8388608, "psramFree": 5242880, "flashBytes": 16777216,
+    "fsBytes": 3145728, "fsUsed": 262144, "sketchBytes": 2195456, "sketchFree": 6291456,
+    "arduino": "3.3.0", "sdk": "5.5.0", "build": "Nov 20 2026 12:00:00",
+    "uptimeS": up // 1000, "mac": "02:00:00:00:00:02", "https": True,
+}
+system_js = f"""
+<script>
+{status_js("STATUS")}
+const SYSTEM={json.dumps(mock_system)};
+SYSTEM.resetReason=STATUS.uiLang==='en'?'Power on':'Einschalten';
+const _f=window.fetch;
+window.fetch=async(u,o)=>{{
+  if(u==='/api/status') return {{ok:true,json:async()=>STATUS}};
+  if(u==='/api/system') return {{ok:true,json:async()=>SYSTEM}};
+  return _f(u,o);
+}};
+</script>
+"""
+write_page("/system", system, system_js)
 print(f"wrote {len(meta)} knx points -> {OUT}")

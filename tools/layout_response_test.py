@@ -14,7 +14,7 @@ def literal(source, name):
     return re.search(rf'const char {name}\[\] PROGMEM = R"(\w+)\(.*?\)\1";', source, re.S)[0]
 
 
-pages = ("DASH_HTML", "HISTORY_HTML", "INDEX_HTML", "SETUP_HTML", "DEBUG_HTML", "OTA_HTML")
+pages = ("DASH_HTML", "SYS_HTML", "HISTORY_HTML", "INDEX_HTML", "SETUP_HTML", "DEBUG_HTML", "OTA_HTML")
 for page in pages:
     assert f"sendPage(req, {page});" in web + ota
 
@@ -48,7 +48,7 @@ program += "\n" + web[start:web.index("\nvoid begin()", start)]
 program += r"""
 int main() {
   const std::string tag = "<link rel=\"stylesheet\" href=\"/a.css\"/>";
-  for (const char* page : {DASH_HTML, HISTORY_HTML, INDEX_HTML, SETUP_HTML, DEBUG_HTML, OTA_HTML}) {
+  for (const char* page : {DASH_HTML, SYS_HTML, HISTORY_HTML, INDEX_HTML, SETUP_HTML, DEBUG_HTML, OTA_HTML}) {
     std::string expected(page);
     const size_t pos = expected.find(tag);
     assert(pos < expected.find("</head>"));

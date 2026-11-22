@@ -28,7 +28,15 @@ display is enabled.
 
 The static web previews in `docs/ui-preview/` show sample data. To view them locally, run
 `python3 -m http.server --bind 127.0.0.1 --directory docs/ui-preview` and open, for example,
-`http://127.0.0.1:8000/bluetooth.html`. Add `?lang=en` to switch the preview to English.
+`http://127.0.0.1:8000/system.html` for Overview or `http://127.0.0.1:8000/bluetooth.html`
+for Bluetooth. Add `?lang=en` to switch the preview to English.
+
+### Overview
+
+**Device → Overview** shows the board, chip, flash, firmware version, build date, uptime and last
+start, as well as network addresses and service status. It also shows CPU load per core as the
+share of time spent outside idle, averaged over two seconds. Bars show usage of internal memory,
+PSRAM when present, and LittleFS.
 
 ### Live
 
@@ -62,6 +70,10 @@ second tab. Both logs can be downloaded as text files.
 ![System log](screenshots/system-log.jpg)
 
 ### HTTPS
+
+On supported boards, TLS uses available PSRAM for its allocations. This reduces internal RAM
+pressure, particularly on the T-Connect-Pro with Bluetooth. On the WT32-ETH01 without PSRAM,
+the web UI stays on HTTP.
 
 The device CA signs the server certificate with IP addresses and `<devicename>.local` (820 days).
 The CA is created once, issued for about ten years, and survives IP changes and

@@ -28,9 +28,11 @@ Hoymiles HIT ──TCP/RS485─┤── Modbus gateway :502 ──→ Home Assi
 ## Bluetooth LED strip via the web UI and KNX (T-Connect-Pro)
 
 LED strips driven by the **Lotus Lantern** app (Bluetooth names `ELK-BLEDOM…`, `MELK-…`, `LEDBLE…`) can be switched
-by KNX. Under **Settings → KNX**, search for the strip, select it, save, and check it with **Test: on/off**. Then
-assign group addresses to the receive objects: **switch** (DPT 1.001), **brightness** (DPT 5.001) and **RGB color**
-(DPT 232.600). The ESP connects only to send and releases the strip after 10 seconds, because the strip accepts a
+by KNX. In **Settings** on the **Bluetooth** page, search for the strip, select it and save. You can also set
+the name, address, address type and power-on command manually there. Check it with **On/Off** on the same
+page. Under **Settings → KNX**, assign group addresses to the receive objects only: **switch** (DPT 1.001),
+**brightness** (DPT 5.001) and **RGB color** (DPT 232.600).
+The ESP connects only to send and releases the strip after 10 seconds, because the strip accepts a
 single Bluetooth connection; the app on the phone must be closed. Available on the T-Connect-Pro (ESP32-S3) only: the
 ESP32 boards lack the memory for Bluetooth and the ESP32-P4 has no Bluetooth. The command set comes from public
 protocol descriptions (ELK-BLEDOM).
