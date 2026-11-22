@@ -3,6 +3,7 @@
 #include "KnxPoints.h"
 #include "KnxDisplayTelegram.h"
 #include "StatusDisplay.h"
+#include "BleLed.h"
 #include "BatteryData.h"
 #include "BatteryLogic.h"
 #include <WiFi.h>
@@ -17,6 +18,7 @@ bool sockOk = false;
 bool multicastJoined = false;
 uint16_t displayGa = 0;
 uint16_t ownPa = 0xFFFE;
+uint16_t ledGa[3] = {}; // schalten, Helligkeit, Farbe
 uint32_t nextJoin = 0;
 char displayRxIp[sizeof(gLive.ipShown)] = "";
 uint32_t nextPub = 0;
@@ -266,11 +268,18 @@ void readDisplaySwitch(uint32_t now) {
   for (int i = 0; i < 8; ++i) {
     const int len = udp.parsePacket();
     if (len <= 0) break;
-    bool on;
+    uint16_t ga;
+    uint8_t value, n;
+    const uint8_t *data;
     if (len <= int(sizeof(packet)) && udp.read(packet, len) == len &&
-        KnxDisplayTelegram::readSwitch(packet, len, displayGa, ownPa, on)) {
-      StatusDisplay::setKnxSwitch(on);
-      gLive.lastKnxMs = now;
+        KnxDisplayTelegram::readWrite(packet, len, ownPa, ga, value, data, n) && ga) {
+      bool hit = true;
+      if (ga == displayGa && n == 0 && value <= 1) StatusDisplay::setKnxSwitch(value);
+      else if (ga == ledGa[0] && n == 0 && value <= 1) BleLed::setPower(value);
+      else if (ga == ledGa[1] && n == 1) BleLed::setBrightness(uint8_t((data[0] * 100 + 127) / 255));
+      else if (ga == ledGa[2] && n == 3) BleLed::setColor(data[0], data[1], data[2]);
+      else hit = false;
+      if (hit) gLive.lastKnxMs = now;
     }
     udp.clear();
   }
@@ -305,7 +314,7 @@ void publish() {
     if (!significantChange(i, v)) continue;
 
     const auto &m = knxMeta(i);
-    uint16_t dpt = ch.dpt ? ch.dpt : m.defaultDpt;
+    uint16_t dpt = uint16_t(ch.dpt ? ch.dpt : m.defaultDpt);
     uint8_t buf[4], len = 0;
     encodeByDpt(dpt, m.kind, v, buf, len);
     if (sendGroupWrite(ga, buf, len)) {
@@ -338,6 +347,11 @@ void applyConfig(const AppConfig &cfg) {
     parseGa(cfg.knxCh[KNX_DISPLAY_SWITCH].ga, ga);
   if (ga != displayGa) StatusDisplay::clearKnxSwitch();
   displayGa = ga;
+  for (int k = 0; k < 3; k++) {
+    const KnxCh &ch = cfg.knxCh[KNX_LED_SWITCH + k];
+    ledGa[k] = 0;
+    if (BleLed::SUPPORTED && cfg.knxEnabled && cfg.bleLedEnabled && ch.ena) parseGa(ch.ga, ledGa[k]);
+  }
   nextJoin = nextPub = millis();
   gLive.knxOk = false;
   for (int i = 0; i < KNX_CH_COUNT; i++) lastInit[i] = false;
@@ -352,7 +366,7 @@ void loop() {
     return;
   }
   const uint32_t now = millis();
-  if (displayGa) readDisplaySwitch(now);
+  if (displayGa || ledGa[0] || ledGa[1] || ledGa[2]) readDisplaySwitch(now);
   if (int32_t(now - nextPub) < 0) return;
   nextPub = now + max<uint32_t>(2000, local.knxPublishMs);
   publish();

@@ -241,6 +241,12 @@ bool load() {
   strlcpy(cfg.batCloudSn, prefs.getString("batcsn", cfg.batCloudSn).c_str(), sizeof(cfg.batCloudSn));
   cfg.batCloudPollS = constrain(prefs.getUShort("batcp", cfg.batCloudPollS), BAT_CLOUD_MIN_S, 3600);
 
+  cfg.bleLedEnabled = prefs.getBool("bleena", cfg.bleLedEnabled);
+  strlcpy(cfg.bleLedAddr, prefs.getString("bleaddr", cfg.bleLedAddr).c_str(), sizeof(cfg.bleLedAddr));
+  cfg.bleLedAddrType = prefs.getUChar("bleatyp", cfg.bleLedAddrType) ? 1 : 0;
+  strlcpy(cfg.bleLedName, prefs.getString("blename", cfg.bleLedName).c_str(), sizeof(cfg.bleLedName));
+  cfg.bleLedVariant = min<uint8_t>(prefs.getUChar("blevar", cfg.bleLedVariant), 3);
+
   cfg.knxEnabled = prefs.getBool("knxena", cfg.knxEnabled);
   strlcpy(cfg.knxPa, prefs.getString("knxpa", cfg.knxPa).c_str(), sizeof(cfg.knxPa));
   cfg.knxPublishMs = prefs.getUInt("knxpub", cfg.knxPublishMs);
@@ -366,6 +372,11 @@ bool save() {
   prefs.putString("batcsn", cfg.batCloudSn);
   prefs.putUShort("batcp", cfg.batCloudPollS);
 
+  prefs.putBool("bleena", cfg.bleLedEnabled);
+  prefs.putString("bleaddr", cfg.bleLedAddr);
+  prefs.putUChar("bleatyp", cfg.bleLedAddrType);
+  prefs.putString("blename", cfg.bleLedName);
+  prefs.putUChar("blevar", cfg.bleLedVariant);
   prefs.putBool("knxena", cfg.knxEnabled);
   prefs.putString("knxpa", cfg.knxPa);
   prefs.putUInt("knxpub", cfg.knxPublishMs);
