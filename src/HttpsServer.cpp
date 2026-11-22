@@ -450,7 +450,7 @@ const char *methodName(int m) {
 
 // Antwort-Header, die durchgereicht werden
 const char *const PASS_HEADERS[] = {"WWW-Authenticate", "Location", "Cache-Control", "X-Width", "X-Height",
-                                    "Content-Disposition"};
+                                    "Content-Disposition", "Set-Cookie"};
 constexpr size_t PASS_COUNT = sizeof(PASS_HEADERS) / sizeof(PASS_HEADERS[0]);
 
 esp_err_t badGateway(httpd_req_t *r) {
@@ -486,7 +486,7 @@ esp_err_t proxyInner(httpd_req_t *r) {
   head += r->uri;
   head += " HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n";
   char val[256];
-  for (const char *h : {"Authorization", "Content-Type", "Origin", "Sec-Fetch-Site"}) {
+  for (const char *h : {"Authorization", "Content-Type", "Origin", "Sec-Fetch-Site", "Cookie", "Sec-Fetch-Mode", "Accept"}) {
     if (httpd_req_get_hdr_value_str(r, h, val, sizeof(val)) == ESP_OK) {
       head += h;
       head += ": ";

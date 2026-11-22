@@ -453,15 +453,16 @@ function addLogout(){
   logout.onclick=()=>{
     logout.disabled=true;
     const xhr=new XMLHttpRequest();
-    const password='logout-'+Date.now();
-    xhr.open('POST','/api/logout',true,'logout',password);
-    xhr.setRequestHeader('Authorization','Basic '+btoa('logout:'+password));
+    xhr.open('POST','/api/logout',true);
     xhr.setRequestHeader('Content-Type','application/json');
     xhr.timeout=5000;
     xhr.onloadend=()=>{
-      alert(uiText('Browser schließen, um die Abmeldung abzuschließen, falls die Anmeldung erhalten bleibt.',
-        'Close the browser to finish signing out if you remain signed in.'));
-      location.replace('/');
+      if(xhr.status>=200&&xhr.status<300)location.replace('/');
+      else{
+        logout.disabled=false;
+        alert(uiText('Abmelden fehlgeschlagen. Bitte erneut versuchen.',
+          'Sign out failed. Please try again.'));
+      }
     };
     xhr.send();
   };
@@ -2426,6 +2427,28 @@ bool requireAuth(AsyncWebServerRequest *req) {
         "{\"ok\":false,\"error\":\"Request from another website rejected.\"}"));
     return false;
   }
+  String cookies = req->header("Cookie");
+  while (cookies.length()) {
+    const int end = cookies.indexOf(';');
+    String cookie = end < 0 ? cookies : cookies.substring(0, end);
+    cookie.trim();
+    if (cookie == "hp_lo=1") {
+      const bool navigate = req->hasHeader("Sec-Fetch-Mode")
+          ? req->header("Sec-Fetch-Mode").equalsIgnoreCase("navigate")
+          : req->header("Accept").indexOf("text/html") >= 0;
+      auto *r = req->beginResponse(401, "text/plain; charset=utf-8", ConfigStore::uiText(
+          "Abgemeldet. Seite neu laden zum Anmelden.", "Signed out. Reload the page to sign in."));
+      r->addHeader("Cache-Control", "no-store");
+      if (navigate) {
+        r->addHeader("WWW-Authenticate", "Basic realm=\"HIT-Proxy\"");
+        r->addHeader("Set-Cookie", "hp_lo=; Path=/; Max-Age=0; SameSite=Strict; HttpOnly");
+      }
+      req->send(r);
+      return false;
+    }
+    if (end < 0) break;
+    cookies = cookies.substring(end + 1);
+  }
   auto &c = ConfigStore::get();
   const char *user = c.webUser[0] ? c.webUser : "admin";
   if (c.displayCode[0] && req->authenticate(user, c.displayCode)) return true;
@@ -2794,7 +2817,9 @@ void begin() {
       req->send(403, "text/plain", "Forbidden");
       return;
     }
-    auto *r = req->beginResponse(401, "text/plain", "");
+    if (!requireAuth(req)) return;
+    auto *r = req->beginResponse(204, "text/plain", "");
+    r->addHeader("Set-Cookie", "hp_lo=1; Path=/; SameSite=Strict; HttpOnly");
     r->addHeader("Cache-Control", "no-store");
     req->send(r);
   });

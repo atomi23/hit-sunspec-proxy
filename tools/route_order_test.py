@@ -42,21 +42,39 @@ class RouteOrderTest(unittest.TestCase):
         end = self.web.index("server.on(", start + 1)
         self.assertIn("if (!requireAuth(req)) return;", self.web[start:end])
 
-    def test_logout_rejects_cross_site_requests_without_auth_challenge(self):
+    def test_logout_sets_cookie_only_after_csrf_and_auth_checks(self):
         start = self.web.index('server.on(AsyncURIMatcher::exact("/api/logout")')
         end = self.web.index("server.on(", start + 1)
         handler = self.web[start:end]
         self.assertIn('HTTP_POST', handler)
         self.assertIn('crossSite(req) || req->contentType() != "application/json"', handler)
         self.assertIn('req->send(403, "text/plain", "Forbidden")', handler)
-        self.assertIn('beginResponse(401, "text/plain", "")', handler)
+        self.assertIn('beginResponse(204, "text/plain", "")', handler)
+        self.assertIn('"hp_lo=1; Path=/; SameSite=Strict; HttpOnly"', handler)
         self.assertIn('r->addHeader("Cache-Control", "no-store")', handler)
-        self.assertNotIn('requireAuth', handler)
+        self.assertIn('if (!requireAuth(req)) return;', handler)
+        self.assertLess(handler.index('crossSite(req)'), handler.index('requireAuth(req)'))
+        self.assertLess(handler.index('requireAuth(req)'), handler.index('beginResponse(204'))
         self.assertNotIn('requestAuthentication', handler)
         self.assertNotIn('WWW-Authenticate', handler)
         proxy = (ROOT / "src/HttpsServer.cpp").read_text()
-        for header in ('Authorization', 'Content-Type', 'Origin', 'Sec-Fetch-Site'):
+        for header in ('Authorization', 'Content-Type', 'Origin', 'Sec-Fetch-Site',
+                       'Cookie', 'Sec-Fetch-Mode', 'Accept', 'Set-Cookie'):
             self.assertIn('"' + header + '"', proxy)
+
+    def test_logout_cookie_precedes_credentials_and_only_navigation_clears_it(self):
+        auth = self.web.split('bool requireAuth(', 1)[1].split('// Der Body', 1)[0]
+        self.assertIn("cookies.indexOf(';')", auth)
+        self.assertIn('cookie.trim();', auth)
+        self.assertIn('cookie == "hp_lo=1"', auth)
+        self.assertLess(auth.index('cookie == "hp_lo=1"'), auth.index('req->authenticate'))
+        self.assertIn('req->hasHeader("Sec-Fetch-Mode")', auth)
+        self.assertIn('equalsIgnoreCase("navigate")', auth)
+        self.assertIn('req->header("Accept").indexOf("text/html") >= 0', auth)
+        navigation = auth.split('if (navigate) {', 1)[1].split('}', 1)[0]
+        self.assertIn('"WWW-Authenticate"', navigation)
+        self.assertIn('"hp_lo=; Path=/; Max-Age=0; SameSite=Strict; HttpOnly"', navigation)
+        self.assertEqual(auth.count('"Set-Cookie"'), 1)
 
     def test_logout_control_is_shared_by_authenticated_pages_only(self):
         for page in ('DASH_HTML', 'INDEX_HTML', 'HISTORY_HTML', 'DEBUG_HTML'):
@@ -70,6 +88,9 @@ class RouteOrderTest(unittest.TestCase):
         self.assertIn("xhr.onloadend=", self.web)
         self.assertIn("xhr.timeout=5000", self.web)
         self.assertIn("location.replace('/')", self.web)
+        self.assertIn("xhr.open('POST','/api/logout',true);", self.web)
+        self.assertIn('if(xhr.status>=200&&xhr.status<300)', self.web)
+        self.assertNotIn("btoa('logout:'", self.web)
 
 
 if __name__ == "__main__":
