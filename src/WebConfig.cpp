@@ -431,6 +431,7 @@ const char UI_JS[] PROGMEM = R"JS(
 const base=window.applyThemeLang;let built=false;
 const en=()=>document.documentElement.lang==='en';
 window.uiText=(de,english)=>en()?english:de;
+window.num=(n,d=0,max=d)=>(Number(n)||0).toLocaleString(en()?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:max});
 let renderedLang='de';
 const german=new WeakMap();
 const translatedAttrs=['placeholder','title','aria-label'];
@@ -743,7 +744,6 @@ function batRows(F){const m=(BAT&&BAT.merged)||{},r=[];if(F.akku===false)return 
   if(m.cellTempMax!==undefined)r.push([T('ctmax'),m.cellTempMax+' °C']);
   if(m.cellDiffMv!==undefined)r.push([T('cspread'),m.cellDiffMv+' mV']);return r;}
 const $=id=>document.getElementById(id);
-const num=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
 // Netz: Bezug positiv, Einspeisung mit Minus; Farbe Weiß→Rot / Gelb→Grün
 const wattGrid=n=>{const v=Number(n)||0;return (v<0?'−':'')+num(Math.abs(v))+'<tspan dx="6">W</tspan>';};
@@ -992,7 +992,6 @@ function batRows(F){const m=(BAT&&BAT.merged)||{},r=[];if(F.akku===false)return 
   if(m.cellTempMax!==undefined)r.push([T('ctmax'),m.cellTempMax+' °C']);
   if(m.cellDiffMv!==undefined)r.push([T('cspread'),m.cellDiffMv+' mV']);return r;}
 const $=id=>document.getElementById(id);
-const nf=(n,d=0)=>(Number(n)||0).toLocaleString(LANG==='en'?'en-US':'de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
 const SER=[['pv','var(--c-pv)'],['use','var(--c-house)'],['imp','var(--c-imp)'],['exp','var(--c-exp)'],['chg','var(--c-chg)'],['dis','var(--c-dis)']];
 const hidden=new Set();
 let D24=null;
@@ -1028,7 +1027,7 @@ function draw24(){
   const step=niceStep(hi-lo);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
   const x=i=>X0+(X1-X0)*i/(n-1),y=v=>Y1-(Y1-Y0)*(v-lo)/(hi-lo);
   let g='';
-  for(let v=lo;v<=hi+1e-6;v+=step){g+=`<line class="ax" x1="${X0}" x2="${X1}" y1="${y(v)}" y2="${y(v)}"/><text x="${X0-8}" y="${y(v)+4}" text-anchor="end">${nf(v/1000,Math.abs(step)<1000?1:0)} kW</text>`;}
+  for(let v=lo;v<=hi+1e-6;v+=step){g+=`<line class="ax" x1="${X0}" x2="${X1}" y1="${y(v)}" y2="${y(v)}"/><text x="${X0-8}" y="${y(v)+4}" text-anchor="end">${num(v/1000,Math.abs(step)<1000?1:0)} kW</text>`;}
   g+=`<line class="zero" x1="${X0}" x2="${X1}" y1="${y(0)}" y2="${y(0)}"/>`;
   for(let i=0;i<n;i++){const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
     if(ts.getMinutes()<5&&ts.getHours()%3===0)g+=`<text x="${x(i)}" y="${Y1+20}" text-anchor="middle">${String(ts.getHours()).padStart(2,'0')}:00</text>`;}
@@ -1050,7 +1049,7 @@ function draw24(){
     const c=$('cur');c.setAttribute('x1',x(i));c.setAttribute('x2',x(i));c.style.display='';
     const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
     $('r24').innerHTML=ts.toLocaleTimeString(LANG==='en'?'en-GB':'de-DE',{hour:'2-digit',minute:'2-digit'})+' · '+
-      SER.map(([k,col])=>`<span style="color:${col}">${T(k)} ${D24[k][i]==null?'–':nf(Math.abs(D24[k][i]))+' W'}</span>`).join(' · ');};
+      SER.map(([k,col])=>`<span style="color:${col}">${T(k)} ${D24[k][i]==null?'–':num(Math.abs(D24[k][i]))+' W'}</span>`).join(' · ');};
   svg.onmouseleave=()=>{$('cur').style.display='none';$('r24').textContent='';};
 }
 
@@ -1082,19 +1081,19 @@ function drawBars(){
   ({w:WB,h:HB}=fit(svg,280));
   const y0=20,y1=HB-36,x0=56,x1=WB-16,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(22,slot/(vis.length+1)));
   const y=v=>y1-(y1-y0)*v/hi;let g='';
-  for(let v=0;v<=hi+1e-6;v+=step)g+=`<line class="ax" x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}"/><text x="${x0-8}" y="${y(v)+4}" text-anchor="end">${nf(v,step<1?1:0)}</text>`;
+  for(let v=0;v<=hi+1e-6;v+=step)g+=`<line class="ax" x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}"/><text x="${x0-8}" y="${y(v)+4}" text-anchor="end">${num(v,step<1?1:0)}</text>`;
   const every=Math.ceil(rows.length/Math.max(6,Math.floor((x1-x0)/70)));
   rows.forEach((r,i)=>{const cx=x0+slot*i+slot/2;
     vis.forEach(([k,c,l],j)=>{if(r[k]==null)return;const v=+r[k],bx=cx+(j-vis.length/2)*bw;
-      g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c}"><title>${label(r.k)} · ${T(l)} ${nf(v,1)} kWh</title></rect>`;});
+      g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c}"><title>${label(r.k)} · ${T(l)} ${num(v,1)} kWh</title></rect>`;});
     if(i%every===0)g+=`<text x="${cx}" y="${y1+18}" text-anchor="middle">${UNIT==='total'?r.k:label(r.k)}</text>`;});
   g+=`<text x="${x0}" y="12">kWh</text>`;
   svg.innerHTML=g;
   const cur=rows[rows.length-1],pv=+cur.pv||0,imp=+cur.imp||0,exp=+cur.exp||0,use=cur.house==null?null:+cur.house;
   const k=(lbl,v)=>`<div><span>${lbl}</span><b>${v}</b></div>`;
-  $('kpis').innerHTML=k(T('gen'),nf(pv,1)+' kWh')+k(T('use'),use==null?'–':nf(use,1)+' kWh')+k(T('imp'),nf(imp,1)+' kWh')+
-    k(T('exp'),nf(exp,1)+' kWh')+k(T('aut'),use?nf(Math.max(0,Math.min(100,100*(1-imp/use))))+' %':'–')+
-    k(T('self'),pv?nf(Math.max(0,Math.min(100,100*(1-exp/pv))))+' %':'–');
+  $('kpis').innerHTML=k(T('gen'),num(pv,1)+' kWh')+k(T('use'),use==null?'–':num(use,1)+' kWh')+k(T('imp'),num(imp,1)+' kWh')+
+    k(T('exp'),num(exp,1)+' kWh')+k(T('aut'),use?num(Math.max(0,Math.min(100,100*(1-imp/use))))+' %':'–')+
+    k(T('self'),pv?num(Math.max(0,Math.min(100,100*(1-exp/pv))))+' %':'–');
   const s=String(BARS.since||'');$('since').textContent=s.length===8?T('since')(s.slice(6)+'.'+s.slice(4,6)+'.'+s.slice(0,4)):'';
 }
 async function loadBars(){
@@ -1737,7 +1736,7 @@ async function batBox(){
   const box=document.getElementById('batBox');if(!box||!document.getElementById('akku').classList.contains('show'))return;
   const d=await fetch('/api/battery').then(r=>r.json()).catch(()=>null);if(!d)return;
   const esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
-  const v=(x,u)=>x===undefined?'-':esc(x)+(u?' '+u:'');
+  const v=(x,u)=>x===undefined?'-':num(x,0,3)+(u?' '+u:'');
   const age=s=>s===undefined?'':(s<90?s+' s':Math.round(s/60)+' min')+uiText(' alt',' ago');
   const row=(k,x)=>`<tr><td>${k}</td><td>${x}</td></tr>`;
   const h=d.hit||{},c=d.cloudData||{};
@@ -1763,8 +1762,8 @@ async function batBox(){
   let cells='';
   if((c.cells||[]).length){const xs=c.cells.map(Number),lo=Math.min(...xs),hi=Math.max(...xs),span=Math.max(hi-lo,0.005);
     cells=`<h3 style="margin:18px 0 6px">${uiText('Zellspannungen (Cloud)','Cell voltages (cloud)')}</h3><div style="display:flex;gap:4px;align-items:flex-end;height:90px">`+
-      xs.map((x,i)=>`<div title="${uiText('Zelle','Cell')} ${i+1}: ${x.toFixed(3)} V" style="flex:1;background:var(--acc);border-radius:3px;height:${20+70*(x-lo)/span}px"></div>`).join('')+
-      `</div><p class="hint">${lo.toFixed(3)} ${uiText('bis','to')} ${hi.toFixed(3)} V, ${uiText('Spreizung','spread')} ${Math.round((hi-lo)*1000)} mV</p>`;}
+      xs.map((x,i)=>`<div title="${uiText('Zelle','Cell')} ${i+1}: ${num(x,3)} V" style="flex:1;background:var(--acc);border-radius:3px;height:${20+70*(x-lo)/span}px"></div>`).join('')+
+      `</div><p class="hint">${num(lo,3)} ${uiText('bis','to')} ${num(hi,3)} V, ${uiText('Spreizung','spread')} ${Math.round((hi-lo)*1000)} mV</p>`;}
   box.innerHTML='<div class="cards two" style="margin-top:18px"><div class="panel"><h2>'+uiText('Vom HIT','From the HIT')+'</h2><table class="tbl">'+hit+'</table></div>'+
     '<div class="panel"><h2>'+uiText('Akku-Cloud','Battery cloud')+'</h2><table class="tbl">'+cl+'</table></div></div>'+packs+cells;
 }
@@ -2400,7 +2399,7 @@ async function refreshSys(){
   const rate=d.hitPolls?(100*d.hitFails/d.hitPolls):0;
   $('sysSum').innerHTML=`<div class="big" style="color:${d.hitFails?(rate>5?'var(--fault)':'var(--warn)'):'var(--acc)'}">${uiText(
     `HIT: ${d.hitFails} von ${d.hitPolls} Abfragen fehlgeschlagen`,`HIT: ${d.hitFails} of ${d.hitPolls} polls failed`)}</div>
-    <div class="muted">${d.hitPolls?rate.toFixed(1)+uiText(' % seit Start · ','% since startup · '):''}${uiText('läuft seit','Uptime:')} ${Math.floor(d.uptimeMs/3600000)} h ${Math.floor(d.uptimeMs/60000)%60} min${d.hitErr?uiText(' · letzte Ursache: ',' · last error: ')+esc(d.hitErr):''}</div>`;
+    <div class="muted">${d.hitPolls?num(rate,1)+uiText(' % seit Start · ','% since startup · '):''}${uiText('läuft seit','Uptime:')} ${Math.floor(d.uptimeMs/3600000)} h ${Math.floor(d.uptimeMs/60000)%60} min${d.hitErr?uiText(' · letzte Ursache: ',' · last error: ')+esc(d.hitErr):''}</div>`;
   const tb=$('sys');
   tb.innerHTML=(d.events||[]).slice().reverse().map(e=>`<tr><td>${when(e,boot)}</td><td><span class="lv ${e.lv}"></span>${esc(e.src)}</td><td>${esc(e.msg)}</td></tr>`).join('')
     ||`<tr><td colspan="3" class="muted">${uiText('Noch keine Einträge.','No entries yet.')}</td></tr>`;
@@ -2414,7 +2413,7 @@ async function refresh(){
   if(TAB==='sys')return refreshSys();
   const d=await(await fetch('/api/debug')).json();
   window._boot=Date.now()-d.uptimeMs;
-  const pct=(d.wMaxLimPct/100).toFixed(2);
+  const pct=num(d.wMaxLimPct/100,2);
   const ena=d.wMaxLimEna;
   document.getElementById('sum').innerHTML=`
     <div class="big">${ena?uiText('BEGRENZT','LIMITED'):uiText('Frei','Unrestricted')} · ${pct} %</div>
