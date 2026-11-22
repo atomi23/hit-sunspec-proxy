@@ -4,6 +4,7 @@
 
 #ifdef HAS_BLE_LED
 #include <BLEDevice.h>
+#include <esp_gattc_api.h>
 
 namespace {
 constexpr uint32_t IDLE_DISCONNECT_MS = 10000; // danach ist der Strip wieder für die App frei
@@ -165,7 +166,15 @@ bool write(const uint8_t *cmd, const char *what) {
     fail(ConfigStore::uiText("Verbindung abgebrochen, Befehl nicht gesendet", "connection lost, command not sent"));
     return false;
   }
-  tx->writeValue(buf, sizeof(buf), false);
+  // Direkt statt tx->writeValue(): nur so ist zu sehen, ob der Bluetooth-Stack den Befehl angenommen hat.
+  const esp_err_t rc = esp_ble_gattc_write_char(client->getGattcIf(), client->getConnId(), tx->getHandle(), sizeof(buf), buf,
+                                                ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
+  if (rc != ESP_OK) {
+    char msg[72];
+    snprintf(msg, sizeof(msg), ConfigStore::uiText("Befehl nicht gesendet (Bluetooth-Fehler %d)", "command not sent (Bluetooth error %d)"), int(rc));
+    fail(msg);
+    return false;
+  }
   char hex[LotusLantern::CMD_LEN * 3 + 1];
   for (size_t i = 0; i < sizeof(buf); i++) snprintf(hex + i * 3, 4, "%02x ", buf[i]);
   hex[sizeof(hex) - 2] = 0;
