@@ -1210,11 +1210,11 @@ und steht dann auf dem Display; wer mit dem alten Code angemeldet ist, muss sich
 <p class="hint has-code" data-en="Sign in with your username and either your own password or the access code shown on the display.">Anmelden mit dem Benutzernamen und entweder dem eigenen Passwort oder dem Zugangscode vom Display.</p>
 <label><input name="httpsEnabled" type="checkbox"/> HTTPS (Port 443)</label>
 <label><input name="httpsRedirect" type="checkbox"/> <span data-en="Redirect HTTP requests to HTTPS">Aufrufe über HTTP auf HTTPS umleiten</span></label>
-<p class="hint" data-en="The ESP generates its own certificate, so the browser warns you on the first visit. Compare the fingerprint below with the one shown by the browser before accepting it. HTTP remains available during setup or when HTTPS cannot start.">Der ESP erzeugt sein Zertifikat selbst. Der Browser warnt deshalb beim ersten Aufruf; vergleiche den Fingerabdruck
-unten mit dem im Browser und bestätige dann. Während der Einrichtung und falls HTTPS nicht startet, bleibt HTTP erreichbar.</p>
+<p class="hint" data-en="Download the device CA certificate and check its fingerprint over a trusted connection. Install it once as a trusted root: Windows: Trusted Root Certification Authorities; macOS: Keychain, Always Trust; iOS: install profile, then enable it in Certificate Trust Settings; Android: CA certificate. Firefox may use its own certificate store. Then open https://&lt;ip&gt; or https://&lt;name&gt;.local without a certificate warning. HTTP remains available during setup or if HTTPS cannot start.">CA-Zertifikat herunterladen und Fingerabdruck über eine vertrauenswürdige Verbindung prüfen. Einmal als vertrauenswürdige Stamm-CA installieren: Windows: „Vertrauenswürdige Stammzertifizierungsstellen“; macOS: Schlüsselbund, „Immer vertrauen“; iOS: Profil installieren und unter Zertifikatsvertrauenseinstellungen aktivieren; Android: „CA-Zertifikat“. Firefox hat ggf. einen eigenen Zertifikatsspeicher. Danach https://&lt;ip&gt; oder https://&lt;name&gt;.local ohne Zertifikatswarnung öffnen. Während der Einrichtung und falls HTTPS nicht startet, bleibt HTTP erreichbar.</p>
 <div id="tlsBox">
 <label data-en="HTTPS certificate">HTTPS-Zertifikat</label>
 <table><tbody id="tlsInfo"><tr><td class="muted" data-en="Loading…">Lade…</td></tr></tbody></table>
+<button class="sec" type="button" onclick="location.href='/api/tls/ca.crt'" data-en="Download CA certificate">CA-Zertifikat herunterladen</button>
 <label data-en="Custom certificate (PEM, followed by intermediate certificates)">Eigenes Zertifikat (PEM, Zwischenzertifikate dahinter)</label>
 <textarea id="tlsCrt" rows="5" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
 <input type="file" id="tlsCrtFile" accept=".pem,.crt,.cer,.txt" onchange="tlsFile(this,'tlsCrt')"/>
@@ -1226,9 +1226,7 @@ unten mit dem im Browser und bestätige dann. Während der Einrichtung und falls
 <button class="sec" type="button" onclick="tlsSelf()" data-en="Generate a new self-signed certificate">Selbst signiertes neu erzeugen</button>
 <span id="tlsMsg" class="hint" style="margin:0"></span>
 </div>
-<p class="hint" data-en="A custom certificate from your local CA or Let&#x27;s Encrypt with DNS validation avoids the warning. The ESP checks that the key and certificate match, then restarts HTTPS. Generating a new self-signed certificate deletes the custom certificate and includes the current IP address.">Ein eigenes Zertifikat, etwa von der Hausnetz-CA oder Let's Encrypt über DNS-Prüfung, erspart die Warnung. Der ESP prüft,
-ob Schlüssel und Zertifikat zusammenpassen, und startet HTTPS danach neu. „Selbst signiertes neu erzeugen“ löscht das eigene Zertifikat
-und nimmt die aktuelle IP-Adresse ins neue auf.</p>
+<p class="hint" data-en="Custom certificates remain supported. The ESP checks that certificate and key match, then restarts HTTPS. Regeneration deletes the custom certificate and renews only the server certificate with the current IP addresses; the device CA and its trust remain unchanged.">Eigene Zertifikate werden weiterhin unterstützt. Der ESP prüft, ob Schlüssel und Zertifikat zusammenpassen, und startet HTTPS neu. „Selbst signiertes neu erzeugen“ löscht das eigene Zertifikat und erneuert nur das Serverzertifikat mit aktuellen IP-Adressen; Geräte-CA und Vertrauen bleiben erhalten.</p>
 </div>
 </div>
 <div class="card" id="display" data-sub="Anzeige am Gerät. Antippen wechselt die Seite." data-en-sub="On-device display. Tap to change pages."><strong>Display</strong>
@@ -1709,9 +1707,10 @@ async function loadTls(){
   const esc=s=>String(s||'–').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
   tb.innerHTML=row('Status',!t.enabled?uiText('aus',"Off"):t.running?uiText('<span class="ok">läuft</span>',"<span class=\"ok\">Running</span>"):t.lowRam?uiText('<span class="bad">zu wenig Speicher auf diesem Board, die Oberfläche läuft über HTTP</span>',"<span class=\"bad\">Not enough memory on this board; the interface uses HTTP</span>"):uiText('<span class="bad">nicht gestartet</span>',"<span class=\"bad\">Not started</span>"))+
-    row(uiText('Zertifikat',"Certificate"),t.source==='own'?uiText('eigenes',"Custom")+(t.chain>1?uiText(' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')',' (with '+(t.chain-1)+' intermediate certificate'+(t.chain>2?'s':'')+')'):''):uiText('selbst signiert',"Self-signed"))+
+    row(uiText('Zertifikat',"Certificate"),t.source==='own'?uiText('eigenes',"Custom")+(t.chain>1?uiText(' (mit '+(t.chain-1)+' Zwischenzertifikat'+(t.chain>2?'en':'')+')',' (with '+(t.chain-1)+' intermediate certificate'+(t.chain>2?'s':'')+')'):''):t.caSigned===false?uiText('selbst signiert (Ersatz)',"Self-signed (fallback)"):uiText('von der Geräte-CA signiert',"Signed by device CA"))+
     row(uiText('Ausgestellt für',"Issued to"),esc(t.subject))+(t.source==='own'?row(uiText('Aussteller',"Issuer"),esc(t.issuer)):'')+
-    row(uiText('Gültig bis',"Valid until"),esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`);
+    row(uiText('Gültig bis',"Valid until"),esc(t.validTo))+row('SHA-256',`<code style="font-size:12px">${esc(t.sha256)}</code>`)+
+    (t.caSha256?row('CA SHA-256',`<code style="font-size:12px">${esc(t.caSha256)}</code>`)+row(uiText('CA gültig bis',"CA valid until"),esc(t.caValidTo)):'');
 }
 function tlsFile(inp,id){const f=inp.files&&inp.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{document.getElementById(id).value=r.result;};r.readAsText(f);}
@@ -1725,7 +1724,7 @@ async function tlsUpload(){
   else tlsMsg(j.error||uiText('Fehler beim Hochladen',"Upload failed"),false);
 }
 async function tlsSelf(){
-  if(!confirm(uiText('Neues selbst signiertes Zertifikat erzeugen? Ein eigenes Zertifikat wird dabei gelöscht, der Browser warnt danach erneut.',"Generate a new self-signed certificate? This removes the custom certificate and the browser will warn you again.")))return;
+  if(!confirm(uiText('Neues Serverzertifikat erzeugen? Ein eigenes Zertifikat wird gelöscht. Die Geräte-CA bleibt erhalten; eine bereits installierte CA muss nicht erneut installiert werden.',"Generate a new server certificate? This removes the custom certificate. The device CA is preserved; an already trusted CA does not need reinstalling.")))return;
   const r=await fetch('/api/tls/self',{method:'POST'}).catch(()=>null);
   if(r&&r.ok){tlsMsg(uiText('Wird erzeugt, HTTPS startet neu…',"Generating certificate. Restarting HTTPS…"),true);setTimeout(()=>location.reload(),5000);}else tlsMsg(uiText('Fehler',"Error"),false);
 }
@@ -2005,7 +2004,7 @@ de:{brand:'Einrichtung',title:'Einrichtung',sub:'Ein paar Fragen, dann läuft de
  saving:'Speichere …',ePass:'Bitte zuerst ein eigenes Passwort mit mindestens 8 Zeichen wählen.',eSave:'Speichern fehlgeschlagen.',
  fin:'Fertig. Die Live-Seite öffnet sich gleich.',finPass:u=>'Fertig. Melde dich gleich mit „'+u+'“ und deinem neuen Passwort an.',
  finAp:'Das Geräte-WLAN nutzt ab jetzt dein neues Passwort. Verbinde dein Handy damit neu.',
- finTls:'Der Browser warnt einmal wegen des eigenen Zertifikats. Bestätigen und anmelden.'},
+ finTls:'Für HTTPS ohne Warnung unter Netzwerk und Zugang das CA-Zertifikat herunterladen, Fingerabdruck über eine vertrauenswürdige Verbindung prüfen und einmal als vertrauenswürdige Stamm-CA installieren. Zunächst ist HTTP zur Einrichtung verfügbar.'},
 en:{brand:'Setup',title:'Setup',sub:'A few questions, then the proxy runs. Everything can be changed later under Settings.',
  st_mode:'Start',st_access:'Access',st_feat:'Features',st_q:'Questions',st_inv:'Inverter',st_data:'Credentials',st_hems:'Consolinno',st_done:'Done',
  step:(a,b)=>'Step '+a+' / '+b,next:'Next',back:'Back',test:'Test connection',finish:'Finish setup',yes:'Yes',no:'No',
@@ -2048,7 +2047,7 @@ en:{brand:'Setup',title:'Setup',sub:'A few questions, then the proxy runs. Every
  saving:'Saving …',ePass:'Please choose your own password with at least 8 characters first.',eSave:'Saving failed.',
  fin:'Done. The live page opens in a moment.',finPass:u=>'Done. Sign in with “'+u+'” and your new password in a moment.',
  finAp:'The device Wi-Fi now uses your new password. Reconnect your phone to it.',
- finTls:'The browser warns once about the device’s own certificate. Confirm and sign in.'}
+ finTls:'For HTTPS without warnings, download the CA certificate under Network and access, check its fingerprint over a trusted connection and install it once as a trusted root. HTTP is initially available for setup.'}
 };
 let LANG='de',MODE='easy',C={},S={},step='s_mode';
 const T=(k,...a)=>{const v=(TXT[LANG]||TXT.de)[k];return typeof v==='function'?v(...a):v;};
@@ -2696,7 +2695,7 @@ void begin() {
         return;
       }
     }
-    if (c.httpsRedirect && c.setupComplete && HttpsServer::hasRoom() && req->client() &&
+    if (req->url() != "/api/tls/ca.crt" && c.httpsRedirect && c.setupComplete && HttpsServer::hasRoom() && req->client() &&
         req->client()->remoteIP() != IPAddress(127, 0, 0, 1)) {
       String host = req->host();
       const int colon = host.indexOf(':');
@@ -2809,6 +2808,18 @@ void begin() {
   server.on("/api/tls", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
     req->send(200, "application/json", HttpsServer::infoJson());
+  });
+
+  server.on("/api/tls/ca.crt", HTTP_GET, [](AsyncWebServerRequest *req) {
+    const String ca = HttpsServer::caCertificate();
+    if (!ca.length()) {
+      req->send(404, "text/plain", "No device CA available");
+      return;
+    }
+    AsyncWebServerResponse *res = req->beginResponse(200, "application/x-x509-ca-cert", ca);
+    res->addHeader("Content-Disposition", "attachment; filename=\"hit-proxy-ca.crt\"");
+    res->addHeader("Cache-Control", "no-store");
+    req->send(res);
   });
 
   server.on("/api/tls/cert", HTTP_POST, [](AsyncWebServerRequest *req) {}, NULL,
