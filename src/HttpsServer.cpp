@@ -2,6 +2,7 @@
 #include "HttpChunked.h"
 #include "EventLog.h"
 #include "LiveData.h"
+#include "LocalCertificates.h"
 #include <LittleFS.h>
 #include <Preferences.h>
 #include <WiFi.h>
@@ -29,6 +30,7 @@ constexpr uint32_t SELF_DAYS = 820;
 AppConfig local;
 httpd_handle_t server = nullptr;
 String certPem, keyPem;
+String caPem;
 bool ownCert = false;
 bool lowRam = false;
 uint32_t startAfterMs = 0;
@@ -131,12 +133,57 @@ bool parseIp(const char *s, uint8_t out[4]) {
 
 String currentIps() { return String(gLive.ipEth) + "|" + gLive.ipWifi; }
 
+int parseCa(mbedtls_x509_crt *crt) {
+  return LocalCertificates::parseCa(crt, reinterpret_cast<const unsigned char *>(caPem.c_str()));
+}
+
+String deviceSubject(bool ca) {
+  String dev = local.deviceName[0] ? local.deviceName : "HIT-Proxy";
+  dev.replace(",", " ");
+  dev.replace("=", " ");
+  return String("CN=") + (ca ? "HIT-SunSpec-Proxy CA " : "") + dev + ",O=HIT-SunSpec-Proxy";
+}
+
+bool ensureCa(bool &created) {
+  created = false;
+  Preferences p;
+  if (!p.begin("tls", false)) return false;
+  caPem = p.getString("cacrt", "");
+  const String storedKey = p.getString("cakey", "");
+  if (caPem.length() || storedKey.length()) {
+    p.end();
+    return caPem.length() && storedKey.length();
+  }
+  Rng rng;
+  mbedtls_pk_context key;
+  mbedtls_pk_init(&key);
+  auto *pem = static_cast<unsigned char *>(calloc(1, 2048));
+  auto *kpem = static_cast<unsigned char *>(calloc(1, 512));
+  char nb[16], na[16];
+  const time_t from = nowOrBuild() - 86400;
+  fmtTime(nb, from);
+  fmtTime(na, from + time_t(3650) * 86400);
+  const String subject = deviceSubject(true);
+  bool ok = pem && kpem && rng.ok && LocalCertificates::generate(true, subject.c_str(), subject.c_str(),
+      nb, na, &key, nullptr, nullptr, &rng.drbg, pem, 2048, kpem, 512) == 0;
+  if (ok) {
+    caPem = reinterpret_cast<char *>(pem);
+    ok = p.putString("cakey", reinterpret_cast<char *>(kpem)) > 0 && p.putString("cacrt", caPem) > 0;
+    created = ok;
+  }
+  p.end();
+  free(pem);
+  if (kpem) { memset(kpem, 0, 512); free(kpem); }
+  mbedtls_pk_free(&key);
+  return ok;
+}
+
 bool makeSelfSigned() {
   Rng rng;
   mbedtls_pk_context key;
-  mbedtls_x509write_cert crt;
+  mbedtls_pk_context issuerKey;
+  mbedtls_pk_init(&issuerKey);
   mbedtls_pk_init(&key);
-  mbedtls_x509write_crt_init(&crt);
   auto *pem = static_cast<unsigned char *>(calloc(1, 2048));
   auto *kpem = static_cast<unsigned char *>(calloc(1, 512));
 
@@ -151,7 +198,7 @@ bool makeSelfSigned() {
   host.replace(" ", "-");
   host.toLowerCase();
   host += ".local";
-  uint8_t ipEth[4], ipWifi[4];
+  uint8_t ipEth[4] = {}, ipWifi[4] = {};
   mbedtls_x509_san_list san[3] = {};
   int nSan = 0;
   san[nSan].node.type = MBEDTLS_X509_SAN_DNS_NAME;
@@ -172,42 +219,27 @@ bool makeSelfSigned() {
   }
   for (int i = 0; i + 1 < nSan; i++) san[i].next = &san[i + 1];
 
-  // serverAuth als erweiterte Schlüsselverwendung, sonst verweigern Apple-Geräte das Zertifikat
-  mbedtls_asn1_sequence eku = {};
-  eku.buf.tag = MBEDTLS_ASN1_OID;
-  eku.buf.p = (unsigned char *)MBEDTLS_OID_SERVER_AUTH;
-  eku.buf.len = MBEDTLS_OID_SIZE(MBEDTLS_OID_SERVER_AUTH);
-
+  mbedtls_x509_crt ca;
+  mbedtls_x509_crt_init(&ca);
   bool ok = false;
   do {
     if (!pem || !kpem || !rng.ok) break;
-    if (mbedtls_pk_setup(&key, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY))) break;
-    if (mbedtls_ecp_gen_key(MBEDTLS_ECP_DP_SECP256R1, mbedtls_pk_ec(key), mbedtls_ctr_drbg_random, &rng.drbg)) break;
-
-    mbedtls_x509write_crt_set_version(&crt, MBEDTLS_X509_CRT_VERSION_3);
-    mbedtls_x509write_crt_set_md_alg(&crt, MBEDTLS_MD_SHA256);
-    mbedtls_x509write_crt_set_subject_key(&crt, &key);
-    mbedtls_x509write_crt_set_issuer_key(&crt, &key);
-    if (mbedtls_x509write_crt_set_subject_name(&crt, name)) break;
-    if (mbedtls_x509write_crt_set_issuer_name(&crt, name)) break;
-    unsigned char serial[16];
-    mbedtls_ctr_drbg_random(&rng.drbg, serial, sizeof(serial));
-    serial[0] &= 0x7F;
-    if (mbedtls_x509write_crt_set_serial_raw(&crt, serial, sizeof(serial))) break;
+    Preferences p;
+    p.begin("tls", true);
+    String caKey = p.getString("cakey", "");
+    p.end();
+    if (mbedtls_pk_parse_key(&issuerKey, reinterpret_cast<const unsigned char *>(caKey.c_str()), caKey.length() + 1,
+        nullptr, 0, mbedtls_ctr_drbg_random, &rng.drbg)) break;
+    if (parseCa(&ca)) break;
+    if (mbedtls_pk_check_pair(&ca.pk, &issuerKey, mbedtls_ctr_drbg_random, &rng.drbg)) break;
+    char issuer[192];
+    if (mbedtls_x509_dn_gets(issuer, sizeof(issuer), &ca.subject) < 0) break;
     const time_t from = nowOrBuild() - 86400;
     char nb[16], na[16];
     fmtTime(nb, from);
     fmtTime(na, from + time_t(SELF_DAYS) * 86400);
-    if (mbedtls_x509write_crt_set_validity(&crt, nb, na)) break;
-    if (mbedtls_x509write_crt_set_basic_constraints(&crt, 0, -1)) break;
-    if (mbedtls_x509write_crt_set_key_usage(&crt, MBEDTLS_X509_KU_DIGITAL_SIGNATURE | MBEDTLS_X509_KU_KEY_AGREEMENT)) break;
-    if (mbedtls_x509write_crt_set_ext_key_usage(&crt, &eku)) break;
-    if (mbedtls_x509write_crt_set_subject_alternative_name(&crt, san)) {
-      san[0].next = nullptr; // IP im SAN nicht unterstützt: nur der Name
-      if (mbedtls_x509write_crt_set_subject_alternative_name(&crt, san)) break;
-    }
-    if (mbedtls_x509write_crt_pem(&crt, pem, 2048, mbedtls_ctr_drbg_random, &rng.drbg)) break;
-    if (mbedtls_pk_write_key_pem(&key, kpem, 512)) break;
+    if (LocalCertificates::generate(false, name, issuer, nb, na, &key, &issuerKey, san,
+        &rng.drbg, pem, 2048, kpem, 512)) break;
     certPem = reinterpret_cast<char *>(pem);
     keyPem = reinterpret_cast<char *>(kpem);
     ok = true;
@@ -218,17 +250,18 @@ bool makeSelfSigned() {
     memset(kpem, 0, 512);
     free(kpem);
   }
-  mbedtls_x509write_crt_free(&crt);
+  mbedtls_x509_crt_free(&ca);
+  mbedtls_pk_free(&issuerKey);
   mbedtls_pk_free(&key);
   if (!ok) return false;
 
   Preferences p;
-  p.begin("tls", false);
-  p.putString("crt", certPem);
-  p.putString("key", keyPem);
-  p.putString("ips", currentIps());
+  if (!p.begin("tls", false)) return false;
+  const bool saved = p.putString("crt", certPem) > 0 && p.putString("key", keyPem) > 0 &&
+                     p.putString("ips", currentIps()) > 0 && p.putBool("caLeaf", true) > 0;
   p.end();
-  EventLog::add('I', "HTTPS", "selbst signiertes Zertifikat erzeugt (%s, %s %s)", host.c_str(), gLive.ipEth,
+  if (!saved) return false;
+  EventLog::add('I', "HTTPS", "von Geräte-CA signiertes Zertifikat erzeugt (%s, %s %s)", host.c_str(), gLive.ipEth,
                 strcmp(gLive.ipWifi, "-") ? gLive.ipWifi : "");
   return true;
 }
@@ -284,6 +317,16 @@ void buildInfo() {
          "\",\"sha256\":\"" + hex + "\",\"chain\":" + chain + ",";
   }
   mbedtls_x509_crt_free(&c);
+  mbedtls_x509_crt_init(&c);
+  if (caPem.length() && parseCa(&c) == 0) {
+    unsigned char fp[32];
+    mbedtls_sha256(c.raw.p, c.raw.len, fp, 0);
+    char hex[96], until[20];
+    for (int i = 0; i < 32; i++) snprintf(hex + i * 3, 4, i < 31 ? "%02X:" : "%02X", fp[i]);
+    snprintf(until, sizeof(until), "%04d-%02d-%02d", c.valid_to.year, c.valid_to.mon, c.valid_to.day);
+    j += String("\"caSha256\":\"") + hex + "\",\"caValidTo\":\"" + until + "\",";
+  }
+  mbedtls_x509_crt_free(&c);
   j += String("\"source\":\"") + (ownCert ? "own" : "self") + "\",\"running\":" + (server ? "true" : "false") +
        ",\"enabled\":" + (local.httpsEnabled ? "true" : "false") + ",\"lowRam\":" + (lowRam ? "true" : "false") + "}";
   if (infoLock) xSemaphoreTake(infoLock, portMAX_DELAY);
@@ -305,6 +348,10 @@ bool selfSignedExpired() {
 
 bool loadCert(bool regenerate) {
   ownCert = false;
+  Preferences caStore;
+  caStore.begin("tls", true);
+  caPem = caStore.getString("cacrt", "");
+  caStore.end();
   if (!regenerate && LittleFS.exists(OWN_CRT) && LittleFS.exists(OWN_KEY)) {
     certPem = readFile(OWN_CRT);
     keyPem = readFile(OWN_KEY);
@@ -314,17 +361,20 @@ bool loadCert(bool regenerate) {
     }
     EventLog::add('W', "HTTPS", "eigenes Zertifikat nicht lesbar, nehme selbst signiertes");
   }
-  if (!regenerate) {
+  bool created = false;
+  if (!ensureCa(created)) return false;
+  if (!regenerate && !created) {
     Preferences p;
     p.begin("tls", true);
     certPem = p.getString("crt", "");
     keyPem = p.getString("key", "");
     const String ips = p.getString("ips", "");
+    const bool caLeaf = p.getBool("caLeaf", false);
     p.end();
     // neue Adresse (DHCP): Zertifikat neu, sonst passt es nicht mehr zur Adresszeile
     const bool moved = ips != currentIps();
     if (moved && certPem.length()) EventLog::add('I', "HTTPS", "IP-Adresse geändert, erneuere Zertifikat");
-    if (certPem.length() && keyPem.length() && !moved && !selfSignedExpired()) return true;
+    if (caLeaf && certPem.length() && keyPem.length() && !moved && !selfSignedExpired()) return true;
   }
   return makeSelfSigned();
 }
@@ -572,7 +622,7 @@ void start(bool regenerate) {
     u.handler = proxy;
     httpd_register_uri_handler(server, &u);
   }
-  EventLog::add('I', "HTTPS", "Port 443 aktiv, %s Zertifikat", ownCert ? "eigenes" : "selbst signiertes");
+  EventLog::add('I', "HTTPS", "Port 443 aktiv, %s Zertifikat", ownCert ? "eigenes" : "von Geräte-CA signiertes");
   buildInfo();
 }
 
@@ -637,6 +687,14 @@ String infoJson() {
   if (infoLock) xSemaphoreTake(infoLock, portMAX_DELAY);
   String s = info;
   if (infoLock) xSemaphoreGive(infoLock);
+  return s;
+}
+
+String caCertificate() {
+  Preferences p;
+  p.begin("tls", true);
+  String s = p.getString("cacrt", "");
+  p.end();
   return s;
 }
 

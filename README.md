@@ -182,7 +182,24 @@ Die §14a-Writes von Consolinno stehen im zweiten Reiter.
 
 ### HTTPS
 
-Selbst signiertes Zertifikat mit Fingerabdruck zum Vergleichen, oder ein eigenes hochladen.
+Die Geräte-CA signiert das Serverzertifikat mit IP-Adressen und `<gerätename>.local` (820 Tage).
+Die CA wird einmal erzeugt, für etwa zehn Jahre ausgestellt und bleibt bei IP-Wechseln und
+„Selbst signiertes neu erzeugen“ erhalten; nur ein Werksreset löscht sie. Alte selbst signierte
+Serverzertifikate werden automatisch umgestellt; hochgeladene eigene Zertifikate bleiben unverändert.
+
+Für HTTPS ohne Browserwarnung unter *Netzwerk und Zugang* **CA-Zertifikat herunterladen** wählen
+(`/api/tls/ca.crt`, mit Anmeldung auch über HTTP erreichbar). Den angezeigten CA-SHA-256-Fingerabdruck
+über eine vertrauenswürdige Verbindung vergleichen und die CA einmal pro Client als Stamm-CA installieren:
+- Windows: **Vertrauenswürdige Stammzertifizierungsstellen**
+- macOS: **Schlüsselbund**, **Immer vertrauen**
+- iOS: **Profil installieren**, danach unter **Zertifikatsvertrauenseinstellungen** aktivieren
+- Android: **CA-Zertifikat** installieren
+- Firefox: ggf. zusätzlich in den eigenen Zertifikatsspeicher importieren
+
+Danach `https://<ip>` oder `https://<name>.local` öffnen. Bei einem IP-Wechsel wird nur das
+Serverzertifikat erneuert; die CA muss nicht erneut installiert werden. Die CA darf nur Namen unter
+`.local` / `.home.arpa` und private IPv4-Netze (10/8, 172.16/12, 192.168/16, 169.254/16) signieren.
+Eigene Zertifikate (PEM, auch mit Zwischenzertifikaten) können weiterhin hochgeladen werden.
 
 ![HTTPS](docs/screenshots/https.jpg)
 
@@ -217,7 +234,7 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
 - **Schutz des Netzschutz-Bereichs:** FC6 auf HIT-Register 101–299 wird nie gesendet
   (laut Hoymiles V2.8 lädt das alle Netzschutz-Werkswerte)
 - **HTTPS** auf Port 443, HTTP leitet um (außer während der Einrichtung). Auf Boards ohne PSRAM reicht der
-  Speicher dafür nicht; dort läuft die Oberfläche über HTTP. Selbst signiertes Zertifikat mit
+  Speicher dafür nicht; dort läuft die Oberfläche über HTTP. Von der Geräte-CA signiertes Zertifikat mit
   IP-Adresse und `<gerätename>.local`, wird bei neuer IP oder vor Ablauf selbst erneuert; eigenes Zertifikat
   (PEM, auch mit Zwischenzertifikaten) hochladbar, der ESP prüft ob Schlüssel und Zertifikat zusammenpassen
 - **Werksreset**, **Neustart** (mit letztem Neustartgrund) und **OTA-Update** in der Weboberfläche
@@ -238,9 +255,9 @@ ETS-Gruppenadressen-Export (XML oder CSV) herunterladen und in ETS 5/6 importier
    fragt ab, was gebraucht wird; ohne Display ist dabei ein eigenes Passwort Pflicht.
 4. Consolinno: Gerät als Fronius Hybrid / SunSpec, **Proxy-IP**, Port **1502**, Unit-ID **1**  
    (Scan nur auf 502 findet den Proxy nicht, solange SunSpec auf 1502 lauscht)
-5. Danach läuft die Oberfläche über `https://<esp-ip>/`. Der Browser warnt beim ersten Aufruf, weil das
-   Zertifikat selbst signiert ist; einmal bestätigen. Unter *Netzwerk und Zugang* steht danach der
-   SHA-256-Fingerabdruck zum Vergleich mit dem im Browser. Ohne Warnung geht es mit einem eigenen Zertifikat.
+5. Danach läuft die Oberfläche über `https://<esp-ip>/`. Für einen Aufruf ohne Warnung die Geräte-CA
+   unter *Netzwerk und Zugang* herunterladen und einmal als vertrauenswürdige Stamm-CA installieren
+   (siehe [HTTPS](#https)). Alternativ ein eigenes Zertifikat hochladen.
 
 Gibt es schon eine andere SunSpec-Quelle, lassen sich beide vergleichen:
 `python tools/sunspec_check.py <alte-quelle> --compare <esp-ip>`. Andere Programme, die den HIT per Modbus
