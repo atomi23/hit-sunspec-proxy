@@ -17,6 +17,7 @@
 #include <mbedtls/entropy.h>
 #include <mbedtls/oid.h>
 #include <mbedtls/pk.h>
+#include <mbedtls/platform.h>
 #include <mbedtls/sha256.h>
 #include <mbedtls/x509_crt.h>
 #include <time.h>
@@ -621,8 +622,22 @@ void closeIdle() {
   for (size_t i = 0; i < nClose; i++) httpd_sess_trigger_close(server, toClose[i]);
 }
 
+// Boards mit PSRAM: TLS (Puffer, Handshake, Zertifikate) dorthin legen. Der interne RAM reicht sonst nicht mehr,
+// sobald Bluetooth mit in der Firmware steckt (rund 40 KB weniger schon ohne aktive Verbindung).
+bool tlsInPsram = false;
+#ifdef BOARD_HAS_PSRAM
+void *tlsCalloc(size_t n, size_t size) {
+  void *p = heap_caps_calloc(n, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  return p ? p : heap_caps_calloc(n, size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+}
+#endif
+constexpr size_t PSRAM_TLS_SPARE = 32000; // Server-Task, Sockets und Weboberfläche bleiben im internen RAM
+
 // Passen die Puffer für alle Sitzungen? Probeweise reservieren, weil der freie RAM in Stücken liegt
 bool tlsFits() {
+  if (tlsInPsram)
+    return heap_caps_get_free_size(MALLOC_CAP_SPIRAM) >= 2 * MAX_SESSIONS * TLS_BUF + 65536 &&
+           heap_caps_get_free_size(MALLOC_CAP_INTERNAL) >= PSRAM_TLS_SPARE;
   void *b[2 * MAX_SESSIONS] = {};
   bool ok = true;
   for (void *&p : b) ok = ok && (p = heap_caps_malloc(TLS_BUF, MALLOC_CAP_INTERNAL));
@@ -703,6 +718,9 @@ namespace HttpsServer {
 void begin(const AppConfig &cfg) {
   local = cfg;
   if (!infoLock) infoLock = xSemaphoreCreateMutex();
+#ifdef BOARD_HAS_PSRAM
+  if (!tlsInPsram && psramFound() && mbedtls_platform_set_calloc_free(tlsCalloc, free) == 0) tlsInPsram = true;
+#endif
   // abgelehnte Handshakes (Browser vor dem Bestätigen des Zertifikats) sind normal, nicht jedes Mal loggen
 #ifndef TLS_DIAG
   esp_log_level_set("esp-tls-mbedtls", ESP_LOG_NONE);
@@ -745,7 +763,9 @@ bool running() { return server != nullptr; }
 
 // Ohne PSRAM kann der interne RAM für eine TLS-Sitzung fehlen; dann darf HTTP nicht auf HTTPS umleiten,
 // sonst ist die Oberfläche gar nicht mehr erreichbar
-bool hasRoom() { return server && heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) >= 2 * TLS_BUF + 64; }
+bool hasRoom() {
+  return server && (tlsInPsram || heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) >= 2 * TLS_BUF + 64);
+}
 
 String infoJson() {
   if (infoLock) xSemaphoreTake(infoLock, portMAX_DELAY);
