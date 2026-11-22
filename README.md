@@ -1,5 +1,7 @@
 # HIT → Consolinno SunSpec Proxy (ESP32)
 
+**Deutsch** · [English](README.en.md)
+
 Autarker Modbus-Proxy: **Hoymiles HIT** → **Consolinno HEMS** (SunSpec GEN24 auf Port **1502**).
 Der ESP hält die einzige HIT-Verbindung und verteilt die Daten an Consolinno, Home Assistant, KNX und
 andere Modbus-Clients. Welche dieser Dienste laufen, wählst du im Einrichtungsassistenten; der Proxy
@@ -16,21 +18,24 @@ Aktuelle Firmware: **v0.5.22** — [Release mit Firmware für jedes Board](https
 - **HTTPS unter Windows:** CA-Installationsschritte mit manueller Auswahl des Stammzertifikatsspeichers ergänzt, damit Chrome der Geräte-CA vertraut.
 - **Abmelden:** Schaltfläche auf den Hauptseiten der Weboberfläche, auch über HTTPS. Falls der Browser die Anmeldung behält, hilft der Hinweis zum Schließen des Browsers.
 
-### Neu in v0.5.20
+<details>
+<summary><b>Ältere Versionen</b> (v0.5.20 bis v0.5.6)</summary>
+
+### v0.5.20
 - **Weboberfläche:** Lädt das Layout mit der Seite, statt es nach einem Neustart separat anfordern zu müssen.
 
-### Neu in v0.5.19
+### v0.5.19
 - **Deutsch und Englisch:** Fehlende Texte in Sicherung und Wiederherstellung, HTTPS, Downloads und Statusmeldungen ergänzt. Neue Protokolleinträge folgen der gewählten Sprache.
 
-### Neu in v0.5.18
+### v0.5.18
 - **CA-Download:** Liefert jetzt die Zertifikatsdatei statt der Zertifikatsinformationen als JSON.
 
-### Neu in v0.5.17
+### v0.5.17
 - **HTTPS ohne Browserwarnung:** Die Geräte-CA signiert das Serverzertifikat; ihr CA-Zertifikat einmal als vertrauenswürdige Stamm-CA installieren.
 - **CA-Zertifikat herunterladen:** Öffentlich und ohne Anmeldung unter `/api/tls/ca.crt`, auch über HTTP erreichbar.
 - **Weboberfläche und OTA bleiben erreichbar:** Scheitert die CA-Umstellung, wird ein passendes gespeichertes oder ein selbst signiertes Ersatz-Zertifikat verwendet. Der nächste Start versucht die Umstellung erneut.
 
-### Neu in v0.5.16
+### v0.5.16
 - **Protokolle und Verlauf:** Ereignis- und Debug-Protokoll als Textdatei, Verlaufsdaten als CSV herunterladen.
 - **Display am T-Connect-Pro:** Wochenplan mit eigenen An- und Aus-Zeiten pro Wochentag. Ein optionales KNX-Objekt (DPT 1.001) schaltet die Beleuchtung ein oder aus.
 - **Firmware und Reset:** Einstellungen als JSON sichern und wiederherstellen. Passwörter und Zugangscode lassen sich beim Export abwählen.
@@ -124,6 +129,8 @@ Aktuelle Firmware: **v0.5.22** — [Release mit Firmware für jedes Board](https
 - Web-Callbacks (Poll, HIT-Schreiben, Tasmota-Probe) laufen in der Hauptschleife, nicht im Async-Task
 - Passwörter werden in `/api/config` nicht mehr im Klartext ausgeliefert
 - `millis()`-Rollover-fest; Platform `espressif32 @ 53.3.13` gepinnt; eigene 16‑MB-Partitionstabelle
+
+</details>
 
 ## Display am Gerät
 
