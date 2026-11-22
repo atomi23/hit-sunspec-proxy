@@ -332,6 +332,15 @@ OTA zwischen App-Slots bleibt danach möglich.
 | `t-poe-pro` | [LILYGO T-POE-Pro](https://lilygo.cc/products/t-poe-pro), ESP32-WROVER-E, 16 MB, 8 MB PSRAM | ohne Display; LAN8720 mit PoE; RS485 auf der Platine (TX 32 / RX 33) |
 | `p4-poe-eth` | [Waveshare ESP32-P4-WIFI6-POE-ETH](https://www.waveshare.com/esp32-p4-wifi6-poe-eth.htm), ESP32-P4, 32 MB, 32 MB PSRAM | ohne Display; IP101 mit PoE (MDC 31, MDIO 52, Reset 51); WLAN über den ESP32-C6; RS485 über externen Wandler an GPIO4 (TX) / GPIO5 (RX). Noch nicht auf Hardware getestet |
 
+### Bezugsquellen
+
+- [LILYGO T-Connect-Pro auf Amazon.de suchen](https://www.amazon.de/s?k=LILYGO+T-Connect-Pro&tag=atomi23-21)\*
+- [LILYGO T-POE-Pro auf Amazon.de](https://www.amazon.de/dp/B0CR3JMCVX?tag=atomi23-21)\*
+- [WT32-ETH01 auf Amazon.de](https://www.amazon.de/dp/B0CTK9414M?tag=atomi23-21)\*
+- [Waveshare ESP32-P4-WIFI6-POE-ETH auf Amazon.de](https://www.amazon.de/dp/B0G259RFX5?tag=atomi23-21)\*
+
+\*Als Amazon-Partner verdiene ich an qualifizierten Verkäufen. Mit * markierte Links sind Werbe-/Affiliate-Links.
+
 Der WT32-ETH01 nutzt `min_spiffs.csv` (2× 1,9 MB OTA), der T-POE-Pro wie der T-Connect-Pro `partitions_16MB.csv`.
 Der WT32-ETH01 wird über einen USB-Seriell-Adapter an TX0/RX0 geflasht (IO0 beim Einschalten auf GND):
 
