@@ -1,4 +1,5 @@
 #include "ModbusGateway.h"
+#include "ClientActivity.h"
 #include "HitBus.h"
 #include "LiveData.h"
 #include "DebugLog.h"
@@ -11,6 +12,7 @@ bool listening = false;
 uint16_t listenPort = 0;
 constexpr int MAX_CLIENTS = 4;
 WiFiClient clients[MAX_CLIENTS];
+ClientActivity<MAX_CLIENTS> clientActivity;
 
 void reply(WiFiClient &c, const uint8_t *mbap, const uint8_t *pdu, size_t len) {
   uint8_t out[7 + 256];
@@ -29,13 +31,15 @@ void exception(WiFiClient &c, const uint8_t *mbap, uint8_t fc, uint8_t code) {
 
 bool isWrite(uint8_t fc) { return fc == 5 || fc == 6 || fc == 15 || fc == 16; }
 
-void handle(WiFiClient &c) {
+void handle(int slot) {
+  WiFiClient &c = clients[slot];
   uint8_t mbap[7];
   if (c.readBytes(mbap, 7) != 7) { c.stop(); return; }
   const size_t len = (size_t(mbap[4]) << 8) | mbap[5];
   if (mbap[2] || mbap[3] || len < 2 || len > 254) { c.stop(); return; }
   uint8_t pdu[254];
   if (c.readBytes(pdu, len - 1) != len - 1) { c.stop(); return; }
+  clientActivity.touch(slot);
   const size_t pduLen = len - 1;
   const uint8_t fc = pdu[0];
 
@@ -114,18 +118,23 @@ void loop() {
     for (int i = 0; i < MAX_CLIENTS; i++) {
       if (!clients[i] || !clients[i].connected()) { slot = i; break; }
     }
-    if (slot < 0) { clients[0].stop(); slot = 0; }
+    if (slot < 0) {
+      slot = clientActivity.oldest();
+      clients[slot].stop();
+    }
     incoming.setTimeout(500);
     incoming.setNoDelay(true);
     clients[slot] = incoming;
+    clientActivity.touch(slot);
   }
   uint8_t n = 0;
-  for (auto &c : clients) {
+  for (int i = 0; i < MAX_CLIENTS; i++) {
+    WiFiClient &c = clients[i];
     if (!c) continue;
     if (!c.connected()) { c.stop(); continue; }
     n++;
     int guard = 4; // jede Anfrage geht an den HIT, Display und Web sollen nicht verhungern
-    while (guard-- > 0 && c.available() >= 8) handle(c);
+    while (guard-- > 0 && c.available() >= 8) handle(i);
   }
   gLive.gatewayClients = n;
 }

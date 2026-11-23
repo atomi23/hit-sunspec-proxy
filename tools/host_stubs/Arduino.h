@@ -29,6 +29,9 @@ template <typename T> T constrain(T x, T low, T high) {
 
 inline uint32_t millis() { return 0; }
 
+inline uint32_t hostMillis;
+inline uint32_t millis() { return hostMillis; }
+
 inline uint32_t micros() {
   static uint32_t t = 0;
   return t += 100;
