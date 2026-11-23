@@ -1,0 +1,294 @@
+
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title data-en="History · HIT Proxy">Verlauf · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>
+.main:has(.hist){height:100vh;overflow:auto;padding-bottom:16px}
+.hist{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.hist .panel{display:flex;flex-direction:column;min-height:0;flex:1 1 0;padding:16px 20px 12px}
+.hist .panel h2{margin-bottom:8px}
+.hist .hint{margin-top:4px}
+.chart{display:block;width:100%;flex:1 1 0;height:0;min-height:140px;overflow:visible}
+@media(max-height:720px),(max-width:860px){
+  .main:has(.hist){height:auto;overflow:visible}
+  .hist .panel{flex:none}
+  .chart{flex:none;height:260px}
+}
+.chart .ax{stroke:var(--rule);stroke-width:1}
+.chart .zero{stroke:var(--rule2);stroke-width:1}
+.chart text{fill:var(--dim);font:400 12px var(--font)}
+.chart .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .cur{stroke:var(--dim);stroke-width:1;stroke-dasharray:3 3}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.legend .chip{cursor:pointer;user-select:none}
+.legend .chip.off{opacity:.4}
+.legend .chip i{width:10px;height:10px;border-radius:3px;display:inline-block}
+:root{--c-pv:#f59e3b;--c-house:#ef6f62;--c-imp:#b39ddb;--c-exp:#5fd38d;--c-chg:#f1c453;--c-dis:#5aa9f0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.tabs button{padding:6px 14px;font-size:14px}
+.tabs button:not(.on){background:var(--plate2);color:var(--ink)}
+.read{font-size:13px;color:var(--dim);min-height:20px;margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:14px}
+.kpis div{background:var(--well);border-radius:12px;padding:10px 12px}
+.kpis b{display:block;font-size:20px;font-weight:600;color:var(--ink)}
+.kpis span{font-size:12px;color:var(--dim)}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head><body><div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
+  <nav>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a class="on" aria-current="page" href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
+      </select>
+    </div>
+  </div>
+</aside>
+<main class="main">
+<div class="page-head">
+  <div>
+    <h1 data-t="title">Verlauf</h1>
+    <p class="sub" data-t="sub">Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.</p>
+    <button class="sec" type="button" onclick="location.href='/api/history/download'" data-en="Download history (CSV)">Verlaufsdaten herunterladen (CSV)</button>
+  </div>
+</div>
+
+<div class="hist">
+<section class="panel day">
+  <h2 data-t="h24">Letzte 24 Stunden</h2>
+  <div class="tabs" id="mode24"></div>
+  <div class="legend" id="leg"></div>
+  <svg id="c24" class="chart" viewBox="0 0 960 300" role="img" aria-label="Leistung der letzten 24 Stunden" data-en-aria-label="Power over the last 24 hours"></svg>
+  <div class="read" id="r24"></div>
+  <p class="hint" data-t="bal">Flächen über der Null-Linie: PV, Netzbezug und Akku entladen. Die Linien zeigen, wohin die Energie geht: rot das Haus, gelb Akku laden. Unter der Null-Linie nur die Einspeisung.</p>
+</section>
+
+<section class="panel bars">
+  <h2 data-t="hE">Energie</h2>
+  <div class="tabs" id="tabs"></div>
+  <div class="legend" id="legB"></div>
+  <svg id="cb" class="chart" viewBox="0 0 960 280" role="img" aria-label="Energie je Zeitraum" data-en-aria-label="Energy per period"></svg>
+  <div class="kpis" id="kpis"></div>
+  <p class="hint" id="since"></p>
+</section>
+</div>
+</main></div>
+
+<script>
+const I18N={de:{},en:{}};
+let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script src="/b.js"></script>
+<script>
+const TX={
+ de:{title:'Verlauf',sub:'Leistung der letzten 24 Stunden und Energie je Tag, Monat und Jahr.',h24:'Letzte 24 Stunden',hE:'Energie',
+   pv:'PV',house:'Haus',grid:'Netz',bat:'Akku',days:'Tage',months:'Monate',years:'Jahre',total:'Gesamt',
+   gen:'Erzeugt',use:'Verbraucht',imp:'Bezug',exp:'Einspeisung',chg:'Akku laden',dis:'Akku entladen',
+   aut:'Autarkie',self:'Eigenverbrauch',none:'Noch keine Daten. Der Verlauf beginnt, sobald der ESP Messwerte und die Uhrzeit hat.',
+   since:d=>'Aufzeichnung seit '+d+'. Erzeugung, Bezug und Einspeisung aus den HIT-Zählern, Verbrauch und Akku vom ESP aufsummiert.',
+   cur:'Laufender Zeitraum',
+   bal:'Flächen über der Null-Linie: PV, Netzbezug und Akku entladen. Die Linien zeigen, wohin die Energie geht: rot das Haus, gelb Akku laden. Unter der Null-Linie nur die Einspeisung.',
+   pos:'Flächen: PV, Netzbezug und Akku entladen. Linien: rot das Haus, gelb Akku laden, grün die Einspeisung.',
+   mBal:'Bilanz',mPos:'Alles positiv'},
+ en:{title:'History',sub:'Power over the last 24 hours and energy per day, month and year.',h24:'Last 24 hours',hE:'Energy',
+   pv:'Solar',house:'Home',grid:'Grid',bat:'Battery',days:'Days',months:'Months',years:'Years',total:'Total',
+   gen:'Produced',use:'Consumed',imp:'Import',exp:'Export',chg:'Battery charge',dis:'Battery discharge',
+   aut:'Self-sufficiency',self:'Self-consumption',none:'No data yet. History starts once the ESP has readings and the time.',
+   since:d=>'Recording since '+d+'. Production, import and export from the HIT counters; consumption and battery summed by the ESP.',
+   cur:'Current period',
+   bal:'Areas above zero: solar, grid import and battery discharge. The lines show where the energy goes: red the home, yellow battery charging. Only export is below zero.',
+   pos:'Areas: solar, grid import and battery discharge. Lines: red the home, yellow battery charging, green export.',
+   mBal:'Balance',mPos:'All positive'}
+};
+const T=k=>(TX[LANG]||TX.de)[k];
+// Akkudetails (eigener Abruf alle 30 s); nur Zeilen mit Werten
+let BAT=null,BAT_AT=0;
+function batRows(F){const m=(BAT&&BAT.merged)||{},r=[];if(F.akku===false)return r;
+  if(m.cellTempMax!==undefined)r.push([T('ctmax'),m.cellTempMax+' °C']);
+  if(m.cellDiffMv!==undefined)r.push([T('cspread'),m.cellDiffMv+' mV']);return r;}
+const $=id=>document.getElementById(id);
+const SER=[['pv','var(--c-pv)'],['use','var(--c-house)'],['imp','var(--c-imp)'],['exp','var(--c-exp)'],['chg','var(--c-chg)'],['dis','var(--c-dis)']];
+const hidden=new Set();
+let D24=null;
+let MODE=localStorage.getItem('histMode')==='pos'?'pos':'bal';
+const S=k=>MODE==='pos'?D24[k].map(v=>v==null?null:Math.abs(v)):D24[k];
+function modeTabs(){
+  $('mode24').innerHTML=[['bal','mBal'],['pos','mPos']].map(([m,l])=>`<button type="button" class="${MODE===m?'on':''}" data-m="${m}">${T(l)}</button>`).join('');
+  $('mode24').querySelectorAll('button').forEach(b=>b.onclick=()=>{MODE=b.dataset.m;localStorage.setItem('histMode',MODE);modeTabs();draw24();});
+  const h=document.querySelector('[data-t="bal"]');if(h)h.textContent=T(MODE);
+}
+const X0=56;let Y0=16,Y1=264,X1=944,W24=960,WB=960,H24=300,HB=280;
+const fit=(el,prefer)=>{
+  const r=el.getBoundingClientRect();
+  const w=Math.max(320,Math.round(r.width||960));
+  let h=Math.round(r.height||prefer);
+  if(h<120)h=prefer;
+  el.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  return {w,h};
+};
+
+function niceStep(range){const raw=range/5,p=Math.pow(10,Math.floor(Math.log10(raw||1))),m=raw/p;return (m<1.5?1:m<3?2:m<7?5:10)*p;}
+function legend(){
+  $('leg').innerHTML=SER.map(([k,c])=>`<span class="chip ${hidden.has(k)?'off':'on'}" data-k="${k}"><i style="background:${c}"></i>${T(k)}</span>`).join('');
+  $('leg').querySelectorAll('.chip').forEach(e=>e.onclick=()=>{const k=e.dataset.k;hidden.has(k)?hidden.delete(k):hidden.add(k);legend();draw24();});
+}
+function draw24(){
+  const svg=$('c24');
+  if(!D24||!D24.valid){const fh=fit(svg,260);svg.innerHTML=`<text x="50%" y="${Math.round(fh.h/2)}" text-anchor="middle">${T('none')}</text>`;return;}
+  ({w:W24,h:H24}=fit(svg,300));X1=W24-16;Y0=16;Y1=H24-36;
+  const n=D24.pv.length;let lo=0,hi=0;
+  SER.forEach(([k])=>{if(hidden.has(k))return;S(k).forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);}});});
+  if(hi-lo<100)hi=lo+100;
+  const step=niceStep(hi-lo);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;
+  const x=i=>X0+(X1-X0)*i/(n-1),y=v=>Y1-(Y1-Y0)*(v-lo)/(hi-lo);
+  let g='';
+  for(let v=lo;v<=hi+1e-6;v+=step){g+=`<line class="ax" x1="${X0}" x2="${X1}" y1="${y(v)}" y2="${y(v)}"/><text x="${X0-8}" y="${y(v)+4}" text-anchor="end">${num(v/1000,Math.abs(step)<1000?1:0)} kW</text>`;}
+  g+=`<line class="zero" x1="${X0}" x2="${X1}" y1="${y(0)}" y2="${y(0)}"/>`;
+  for(let i=0;i<n;i++){const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
+    if(ts.getMinutes()<5&&ts.getHours()%3===0)g+=`<text x="${x(i)}" y="${Y1+20}" text-anchor="middle">${String(ts.getHours()).padStart(2,'0')}:00</text>`;}
+  const sum=k=>D24[k].reduce((a,v)=>a+Math.abs(v||0),0);
+  const order=SER.filter(([k])=>!hidden.has(k)).sort((a,b)=>sum(b[0])-sum(a[0]));
+  const segs=k=>{const out=[];let cur=null;S(k).forEach((v,i)=>{if(v==null){cur=null;return;}if(!cur){cur=[];out.push(cur);}cur.push([x(i),y(v)]);});return out;};
+  const y0=y(0).toFixed(1);
+  // Verbraucher (Haus, Akku laden) liegen über den Quellen, die sie decken: nur als Linie, sonst verdecken ihre Flächen sie.
+  // Ohne Vorzeichen liegt auch die Einspeisung in der PV-Fläche und wird deshalb ebenfalls zur Linie.
+  const LINE=new Set(MODE==='pos'?['use','chg','exp']:['use','chg']);
+  order.forEach(([k,c])=>{if(LINE.has(k))return;segs(k).forEach(p=>{if(p.length<2)return;
+    g+=`<path d="M${p[0][0].toFixed(1)} ${y0}`+p.map(q=>`L${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join('')+`L${p[p.length-1][0].toFixed(1)} ${y0}Z" style="fill:${c};opacity:.28"/>`;});});
+  [...order.filter(([k])=>!LINE.has(k)),...order.filter(([k])=>LINE.has(k))].forEach(([k,c])=>{segs(k).forEach(p=>{
+    g+=`<path class="ln" d="`+p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join('')+`" style="stroke:${c}${LINE.has(k)?';stroke-width:2.5':''}"/>`;});});
+  g+=`<line id="cur" class="cur" x1="0" x2="0" y1="${Y0}" y2="${Y1}" style="display:none"/>`;
+  svg.innerHTML=g;
+  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W24/r.width;
+    const i=Math.round((px-X0)/(X1-X0)*(n-1));if(i<0||i>=n)return;
+    const c=$('cur');c.setAttribute('x1',x(i));c.setAttribute('x2',x(i));c.style.display='';
+    const ts=new Date((D24.end-(n-1-i)*D24.step)*1000);
+    $('r24').innerHTML=ts.toLocaleTimeString(LANG==='en'?'en-GB':'de-DE',{hour:'2-digit',minute:'2-digit'})+' · '+
+      SER.map(([k,col])=>`<span style="color:${col}">${T(k)} ${D24[k][i]==null?'–':num(Math.abs(D24[k][i]))+' W'}</span>`).join(' · ');};
+  svg.onmouseleave=()=>{$('cur').style.display='none';$('r24').textContent='';};
+}
+
+const BSER=[['pv','var(--c-pv)','gen'],['house','var(--c-house)','use'],['imp','var(--c-imp)','imp'],['exp','var(--c-exp)','exp'],['chg','var(--c-chg)','chg'],['dis','var(--c-dis)','dis']];
+const hiddenB=new Set();
+let UNIT='day',BARS=null;
+function tabs(){
+  const u=[['day','days'],['month','months'],['year','years'],['total','total']];
+  $('tabs').innerHTML=u.map(([k,l])=>`<button type="button" class="${UNIT===k?'on':''}" data-u="${k}">${T(l)}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{UNIT=b.dataset.u;tabs();loadBars();});
+  legendB();
+}
+function legendB(){
+  $('legB').innerHTML=BSER.map(([k,c,l])=>`<span class="chip ${hiddenB.has(k)?'off':'on'}" data-k="${k}"><i style="background:${c}"></i>${T(l)}</span>`).join('');
+  $('legB').querySelectorAll('.chip').forEach(e=>e.onclick=()=>{const k=e.dataset.k;hiddenB.has(k)?hiddenB.delete(k):hiddenB.add(k);legendB();if(BARS)drawBars();});
+}
+function label(k){
+  if(UNIT==='day'){const p=k.split('-');return p[2]+'.'+p[1]+'.';}
+  if(UNIT==='month'){const p=k.split('-');return new Date(+p[0],+p[1]-1,1).toLocaleDateString(LANG==='en'?'en-GB':'de-DE',{month:'short',year:'2-digit'});}
+  return k;
+}
+function drawBars(){
+  const svg=$('cb');let rows=BARS.bars||[];
+  if(UNIT==='total'){const tt=BARS.total||{};rows=[{k:T('total'),pv:+tt.pv,imp:+tt.imp,exp:+tt.exp,house:null,chg:null,dis:null}];}
+  if(!rows.length){const fh=fit(svg,240);svg.innerHTML=`<text x="50%" y="${Math.round(fh.h/2)}" text-anchor="middle">${T('none')}</text>`;$('kpis').innerHTML='';return;}
+  const vis=BSER.filter(([k])=>!hiddenB.has(k));
+  let hi=0;rows.forEach(r=>vis.forEach(([k])=>{if(r[k]!=null)hi=Math.max(hi,+r[k]);}));if(hi<=0)hi=1;
+  const step=niceStep(hi);hi=Math.ceil(hi/step)*step;
+  ({w:WB,h:HB}=fit(svg,280));
+  const y0=20,y1=HB-36,x0=56,x1=WB-16,slot=(x1-x0)/rows.length,bw=Math.max(2,Math.min(22,slot/(vis.length+1)));
+  const y=v=>y1-(y1-y0)*v/hi;let g='';
+  for(let v=0;v<=hi+1e-6;v+=step)g+=`<line class="ax" x1="${x0}" x2="${x1}" y1="${y(v)}" y2="${y(v)}"/><text x="${x0-8}" y="${y(v)+4}" text-anchor="end">${num(v,step<1?1:0)}</text>`;
+  const every=Math.ceil(rows.length/Math.max(6,Math.floor((x1-x0)/70)));
+  rows.forEach((r,i)=>{const cx=x0+slot*i+slot/2;
+    vis.forEach(([k,c,l],j)=>{if(r[k]==null)return;const v=+r[k],bx=cx+(j-vis.length/2)*bw;
+      g+=`<rect x="${bx.toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${(y1-y(v)).toFixed(1)}" rx="2" style="fill:${c}"><title>${label(r.k)} · ${T(l)} ${num(v,1)} kWh</title></rect>`;});
+    if(i%every===0)g+=`<text x="${cx}" y="${y1+18}" text-anchor="middle">${UNIT==='total'?r.k:label(r.k)}</text>`;});
+  g+=`<text x="${x0}" y="12">kWh</text>`;
+  svg.innerHTML=g;
+  const cur=rows[rows.length-1],pv=+cur.pv||0,imp=+cur.imp||0,exp=+cur.exp||0,use=cur.house==null?null:+cur.house;
+  const k=(lbl,v)=>`<div><span>${lbl}</span><b>${v}</b></div>`;
+  $('kpis').innerHTML=k(T('gen'),num(pv,1)+' kWh')+k(T('use'),use==null?'–':num(use,1)+' kWh')+k(T('imp'),num(imp,1)+' kWh')+
+    k(T('exp'),num(exp,1)+' kWh')+k(T('aut'),use?num(Math.max(0,Math.min(100,100*(1-imp/use))))+' %':'–')+
+    k(T('self'),pv?num(Math.max(0,Math.min(100,100*(1-exp/pv))))+' %':'–');
+  const s=String(BARS.since||'');$('since').textContent=s.length===8?T('since')(s.slice(6)+'.'+s.slice(4,6)+'.'+s.slice(0,4)):'';
+}
+async function loadBars(){
+  const u=UNIT==='total'?'day':UNIT,n=UNIT==='day'?31:UNIT==='month'?24:40;
+  BARS=await(await fetch(`/api/history/bars?unit=${u}&n=${n}`)).json();drawBars();
+}
+async function load24(){
+  D24=await(await fetch('/api/history/day')).json();
+  if(D24.valid){const m=(a,f)=>a.map(v=>v==null?null:f(v));
+    D24.imp=m(D24.grid,v=>Math.max(0,v));D24.exp=m(D24.grid,v=>Math.min(0,v));
+    D24.dis=m(D24.bat,v=>Math.max(0,v));D24.chg=m(D24.bat,v=>Math.max(0,-v));
+    D24.use=m(D24.house,v=>Math.abs(v));}
+  draw24();
+}
+async function boot(){
+  const s=await(await fetch('/api/status')).json();applyThemeLang(s);
+  document.querySelectorAll('[data-t]').forEach(e=>{const v=T(e.dataset.t);if(typeof v==='string')e.textContent=v;});
+  modeTabs();legend();tabs();await load24();await loadBars();
+}
+boot();
+setInterval(()=>{if(!document.hidden){load24();if(UNIT==='day')loadBars();}},60000);
+let rsz=0;const redraw=()=>{clearTimeout(rsz);rsz=setTimeout(()=>{draw24();if(BARS)drawBars();},120);};
+if(window.ResizeObserver){const ro=new ResizeObserver(redraw);ro.observe($('c24'));ro.observe($('cb'));}
+else window.addEventListener('resize',redraw);
+</script></body></html>

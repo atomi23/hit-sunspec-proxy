@@ -77,20 +77,21 @@ class RouteOrderTest(unittest.TestCase):
         self.assertEqual(auth.count('"Set-Cookie"'), 1)
 
     def test_logout_control_is_shared_by_authenticated_pages_only(self):
-        for page in ('DASH_HTML', 'INDEX_HTML', 'HISTORY_HTML', 'DEBUG_HTML'):
-            html = self.web.split('const char ' + page + '[]', 1)[1].split(')HTML";', 1)[0]
+        for page in ('dashboard', 'config', 'history', 'debug'):
+            html = (ROOT / "web" / (page + ".html")).read_text()
             self.assertIn('class="page-head"', html)
             self.assertIn('<script src="/b.js"></script>', html)
-        setup = self.web.split('const char SETUP_HTML[]', 1)[1].split(')HTML";', 1)[0]
+        setup = (ROOT / "web/setup.html").read_text()
         self.assertNotIn('/b.js', setup)
-        self.assertIn("logout.textContent='Abmelden'", self.web)
-        self.assertIn("logout.setAttribute('data-en','Sign out')", self.web)
-        self.assertIn("xhr.onloadend=", self.web)
-        self.assertIn("xhr.timeout=5000", self.web)
-        self.assertIn("location.replace('/')", self.web)
-        self.assertIn("xhr.open('POST','/api/logout',true);", self.web)
-        self.assertIn('if(xhr.status>=200&&xhr.status<300)', self.web)
-        self.assertNotIn("btoa('logout:'", self.web)
+        js = (ROOT / "web/b.js").read_text()
+        self.assertIn("logout.textContent='Abmelden'", js)
+        self.assertIn("logout.setAttribute('data-en','Sign out')", js)
+        self.assertIn("xhr.onloadend=", js)
+        self.assertIn("xhr.timeout=5000", js)
+        self.assertIn("location.replace('/')", js)
+        self.assertIn("xhr.open('POST','/api/logout',true);", js)
+        self.assertIn('if(xhr.status>=200&&xhr.status<300)', js)
+        self.assertNotIn("btoa('logout:'", js)
 
     def test_regular_auth_challenge_has_localized_body(self):
         auth = self.web.split('bool requireAuth(', 1)[1].split('// Der Body', 1)[0]

@@ -78,7 +78,7 @@ for kind in ("events", "debug"):
     route = source.split(f'server.on("/api/{kind}/download"', 1)[1].split("\n  });", 1)[0]
     assert route.index("if (!requireAuth(req)) return;") < route.index("downloadLog<")
     button = f"onclick=\"location.href='/api/{kind}/download'\""
-    assert button in source
+    assert button in (ROOT / "web/debug.html").read_text()
     assert button in (ROOT / "docs/ui-preview/debug.html").read_text()
 assert 'req->send(503, "text/plain; charset=utf-8"' in source
 print("PASS: authenticated routes, mirrored buttons and low-memory error response present")
