@@ -125,7 +125,7 @@ void loop() {
     incoming.setTimeout(500);
     incoming.setNoDelay(true);
     clients[slot] = incoming;
-    clientActivity.touch(slot);
+    clientActivity.markIdle(slot);
   }
   uint8_t n = 0;
   for (int i = 0; i < MAX_CLIENTS; i++) {

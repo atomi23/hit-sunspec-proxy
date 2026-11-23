@@ -11,6 +11,13 @@ public:
 
   int oldest() const { return order[0]; }
 
+  void markIdle(int slot) {
+    int i = 0;
+    while (order[i] != slot) i++;
+    for (; i > 0; i--) order[i] = order[i - 1];
+    order[0] = slot;
+  }
+
   void touch(int slot) {
     int i = 0;
     while (order[i] != slot) i++;

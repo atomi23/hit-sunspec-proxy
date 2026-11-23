@@ -31,18 +31,25 @@ static WiFiClient connect(uint16_t port, void (*loop)()) {
   return c;
 }
 
+static void queueRead(WiFiClient &c) {
+  c.socket->rx = {0, 1, 0, 0, 0, 6, 1, 3, 0, 0, 0, 1};
+}
+
 template <size_t N>
 static void testEviction(const char *server, uint16_t port, void (*loop)()) {
   WiFiClient clients[N];
   for (auto &c : clients) {
     hostMillis += 100;
     c = connect(port, loop);
+    queueRead(c);
+    loop();
   }
 
   hostMillis += 100;
-  clients[0].socket->rx = {0, 1, 0, 0, 0, 6, 1, 3, 0, 0, 0, 1};
+  const size_t bytesBefore = clients[0].socket->bytesWritten;
+  queueRead(clients[0]);
   loop();
-  expect(server, "Anfrage auf Slot 0 verarbeitet", clients[0].socket->bytesWritten > 0);
+  expect(server, "Anfrage auf Slot 0 verarbeitet", clients[0].socket->bytesWritten > bytesBefore);
 
   hostMillis += 100;
   WiFiClient incoming = connect(port, loop);
@@ -58,6 +65,27 @@ static void testEviction(const char *server, uint16_t port, void (*loop)()) {
   bool kept = true;
   for (size_t i = 0; i < N; i++) kept &= clients[i].connected() == connected[i];
   expect(server, "freien Slot ohne weitere Trennung wiederverwendet", reused.connected() && kept);
+
+  if (!clients[0].connected() || clients[1].connected()) return;
+  clients[1] = reused;
+  for (auto &c : clients) queueRead(c);
+  loop();
+
+  WiFiClient silent = connect(port, loop);
+  WiFiClient next = connect(port, loop);
+  expect(server, "zweiter Client ohne Anfrage verdrängt ersten statt aktiver Clients",
+         !clients[0].connected() && !silent.connected() && next.connected() &&
+           std::all_of(clients + 1, clients + N, [](const WiFiClient &c) { return c.connected(); }));
+
+  queueRead(next);
+  queueRead(clients[N - 1]);
+  loop();
+  clients[N - 1].stop();
+  WiFiClient reusedSilent = connect(port, loop);
+  WiFiClient replacement = connect(port, loop);
+  expect(server, "freier Slot erbt keine Aktivität der vorherigen Verbindung",
+         !reusedSilent.connected() && replacement.connected() && next.connected() &&
+           std::all_of(clients + 1, clients + N - 1, [](const WiFiClient &c) { return c.connected(); }));
 }
 
 int main() {

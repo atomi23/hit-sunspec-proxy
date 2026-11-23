@@ -233,7 +233,7 @@ void loop() {
     incoming.setTimeout(300);
     incoming.setNoDelay(true);
     clients[slot] = incoming;
-    clientActivity.touch(slot);
+    clientActivity.markIdle(slot);
   }
 
   bool any = false;
