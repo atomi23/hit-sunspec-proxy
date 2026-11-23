@@ -2,12 +2,42 @@
 #include "LiveData.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <WiFi.h>
+#include <atomic>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 namespace {
-AppConfig local;
+struct Endpoint {
+  char host[sizeof(AppConfig::tasmotaHost)];
+  char user[sizeof(AppConfig::tasmotaUser)];
+  char pass[sizeof(AppConfig::tasmotaPass)];
+  uint16_t port;
+};
+
+Endpoint endpoint(const AppConfig &cfg) {
+  Endpoint ep{};
+  strlcpy(ep.host, cfg.tasmotaHost, sizeof(ep.host));
+  strlcpy(ep.user, cfg.tasmotaUser, sizeof(ep.user));
+  strlcpy(ep.pass, cfg.tasmotaPass, sizeof(ep.pass));
+  ep.port = cfg.tasmotaPort;
+  return ep;
+}
+
+Endpoint configured, probeEndpoint;
+uint32_t pollMs = 0;
 uint32_t nextPoll = 0;
-bool started = false;
+bool enabled = false, forcePoll = false, probeQueued = false, probeEnglish = false;
+
+// Ein Auftrag zur Zeit; die Tasmota-Task greift nicht auf gLive zu.
+TaskHandle_t worker = nullptr;
+enum class State { Idle, Running, Done };
+std::atomic<State> state{State::Idle};
+Endpoint job;
+bool jobIsProbe = false, discardPoll = false;
+String raw;
+JsonDocument reply;
+enum class Reply { HttpError, JsonError, Parsed };
+Reply status;
 
 // Zugangsdaten stehen in der Query: & # % + Leerzeichen usw. müssen kodiert werden
 String urlEncode(const char *s) {
@@ -26,17 +56,16 @@ String urlEncode(const char *s) {
   return out;
 }
 
-String buildUrl(const char *cmnd) {
-  String url = String("http://") + local.tasmotaHost + ":" + local.tasmotaPort + "/cm?";
-  if (local.tasmotaUser[0] && local.tasmotaPass[0]) {
-    url += "user=" + urlEncode(local.tasmotaUser) + "&password=" + urlEncode(local.tasmotaPass) + "&";
+String buildUrl(const Endpoint &ep) {
+  String url = String("http://") + ep.host + ":" + ep.port + "/cm?";
+  if (ep.user[0] && ep.pass[0]) {
+    url += "user=" + urlEncode(ep.user) + "&password=" + urlEncode(ep.pass) + "&";
   }
-  url += "cmnd=";
-  url += cmnd;
+  url += "cmnd=Status%208";
   return url;
 }
 
-bool parseEnergy(JsonVariantConst root, String *sensorKeyOut = nullptr) {
+bool parseEnergy(JsonVariantConst root) {
   JsonVariantConst energy;
   const char *keyFound = nullptr;
 
@@ -60,7 +89,6 @@ bool parseEnergy(JsonVariantConst root, String *sensorKeyOut = nullptr) {
   }
   if (energy.isNull()) return false;
 
-  if (sensorKeyOut && keyFound) *sensorKeyOut = keyFound;
   strlcpy(gLive.tasmotaSensorKey, keyFound ? keyFound : "", sizeof(gLive.tasmotaSensorKey));
 
   if (!energy["Power"].isNull()) gLive.tasmotaPowerW = energy["Power"].as<int32_t>();
@@ -88,9 +116,9 @@ bool parseEnergy(JsonVariantConst root, String *sensorKeyOut = nullptr) {
   return true;
 }
 
-bool fetchStatus8(String &bodyOut) {
+bool fetchStatus8(const Endpoint &ep, String &bodyOut) {
   HTTPClient http;
-  const String url = buildUrl("Status%208");
+  const String url = buildUrl(ep);
   http.setConnectTimeout(2000);
   http.setTimeout(3000);
   if (!http.begin(url)) return false;
@@ -103,90 +131,115 @@ bool fetchStatus8(String &bodyOut) {
   http.end();
   return true;
 }
+
+void taskMain(void *) {
+  for (;;) {
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    if (state.load(std::memory_order_acquire) != State::Running) continue;
+    String body;
+    status = !fetchStatus8(job, body) ? Reply::HttpError
+             : deserializeJson(reply, body) ? Reply::JsonError : Reply::Parsed;
+    if (jobIsProbe) raw = std::move(body);
+    state.store(State::Done, std::memory_order_release);
+  }
+}
+
+void startJob(const Endpoint &ep, bool probe) {
+  job = ep;
+  jobIsProbe = probe;
+  discardPoll = false;
+  if (!worker && xTaskCreatePinnedToCore(taskMain, "tasmota", 8192, nullptr, 1, &worker, 0) != pdPASS) {
+    status = Reply::HttpError;
+    state.store(State::Done, std::memory_order_release);
+    return;
+  }
+  state.store(State::Running, std::memory_order_release);
+  xTaskNotifyGive(worker);
+}
+
+bool publishReply() {
+  gLive.tasmotaOk = status == Reply::Parsed && parseEnergy(reply.as<JsonVariantConst>());
+  if (gLive.tasmotaOk) gLive.lastTasmotaMs = millis();
+  return gLive.tasmotaOk;
+}
+
+void finishJob() {
+  reply.clear();
+  state.store(State::Idle, std::memory_order_release);
+}
 } // namespace
 
 namespace TasmotaClient {
 
 void begin(const AppConfig &cfg) {
-  local = cfg;
-  started = true;
-  nextPoll = 0;
+  applyConfig(cfg);
 }
 
 void applyConfig(const AppConfig &cfg) {
-  local = cfg;
-  nextPoll = 0;
+  configured = endpoint(cfg);
+  enabled = cfg.tasmotaEnabled;
+  pollMs = max<uint32_t>(2000, cfg.tasmotaPollMs);
+  nextPoll = millis();
+  discardPoll = !jobIsProbe && state.load(std::memory_order_relaxed) != State::Idle;
 }
 
-bool pollNow() {
-  if (!local.tasmotaEnabled) {
-    gLive.tasmotaOk = false;
-    return false;
-  }
-  String body;
-  if (!fetchStatus8(body)) {
-    gLive.tasmotaOk = false;
-    return false;
-  }
-  JsonDocument doc;
-  if (deserializeJson(doc, body)) {
-    gLive.tasmotaOk = false;
-    return false;
-  }
-  if (!parseEnergy(doc.as<JsonVariantConst>())) {
-    gLive.tasmotaOk = false;
-    return false;
-  }
-  gLive.tasmotaOk = true;
-  gLive.lastTasmotaMs = millis();
-  return true;
+void pollNow() {
+  if (enabled) forcePoll = true;
+  else gLive.tasmotaOk = false;
 }
 
-bool probe(String &rawOut, String &summaryOut, bool english) {
-  rawOut = "";
-  summaryOut = "";
-  String body;
-  if (!fetchStatus8(body)) {
+void requestProbe(const AppConfig &cfg) {
+  probeEndpoint = endpoint(cfg);
+  probeEnglish = cfg.uiLang == UiLang::En;
+  probeQueued = true;
+}
+
+bool takeProbeResult(String &rawOut, String &summaryOut, bool &ok) {
+  if (state.load(std::memory_order_acquire) != State::Done || !jobIsProbe) return false;
+  rawOut = std::move(raw);
+  const bool english = probeEnglish;
+  ok = publishReply();
+  if (status == Reply::HttpError) {
     summaryOut = english ? "HTTP request failed. Check the IP address, network and password."
                          : "HTTP fehlgeschlagen — IP/Netz/Passwort prüfen";
-    gLive.tasmotaOk = false;
-    return false;
-  }
-  rawOut = body;
-  JsonDocument doc;
-  if (deserializeJson(doc, body)) {
+  } else if (status == Reply::JsonError) {
     summaryOut = english ? "Invalid JSON" : "JSON ungültig";
-    gLive.tasmotaOk = false;
-    return false;
-  }
-  String key;
-  if (!parseEnergy(doc.as<JsonVariantConst>(), &key)) {
+  } else if (!ok) {
     summaryOut = english ? "No meter block found (Power/E_in/E_out/Total)"
                          : "Kein Zähler-Block gefunden (Power/E_in/E_out/Total)";
-    gLive.tasmotaOk = false;
-    return false;
+  } else {
+    char buf[192];
+    snprintf(buf, sizeof(buf),
+             english ? "OK · Sensor %s · Power %ld W · Import %.3f kWh · Export %.3f kWh%s%s"
+                     : "OK · Sensor %s · Power %ld W · Bezug %.3f kWh · Einsp. %.3f kWh%s%s",
+             gLive.tasmotaSensorKey,
+             long(gLive.tasmotaPowerW),
+             gLive.tasmotaTotalKwh,
+             gLive.tasmotaExportKwh,
+             gLive.tasmotaMeterId[0] ? (english ? " · No. " : " · Nr ") : "",
+             gLive.tasmotaMeterId[0] ? gLive.tasmotaMeterId : "");
+    summaryOut = buf;
   }
-  gLive.tasmotaOk = true;
-  gLive.lastTasmotaMs = millis();
-  char buf[192];
-  snprintf(buf, sizeof(buf),
-           english ? "OK · Sensor %s · Power %ld W · Import %.3f kWh · Export %.3f kWh%s%s"
-                   : "OK · Sensor %s · Power %ld W · Bezug %.3f kWh · Einsp. %.3f kWh%s%s",
-           gLive.tasmotaSensorKey,
-           long(gLive.tasmotaPowerW),
-           gLive.tasmotaTotalKwh,
-           gLive.tasmotaExportKwh,
-           gLive.tasmotaMeterId[0] ? (english ? " · No. " : " · Nr ") : "",
-           gLive.tasmotaMeterId[0] ? gLive.tasmotaMeterId : "");
-  summaryOut = buf;
+  finishJob();
   return true;
 }
 
 void loop() {
-  if (!started || !local.tasmotaEnabled) return;
-  if (int32_t(millis() - nextPoll) < 0) return;
-  nextPoll = millis() + max<uint32_t>(2000, local.tasmotaPollMs);
-  pollNow();
+  const auto s = state.load(std::memory_order_acquire);
+  if (s == State::Running) return;
+  if (s == State::Done) {
+    if (jobIsProbe) return;
+    if (!discardPoll) publishReply();
+    finishJob();
+  }
+  if (probeQueued) {
+    probeQueued = false;
+    startJob(probeEndpoint, true);
+  } else if (enabled && (forcePoll || int32_t(millis() - nextPoll) >= 0)) {
+    forcePoll = false;
+    nextPoll = millis() + pollMs;
+    startJob(configured, false);
+  }
 }
 
 } // namespace TasmotaClient

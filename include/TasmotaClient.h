@@ -6,8 +6,8 @@ namespace TasmotaClient {
   void begin(const AppConfig &cfg);
   void applyConfig(const AppConfig &cfg);
   void loop();
-  bool pollNow();
+  void pollNow();
 
-  // One-Click: Status 8 holen, parsen, Roh-JSON + erkannte Felder liefern
-  bool probe(String &rawOut, String &summaryOut, bool english);
+  void requestProbe(const AppConfig &cfg);
+  bool takeProbeResult(String &raw, String &summary, bool &ok);
 }

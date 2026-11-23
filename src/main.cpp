@@ -59,7 +59,6 @@ void setup() {
   HttpsServer::begin(cfg); // nach History: braucht das Dateisystem
 
   HitClient::pollNow();
-  TasmotaClient::pollNow();
   DataBroker::reconcile();
   SunSpecServer::rebuildMap();
   MqttHa::publishNow();
