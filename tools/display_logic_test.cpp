@@ -46,10 +46,19 @@ static void testOverride() {
 }
 
 static void testTelegram() {
-  constexpr uint16_t ga = 0x0a05, ownPa = 0xfffa;
+  constexpr uint16_t displayGa = 0x0a05, ownPa = 0xfffa;
   uint8_t p[] = {6, 0x10, 5, 0x30, 0, 17, 0x29, 0, 0xbc, 0xe0, 0x11, 0x03, 0x0a, 0x05, 1, 0, 0x81};
   bool on = false;
-  auto parse = [&] { return KnxDisplayTelegram::readSwitch(p, sizeof(p), ga, ownPa, on); };
+  auto parsePacket = [&](const uint8_t *packet, size_t len, uint16_t localPa) {
+    uint16_t ga;
+    uint8_t value, n;
+    const uint8_t *data;
+    if (!KnxDisplayTelegram::readWrite(packet, len, localPa, ga, value, data, n) ||
+        !KnxDisplayTelegram::matchesDisplaySwitch(ga, displayGa, value, n)) return false;
+    on = value;
+    return true;
+  };
+  auto parse = [&] { return parsePacket(p, sizeof(p), ownPa); };
   assert(parse() && on);
   p[16] = 0x80;
   assert(parse() && !on);
@@ -64,14 +73,14 @@ static void testTelegram() {
   p[13]++;
   assert(!parse());
   p[13]--;
-  assert(!KnxDisplayTelegram::readSwitch(p, sizeof(p), ga, 0x1103, on));
-  assert(!KnxDisplayTelegram::readSwitch(p, sizeof(p) - 1, ga, ownPa, on));
+  assert(!parsePacket(p, sizeof(p), 0x1103));
+  assert(!parsePacket(p, sizeof(p) - 1, ownPa));
 
   uint8_t withInfo[] = {6, 0x10, 5, 0x30, 0, 21, 0x29, 4, 3, 2, 0, 0, 0xbc, 0xe0, 0x11,
                         0x03, 0x0a, 0x05, 1, 0, 0x81};
-  assert(KnxDisplayTelegram::readSwitch(withInfo, sizeof(withInfo), ga, ownPa, on) && on);
+  assert(parsePacket(withInfo, sizeof(withInfo), ownPa) && on);
   withInfo[7] = 255;
-  assert(!KnxDisplayTelegram::readSwitch(withInfo, sizeof(withInfo), ga, ownPa, on));
+  assert(!parsePacket(withInfo, sizeof(withInfo), ownPa));
 }
 
 static void testGroupWrite() {
