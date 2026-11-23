@@ -106,6 +106,25 @@ static void testGroupWrite() {
   assert(!KnxDisplayTelegram::readWrite(rgb, sizeof(rgb), ownPa, ga, value, data, n));
 }
 
+static void testBrightness() {
+  constexpr uint16_t ownPa = 0xfffa;
+  uint8_t pct[] = {6, 0x10, 5, 0x30, 0, 18, 0x29, 0, 0xbc, 0xe0, 0x11, 0x03, 0x0a, 0x06, 2, 0, 0x80, 0};
+  auto percent = [&](uint8_t raw) {
+    uint16_t ga;
+    uint8_t value, n;
+    const uint8_t *data;
+    pct[17] = raw;
+    assert(KnxDisplayTelegram::readWrite(pct, sizeof(pct), ownPa, ga, value, data, n) && n == 1);
+    return KnxDisplayTelegram::scalingPercent(data[0]);
+  };
+  assert(percent(0) == 0); // nur 0 schaltet aus
+  assert(percent(1) == 1);
+  assert(percent(2) == 1);
+  assert(percent(128) == 50);
+  assert(percent(255) == 100);
+  for (int raw = 1; raw <= 255; ++raw) assert(percent(uint8_t(raw)) >= 1);
+}
+
 static void testLotusLantern() {
   using namespace LotusLantern;
   uint8_t c[CMD_LEN];
@@ -128,6 +147,7 @@ static void testLotusLantern() {
 
 int main() {
   testGroupWrite();
+  testBrightness();
   testLotusLantern();
   testWeek();
   testOverride();

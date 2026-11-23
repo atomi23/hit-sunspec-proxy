@@ -276,7 +276,7 @@ void readDisplaySwitch(uint32_t now) {
       bool hit = true;
       if (KnxDisplayTelegram::matchesDisplaySwitch(ga, displayGa, value, n)) StatusDisplay::setKnxSwitch(value);
       else if (ga == ledGa[0] && n == 0 && value <= 1) BleLed::setPower(value);
-      else if (ga == ledGa[1] && n == 1) BleLed::setBrightness(uint8_t((data[0] * 100 + 127) / 255));
+      else if (ga == ledGa[1] && n == 1) BleLed::setBrightness(KnxDisplayTelegram::scalingPercent(data[0]));
       else if (ga == ledGa[2] && n == 3) BleLed::setColor(data[0], data[1], data[2]);
       else hit = false;
       if (hit) gLive.lastKnxMs = now;
