@@ -27,6 +27,12 @@ inline bool readWrite(const uint8_t *p, size_t len, uint16_t ownPa, uint16_t &ga
   return true;
 }
 
+// DPT 5.001 (0..255) auf Prozent; nur 0 ergibt 0 %, jeder andere Wert mindestens 1 %.
+inline uint8_t scalingPercent(uint8_t raw) {
+  const uint8_t pct = uint8_t((raw * 100 + 127) / 255);
+  return raw && !pct ? 1 : pct;
+}
+
 inline bool matchesDisplaySwitch(uint16_t ga, uint16_t displayGa, uint8_t value, uint8_t n) {
   return ga == displayGa && n == 0 && value <= 1;
 }
