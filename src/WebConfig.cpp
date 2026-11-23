@@ -29,6 +29,8 @@
 #include <WiFi.h>
 #include <esp_heap_caps.h>
 #include <ArduinoJson.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <memory>
 #include <new>
 
@@ -2925,13 +2927,15 @@ volatile uint8_t applyPending = 0; // 1 = übernehmen, 2 = übernehmen und HIT s
 volatile uint32_t applyAt = 0;
 // Langsame Arbeit nie im async_tcp-Task (SPI/HTTP/MQTT/HIT)
 volatile uint8_t workFlags = 0;
-constexpr uint8_t W_POLL = 1, W_CTRL = 2, W_NEWCODE = 4, W_PROBE = 8;
+constexpr uint8_t W_POLL = 1, W_CTRL = 2, W_NEWCODE = 4;
 void addWork(uint8_t w) { __atomic_fetch_or(&workFlags, w, __ATOMIC_SEQ_CST); }
 volatile bool ctrlDone = false, ctrlOk = false;
 char ctrlErr[96] = "";
 AppConfig probeReq;
-volatile bool probePending = false, probeDone = false, probeOk = false;
-char probeSummary[192] = "", probeRaw[2048] = "";
+SemaphoreHandle_t probeLock = nullptr;
+enum class ProbeState { Idle, Queued, Running, Done };
+ProbeState probeState = ProbeState::Idle;
+String probeResult;
 
 void scheduleApply(bool pollHit) {
   applyAt = millis() + 300;
@@ -2983,15 +2987,21 @@ void runDeferredWork() {
     strlcpy(ctrlErr, HitControl::lastError().c_str(), sizeof(ctrlErr));
     ctrlDone = true;
   }
-  if (f & W_PROBE) {
-    auto &c = ConfigStore::get();
-    TasmotaClient::applyConfig(probeReq);
+}
+
+void runProbe() {
+  if (applyPending || !probeLock || !xSemaphoreTake(probeLock, 0)) return;
+  const auto state = probeState;
+  if (state == ProbeState::Queued) probeState = ProbeState::Running;
+  xSemaphoreGive(probeLock);
+  if (state == ProbeState::Queued) {
+    TasmotaClient::requestProbe(probeReq);
+  } else if (state == ProbeState::Running) {
     String raw, summary;
-    probeOk = TasmotaClient::probe(raw, summary, probeReq.uiLang == UiLang::En);
-    strlcpy(probeSummary, summary.c_str(), sizeof(probeSummary));
-    strlcpy(probeRaw, raw.c_str(), sizeof(probeRaw));
-    TasmotaClient::applyConfig(c);
-    if (probeOk) {
+    bool ok;
+    if (!TasmotaClient::takeProbeResult(raw, summary, ok)) return;
+    auto &c = ConfigStore::get();
+    if (ok) {
       c.tasmotaEnabled = true;
       strlcpy(c.tasmotaHost, probeReq.tasmotaHost, sizeof(c.tasmotaHost));
       c.tasmotaPort = probeReq.tasmotaPort;
@@ -3002,8 +3012,22 @@ void runDeferredWork() {
       TasmotaClient::applyConfig(c);
       SunSpecServer::rebuildMap();
     }
-    probeDone = true;
-    probePending = false;
+    JsonDocument out;
+    out["pending"] = false;
+    out["ok"] = ok;
+    out["summary"] = summary;
+    if (raw.length() > 2047) raw.remove(2047);
+    out["raw"] = raw;
+    out["powerW"] = gLive.tasmotaPowerW;
+    out["e_in"] = gLive.tasmotaTotalKwh;
+    out["e_out"] = gLive.tasmotaExportKwh;
+    out["sensor"] = gLive.tasmotaSensorKey;
+    String response;
+    serializeJson(out, response);
+    xSemaphoreTake(probeLock, portMAX_DELAY);
+    probeResult = std::move(response);
+    probeState = ProbeState::Done;
+    xSemaphoreGive(probeLock);
   }
 }
 
@@ -3913,12 +3937,18 @@ void begin() {
               const char *body = fullBody(req, data, len, index, total);
               if (!body) return;
               if (!requireAuth(req)) return;
-              if (probePending) {
-                req->send(409, "application/json", "{\"ok\":false,\"pending\":true,\"summary\":\"Probe läuft bereits\"}");
+              if (!probeLock) {
+                req->send(503, "application/json", "{\"ok\":false,\"pending\":false}");
                 return;
               }
               JsonDocument in;
               deserializeJson(in, body);
+              xSemaphoreTake(probeLock, portMAX_DELAY);
+              if (probeState == ProbeState::Queued || probeState == ProbeState::Running) {
+                xSemaphoreGive(probeLock);
+                req->send(409, "application/json", "{\"ok\":false,\"pending\":true,\"summary\":\"Probe läuft bereits\"}");
+                return;
+              }
               auto &c = ConfigStore::get();
               probeReq = c;
               if (in["tasmotaHost"].is<const char *>())
@@ -3929,11 +3959,8 @@ void begin() {
               if (in["tasmotaPass"].is<const char *>() && in["tasmotaPass"].as<const char *>()[0])
                 strlcpy(probeReq.tasmotaPass, in["tasmotaPass"], sizeof(probeReq.tasmotaPass));
               probeReq.tasmotaEnabled = true;
-              probeDone = false;
-              probeOk = false;
-              probeSummary[0] = probeRaw[0] = '\0';
-              probePending = true;
-              addWork(W_PROBE);
+              probeState = ProbeState::Queued;
+              xSemaphoreGive(probeLock);
               req->send(200, "application/json", "{\"ok\":true,\"pending\":true}");
             });
 
@@ -3970,27 +3997,25 @@ void begin() {
 
   server.on("/api/tasmota/probe/result", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (!requireAuth(req)) return;
-    JsonDocument out;
-    out["pending"] = probePending || !probeDone;
-    out["ok"] = probeOk;
-    out["summary"] = probeSummary;
-    out["raw"] = probeRaw;
-    out["powerW"] = gLive.tasmotaPowerW;
-    out["e_in"] = gLive.tasmotaTotalKwh;
-    out["e_out"] = gLive.tasmotaExportKwh;
-    out["sensor"] = gLive.tasmotaSensorKey;
-    String s; serializeJson(out, s);
-    req->send(200, "application/json", s);
+    String result;
+    if (probeLock) {
+      xSemaphoreTake(probeLock, portMAX_DELAY);
+      if (probeState == ProbeState::Done) result = probeResult;
+      xSemaphoreGive(probeLock);
+    }
+    req->send(200, "application/json", result.length() ? result : "{\"pending\":true,\"ok\":false}");
   });
 
   OtaUpdate::registerRoutes(server, requireAuth);
 
+  probeLock = xSemaphoreCreateMutex();
   server.begin();
 }
 
 void loop() {
   runPendingApply();
   runDeferredWork();
+  runProbe();
   SysInfo::loop();
   OtaUpdate::loop();
   HttpsServer::loop();
