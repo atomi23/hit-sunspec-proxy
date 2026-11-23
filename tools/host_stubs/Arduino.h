@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstring>
 #include <deque>
+#include <string>
+#include <freertos/semphr.h>
 
 using std::max;
 using std::min;
@@ -19,7 +21,13 @@ inline size_t strlcpy(char *dst, const char *src, size_t n) {
   return len;
 }
 
-class String {};
+using String = std::string;
+
+template <typename T> T constrain(T x, T low, T high) {
+  return std::clamp(x, low, high);
+}
+
+inline uint32_t millis() { return 0; }
 
 inline uint32_t micros() {
   static uint32_t t = 0;
