@@ -9,6 +9,7 @@
 namespace {
 constexpr uint32_t IDLE_DISCONNECT_MS = 10000; // danach ist der Strip wieder für die App frei
 constexpr uint32_t CONNECT_TIMEOUT_MS = 6000;
+constexpr uint32_t WRITE_DELAY_MS = 40;
 constexpr uint8_t SCAN_SECONDS = 5;
 constexpr size_t MAX_FOUND = 12;
 
@@ -179,7 +180,6 @@ bool write(const uint8_t *cmd, const char *what) {
   for (size_t i = 0; i < sizeof(buf); i++) snprintf(hex + i * 3, 4, "%02x ", buf[i]);
   hex[sizeof(hex) - 2] = 0;
   EventLog::add('I', "LED", ConfigStore::uiText("gesendet: %s (%s)", "sent: %s (%s)"), what, hex);
-  vTaskDelay(pdMS_TO_TICKS(40));
   return true;
 }
 
@@ -190,26 +190,35 @@ bool send(const Target &t, const Pending &p) {
   if (p.power >= 0) {
     LotusLantern::power(cmd, v, p.power);
     if (!write(cmd, p.power ? ConfigStore::uiText("ein", "on") : ConfigStore::uiText("aus", "off"))) return false;
+    {
+      Guard g;
+      sent.power = p.power;
+    }
+    vTaskDelay(pdMS_TO_TICKS(WRITE_DELAY_MS));
   }
   if (p.hasColor) {
     LotusLantern::color(cmd, p.r, p.g, p.b);
     snprintf(what, sizeof(what), ConfigStore::uiText("Farbe #%02x%02x%02x", "color #%02x%02x%02x"), p.r, p.g, p.b);
     if (!write(cmd, what)) return false;
+    {
+      Guard g;
+      sent.hasColor = true;
+      sent.r = p.r;
+      sent.g = p.g;
+      sent.b = p.b;
+    }
+    vTaskDelay(pdMS_TO_TICKS(WRITE_DELAY_MS));
   }
   if (p.bri >= 0) {
     LotusLantern::brightness(cmd, uint8_t(p.bri));
     snprintf(what, sizeof(what), ConfigStore::uiText("Helligkeit %d %%", "brightness %d %%"), p.bri);
     if (!write(cmd, what)) return false;
+    {
+      Guard g;
+      sent.bri = p.bri;
+    }
+    vTaskDelay(pdMS_TO_TICKS(WRITE_DELAY_MS));
   }
-  Guard g;
-  if (p.power >= 0) sent.power = p.power;
-  if (p.hasColor) {
-    sent.hasColor = true;
-    sent.r = p.r;
-    sent.g = p.g;
-    sent.b = p.b;
-  }
-  if (p.bri >= 0) sent.bri = p.bri;
   return true;
 }
 
