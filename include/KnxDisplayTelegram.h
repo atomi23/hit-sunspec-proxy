@@ -27,16 +27,7 @@ inline bool readWrite(const uint8_t *p, size_t len, uint16_t ownPa, uint16_t &ga
   return true;
 }
 
-inline bool readSwitch(const uint8_t *p, size_t len, uint16_t ga, uint16_t ownPa, bool &on) {
-  if (len < 17 || p[0] != 6 || p[1] != 0x10 || readWord(p + 2) != 0x0530 ||
-      readWord(p + 4) != len || p[6] != 0x29) return false;
-  const size_t offset = 8 + p[7]; // cEMI Additional Information Length
-  if (offset + 9 != len) return false;
-  const uint8_t *frame = p + offset;
-  if (!(frame[1] & 0x80) || readWord(frame + 2) == ownPa || readWord(frame + 4) != ga) return false;
-  // Nur verbindungslose GroupValueWrite-Telegramme mit einem Bit (DPT 1.001).
-  if (frame[6] != 1 || frame[7] != 0 || (frame[8] & 0xfe) != 0x80) return false;
-  on = frame[8] & 1;
-  return true;
+inline bool matchesDisplaySwitch(uint16_t ga, uint16_t displayGa, uint8_t value, uint8_t n) {
+  return ga == displayGa && n == 0 && value <= 1;
 }
 }
