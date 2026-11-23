@@ -2,17 +2,24 @@
 
 [Deutsch](./changelog.md) · **English** · [Back to overview](../README.en.md)
 
-## New in v0.7.0
+## New in v0.7.1
+- **Bluetooth LED strip via KNX (T-Connect-Pro only):** The smallest brightness value (DPT 5.001, raw value 1) dims the strip to 1 % instead of switching it off. Only 0 switches off.
+- **"Bluetooth" page:** "Last sent" shows every command the strip accepted, even if a later command of the same sequence fails. Rapid use no longer starts parallel requests (3 clicks: 10 instead of 51 requests to the device).
+- **SunSpec and Modbus gateway:** When all connection slots are taken, the longest-idle connection is dropped instead of always the first one. Until now that could hit the active HEMS.
+- **Tasmota meter:** A slow or silent meter no longer stalls SunSpec and the Modbus gateway (previously up to 3 s per poll).
+- **Web UI:** Is gzip-compressed at build time; the firmware is about 105 KiB smaller per board (WT32-ETH01: 88.8 % used instead of 94.3 %).
+
+<details>
+<summary><b>Older versions</b> (v0.7.0 to v0.5.6)</summary>
+
+### v0.7.0
 - **Bluetooth settings on the "Bluetooth" page (T-Connect-Pro only):** Strip search, name, address and power-on command now sit where the strip is controlled, instead of under *Settings → KNX*. Only the group addresses stay there.
 - **"Overview" page:** Shows hardware (board, chip, memory, flash), software (firmware, build date, Arduino/ESP-IDF, uptime, last start), network and services, and the load: CPU load per core, memory, PSRAM and file system.
 - **HTTPS despite Bluetooth:** Since v0.5.23 the T-Connect-Pro was about 40 KB of internal RAM short for HTTPS ("Not enough RAM for HTTPS; HTTP only"). On boards with PSRAM, TLS now lives in PSRAM.
 
-## v0.6.0
+### v0.6.0
 - **"Bluetooth" page (T-Connect-Pro only):** Shows the connection state of the LED strip and the last error, switches the strip on and off and sets brightness and color. It shows what the gateway sent last; the strip reports nothing back.
 - **Bluetooth log:** Every command sent to the strip is in the event log with its bytes, as is every connection. Error messages now name the reason (not reachable or no matching write channel).
-
-<details>
-<summary><b>Older versions</b> (v0.5.23 to v0.5.6)</summary>
 
 ### v0.5.23
 - **Bluetooth LED strip via KNX (T-Connect-Pro only):** LED strips driven by the *Lotus Lantern* app can be switched (DPT 1.001), dimmed (DPT 5.001) and colored (DPT 232.600) through three KNX objects. Set up with strip search and test under *Settings → KNX*. The commands come from public protocol descriptions and have not yet been tried on a real strip.
