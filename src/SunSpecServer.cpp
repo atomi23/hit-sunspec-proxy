@@ -1,4 +1,5 @@
 #include "SunSpecServer.h"
+#include "ClientActivity.h"
 #include "SunSpecMap.h"
 #include "HitControl.h"
 #include "DebugLog.h"
@@ -14,6 +15,7 @@ bool started = false;
 bool listening = false;
 constexpr int MAX_CLIENTS = 2;
 WiFiClient clients[MAX_CLIENTS];
+ClientActivity<MAX_CLIENTS> clientActivity;
 
 // Gleiches Abbild ab 0 (wie Node-RED-Buffer) und auf den SunSpec-Standardbasen 40000/50000
 int toLocal(uint32_t addr) {
@@ -81,7 +83,8 @@ void sendException(WiFiClient &c, const uint8_t *hdr, uint8_t fc, uint8_t code) 
   c.write(resp, 9);
 }
 
-void handleClient(WiFiClient &c) {
+void handleClient(int slot) {
+  WiFiClient &c = clients[slot];
   uint8_t hdr[8];
   // Bei kaputten Rahmen die Verbindung schließen: sonst liest man ab jetzt mitten aus Daten
   if (c.readBytes(hdr, 8) != 8) { c.stop(); return; }
@@ -96,6 +99,7 @@ void handleClient(WiFiClient &c) {
   if (rem < 0 || rem > 256) { c.stop(); return; }
   uint8_t pdu[256];
   if (rem > 0 && int(c.readBytes(pdu, rem)) != rem) { c.stop(); return; }
+  clientActivity.touch(slot);
 
   if (fc == 3 || fc == 4) {
     if (rem < 4) { sendException(c, hdr, fc, 0x03); return; }
@@ -223,12 +227,13 @@ void loop() {
       if (!clients[i] || !clients[i].connected()) { slot = i; break; }
     }
     if (slot < 0) {
-      clients[0].stop(); // ältesten Slot freigeben, z. B. nach Neustart des HEMS
-      slot = 0;
+      slot = clientActivity.oldest();
+      clients[slot].stop();
     }
     incoming.setTimeout(300);
     incoming.setNoDelay(true);
     clients[slot] = incoming;
+    clientActivity.markIdle(slot);
   }
 
   bool any = false;
@@ -238,7 +243,7 @@ void loop() {
     if (!c.connected()) { c.stop(); continue; }
     any = true;
     int guard = 8; // max. Anfragen pro Durchlauf, damit Display/Web nicht verhungern
-    while (guard-- > 0 && c.available() >= 8) handleClient(c);
+    while (guard-- > 0 && c.available() >= 8) handleClient(i);
   }
   gLive.sunspecClient = any;
 }

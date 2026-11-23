@@ -27,7 +27,8 @@ template <typename T> T constrain(T x, T low, T high) {
   return std::clamp(x, low, high);
 }
 
-inline uint32_t millis() { return 0; }
+inline uint32_t hostMillis = 0;
+inline uint32_t millis() { return hostMillis; }
 
 inline uint32_t micros() {
   static uint32_t t = 0;
