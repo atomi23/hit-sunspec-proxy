@@ -181,6 +181,7 @@ void applyConfig(const AppConfig &cfg) {
   pollMs = max<uint32_t>(2000, cfg.tasmotaPollMs);
   nextPoll = millis();
   discardPoll = !jobIsProbe && state.load(std::memory_order_relaxed) != State::Idle;
+  if (!enabled || discardPoll) gLive.tasmotaOk = false;
 }
 
 void pollNow() {

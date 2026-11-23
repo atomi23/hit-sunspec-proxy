@@ -167,11 +167,17 @@ void runPendingApply() {}
 #include "main_loop.inc"
 
 #if ASYNC
-void finishHttp(bool silent) {
+void finishHttp(bool silent, bool disableInFlight = false) {
   auto &task = *replayTask;
   {
     std::unique_lock<std::mutex> lock(task.lock);
     waitFor(task, lock, [&] { return task.inGet; });
+  }
+  if (disableInFlight) {
+    assert(gLive.tasmotaOk);
+    config.tasmotaEnabled = false;
+    TasmotaClient::applyConfig(config);
+    assert(!gLive.tasmotaOk);
   }
   if (silent) {
     const auto started = millis();
@@ -188,7 +194,8 @@ int main(int argc, char **argv) {
   assert(argc == 2);
   const std::string scenario = argv[1];
   const bool probe = scenario.find("probe") != std::string::npos;
-  const bool manual = scenario == "manual silent";
+  const bool disableInFlight = scenario == "disable in-flight silent";
+  const bool manual = scenario == "manual silent" || disableInFlight;
   const bool disabled = scenario == "poll disabled";
   const bool silent = scenario.find("silent") != std::string::npos;
   silentMeter = silent && !manual;
@@ -226,7 +233,7 @@ int main(int argc, char **argv) {
   if (probe || manual) loop(); // The queued job starts at the next Tasmota stage.
   if (!disabled) {
     assert(gLive.tasmotaOk == manual && saves == 0);
-    finishHttp(silent);
+    finishHttp(silent, disableInFlight);
   }
   loop();
 #else
@@ -258,7 +265,8 @@ int main(int argc, char **argv) {
   assert(sunspec.maxDelay == expectedDelay && gateway.maxDelay == expectedDelay);
   printf("%-12s SunSpec +%4u ms  Gateway +%4u ms  meter %s\n",
          scenario.c_str(), sunspec.maxDelay, gateway.maxDelay,
-         expectValues ? "-321 W / 123.25 in / 67.50 out kWh" : disabled ? "disabled" : "timeout");
+         expectValues ? "-321 W / 123.25 in / 67.50 out kWh" :
+         disableInFlight ? "invalid at disable and after timeout" : disabled ? "disabled" : "timeout");
 }
 """
 
@@ -284,6 +292,8 @@ def replay(tree, json_include, tmp, baseline=False):
     print(f"{'BEFORE' if baseline else 'AFTER'}: worst extra service gap over the 2 ms loop tick", flush=True)
     for scenario in ("poll silent", "manual silent", "probe silent", "poll normal", "probe normal", "poll disabled"):
         subprocess.run([str(exe), scenario], check=True, timeout=10)
+    if not baseline:
+        subprocess.run([str(exe), "disable in-flight silent"], check=True, timeout=10)
 
 
 def main():
