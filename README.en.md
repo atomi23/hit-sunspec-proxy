@@ -12,7 +12,7 @@ Target board: [LILYGO T-Connect-Pro](https://github.com/Xinyuan-LilyGO/T-Connect
 Without a display it also runs on the **WT32-ETH01** (ESP32 + LAN8720, 4 MB flash) and the LilyGO T-POE-Pro, see [Build](docs/hardware.en.md#build).
 There is a [printable DIN rail enclosure (2 modules)](hardware/wt32-din/) for the WT32-ETH01, and one with [3.5 modules](hardware/p4-poe-din/) for the Waveshare ESP32-P4-WIFI6-POE-ETH (`p4-poe-eth`).
 
-Current firmware: **v0.7.0** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.7.0)
+Current firmware: **v0.7.1** — [release with firmware for every board](https://github.com/atomi23/hit-sunspec-proxy/releases/tag/v0.7.1)
 
 ## Quick links
 
