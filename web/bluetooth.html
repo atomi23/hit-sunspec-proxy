@@ -179,13 +179,25 @@ async function bLoad(){
       if(j.rgb&&document.activeElement!==$('bCol'))$('bCol').value=j.rgb;
     }
   }
+  return j;
+}
+async function bLog(){
   const e=await fetch('/api/events').catch(()=>null);const ev=e&&e.ok?await e.json():null;
   if(ev){
     const rows=(ev.events||[]).filter(x=>x.src==='LED').reverse();
     $('bLog').innerHTML=rows.map(x=>`<tr class="${esc(x.lv)}"><td>${esc(when(x,ev.uptimeMs))}</td><td>${esc(x.msg)}</td></tr>`).join('')
       ||`<tr><td colspan="2">${uiText('Noch keine Einträge.','No entries yet.')}</td></tr>`;
   }
-  return j;
+}
+let bPoll=null,bLogDue=false;
+function bRefresh(log=false){
+  if(log)bLogDue=true;
+  if(!bPoll)bPoll=(async()=>{
+    const j=await bLoad().catch(()=>null);
+    if(bLogDue){bLogDue=false;await bLog().catch(()=>null);}
+    return j;
+  })().finally(()=>{bPoll=null;});
+  return bPoll;
 }
 let found=[];
 function bShowFound(j,done){
@@ -202,13 +214,14 @@ async function bScan(){
   busy++;
   $('bScanState').textContent=uiText('sucht …','scanning …');$('bFound').textContent='';
   await fetch('/api/bleled/scan',{method:'POST'}).catch(()=>null);
+  await bPoll;
   for(let n=0;n<40;n++){
     await new Promise(x=>setTimeout(x,700));
-    const r=await fetch('/api/bleled').catch(()=>null);const j=r&&r.ok?await r.json():null;
+    const j=await bRefresh();
     if(j&&!j.scanning){bShowFound(j,true);break;}
   }
   $('bScanState').textContent='';
-  busy--;bLoad();
+  busy--;bRefresh(true);
 }
 async function bCfg(){
   const r=await fetch('/api/config').catch(()=>null);const c=r&&r.ok?await r.json():null;if(!c)return;
@@ -223,19 +236,30 @@ async function bSave(){
   const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>null);
   const ok=!!(r&&r.ok);
   m.textContent=ok?uiText('Gespeichert','Saved'):uiText('Speichern fehlgeschlagen','Could not save settings');m.style.color=ok?'var(--acc)':'var(--fault)';
-  if(ok){await new Promise(x=>setTimeout(x,800));await bCfg();await bLoad();}
+  if(ok){await new Promise(x=>setTimeout(x,800));await bCfg();await bPoll;await bRefresh(true);}
+}
+let bFastUntil=0,bFollowing=false;
+async function bFollow(){
+  if(bFollowing)return;
+  bFollowing=true;
+  do{
+    await new Promise(x=>setTimeout(x,600));
+    await bRefresh();
+  }while(Date.now()<bFastUntil);
+  bFollowing=false;
 }
 async function bSet(q){
   busy++;
   await fetch('/api/bleled/set?'+q,{method:'POST'}).catch(()=>null);
-  for(let n=0;n<8;n++){await new Promise(x=>setTimeout(x,600));await bLoad();}
   busy--;
+  bFastUntil=Date.now()+4800;
+  bFollow();
 }
 async function boot(){
   const s=await(await fetch('/api/status')).json();applyThemeLang(s);
   await bCfg();
-  const j=await bLoad();if(j)bShowFound(j,false);
+  const j=await bRefresh(true);if(j)bShowFound(j,false);
 }
 boot();
-setInterval(()=>{if(!document.hidden&&!busy)bLoad();},3000);
+setInterval(()=>{if(!document.hidden)bRefresh(true);},3000);
 </script></body></html>
