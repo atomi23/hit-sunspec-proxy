@@ -451,7 +451,7 @@ const char *methodName(int m) {
 
 // Antwort-Header, die durchgereicht werden
 const char *const PASS_HEADERS[] = {"WWW-Authenticate", "Location", "Cache-Control", "X-Width", "X-Height",
-                                    "Content-Disposition", "Set-Cookie"};
+                                    "Content-Disposition", "Set-Cookie", "Content-Encoding"};
 constexpr size_t PASS_COUNT = sizeof(PASS_HEADERS) / sizeof(PASS_HEADERS[0]);
 
 esp_err_t badGateway(httpd_req_t *r) {

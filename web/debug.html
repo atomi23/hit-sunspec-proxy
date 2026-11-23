@@ -1,0 +1,175 @@
+
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title data-en="Log · HIT Proxy">Protokoll · HIT Proxy</title>
+<link rel="stylesheet" href="/a.css"/>
+<style>.card{margin-bottom:12px}</style>
+</head><body><div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
+  <nav>
+    <a href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a class="on" aria-current="page" href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
+      </select>
+    </div>
+  </div>
+</aside>
+<main class="main">
+<style>
+.ltabs{display:flex;gap:6px;margin:0 0 14px}
+.ltabs button:not(.on){background:var(--plate2);color:var(--ink)}
+.lv{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--rule2)}
+.lv.W{background:var(--warn)}.lv.E{background:var(--fault)}.lv.I{background:var(--acc)}
+#sys td:first-child,#tb td:first-child{white-space:nowrap;color:var(--dim);padding-right:16px}
+#sys td:nth-child(2){white-space:nowrap;padding-right:16px}
+</style>
+<div class="page-head">
+  <div>
+    <h1 data-en="Log">Protokoll</h1>
+    <p class="sub" id="psub"></p>
+  </div>
+</div>
+<div class="ltabs">
+  <button type="button" id="tSys" class="on" onclick="tab('sys')">System</button>
+  <button type="button" id="tW" onclick="tab('w')" data-en="§14a writes">§14a-Schreibzugriffe</button>
+</div>
+
+<div id="pSys">
+<div class="card" id="sysSum"><span data-en="Loading…">Lade…</span></div>
+<div class="card" style="margin-top:12px">
+<div class="row" style="margin-top:0;margin-bottom:12px">
+<button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
+<button class="sec" type="button" onclick="clrSys()" data-en="Clear log">Protokoll leeren</button>
+<button class="sec" type="button" onclick="location.href='/api/events/download'" data-en="Download log">Protokoll herunterladen</button>
+</div>
+<table><thead><tr><th data-en="Time">Zeit</th><th data-en="Source">Quelle</th><th data-en="Message">Meldung</th></tr></thead>
+<tbody id="sys"></tbody></table>
+</div>
+</div>
+
+<div id="pW" class="hide">
+<div class="card" id="sum"><span data-en="Loading…">Lade…</span></div>
+<div class="card" style="margin-top:12px">
+<div class="row" style="margin-top:0;margin-bottom:12px">
+<button class="sec" type="button" onclick="refresh()" data-en="Refresh">Aktualisieren</button>
+<button class="sec" type="button" onclick="clr()" data-en="Clear log">Log leeren</button>
+<button class="sec" type="button" onclick="location.href='/api/debug/download'" data-en="Download log">Protokoll herunterladen</button>
+</div>
+<table><thead><tr><th data-en="Age">Alter</th><th>FC</th><th data-en="Address">Addr</th><th data-en="Value">Wert</th><th data-en="Note">Hinweis</th></tr></thead>
+<tbody id="tb"></tbody></table>
+</div>
+</div>
+</main></div>
+
+<script>
+let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script src="/b.js"></script>
+<script>
+function age(ms){const s=Math.floor((Date.now()-window._boot-ms)/1000);if(s<0)return ms+'ms';if(s<60)return s+'s';return Math.floor(s/60)+'m';}
+let TAB=location.hash==='#writes'?'w':'sys';
+function tab(k){TAB=k;$('tSys').classList.toggle('on',k==='sys');$('tW').classList.toggle('on',k==='w');
+  $('pSys').classList.toggle('hide',k!=='sys');$('pW').classList.toggle('hide',k!=='w');
+  history.replaceState(null,'',location.pathname+location.search+(k==='w'?'#writes':''));refresh();}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function when(e,boot){
+  const d=e.ts?new Date(e.ts*1000):new Date(boot+e.t);
+  const today=new Date().toDateString()===d.toDateString();
+  const locale=uiText('de-DE','en-GB');
+  return (today?'':d.toLocaleDateString(locale,{day:'2-digit',month:'2-digit'})+' ')+d.toLocaleTimeString(locale);
+}
+async function refreshSys(){
+  const d=await(await fetch('/api/events')).json();
+  const boot=Date.now()-d.uptimeMs;
+  const rate=d.hitPolls?(100*d.hitFails/d.hitPolls):0;
+  $('sysSum').innerHTML=`<div class="big" style="color:${d.hitFails?(rate>5?'var(--fault)':'var(--warn)'):'var(--acc)'}">${uiText(
+    `HIT: ${d.hitFails} von ${d.hitPolls} Abfragen fehlgeschlagen`,`HIT: ${d.hitFails} of ${d.hitPolls} polls failed`)}</div>
+    <div class="muted">${d.hitPolls?num(rate,1)+uiText(' % seit Start · ','% since startup · '):''}${uiText('läuft seit','Uptime:')} ${Math.floor(d.uptimeMs/3600000)} h ${Math.floor(d.uptimeMs/60000)%60} min${d.hitErr?uiText(' · letzte Ursache: ',' · last error: ')+esc(d.hitErr):''}</div>`;
+  const tb=$('sys');
+  tb.innerHTML=(d.events||[]).slice().reverse().map(e=>`<tr><td>${when(e,boot)}</td><td><span class="lv ${e.lv}"></span>${esc(e.src)}</td><td>${esc(e.msg)}</td></tr>`).join('')
+    ||`<tr><td colspan="3" class="muted">${uiText('Noch keine Einträge.','No entries yet.')}</td></tr>`;
+}
+async function clrSys(){await fetch('/api/events/clear',{method:'POST'});refresh();}
+async function refresh(){
+  const s=await(await fetch('/api/status')).json(); applyThemeLang(s);
+  $('psub').textContent=TAB==='sys'
+    ?uiText('Verbindungen, Fehler und Neustarts seit dem letzten Start.','Connections, errors and restarts since startup.')
+    :uiText('SunSpec Model 123: Writes von Consolinno auf Port 1502.','SunSpec Model 123: writes from Consolinno on port 1502.');
+  if(TAB==='sys')return refreshSys();
+  const d=await(await fetch('/api/debug')).json();
+  window._boot=Date.now()-d.uptimeMs;
+  const pct=num(d.wMaxLimPct/100,2);
+  const ena=d.wMaxLimEna;
+  document.getElementById('sum').innerHTML=`
+    <div class="big">${ena?uiText('BEGRENZT','LIMITED'):uiText('Frei','Unrestricted')} · ${pct} %</div>
+    <div class="muted">WMaxLimPct_Ena=${ena?1:0} · ${uiText('Rohwert','raw')}=${d.wMaxLimPct} (SF-2) · ${uiText('HEMS-Client','HEMS client')} ${d.sunspecClient?uiText('verbunden','connected'):'—'} · ${uiText('Schreibzugriffe','Writes')} ${d.count}
+    <br>${d.lastNote?uiText('Zuletzt: ','Last: ')+esc(d.lastNote)+' (Addr '+d.lastAddr+' = '+d.lastVal+')':uiText(
+      'Noch kein Write empfangen — in Consolinno §14a/LPP testen.','No writes received yet. Test §14a/LPP in Consolinno.')}</div>
+    <div class="muted" style="margin-top:8px">${uiText('HIT-Weiterleitung','HIT forwarding')}: ${d.sunspecWriteToHit?uiText('an','on'):uiText('aus','off')} · ${uiText('Schreibfreigabe','Write access')}: ${d.hitWriteEnabled?uiText('an','on'):uiText('aus','off')}</div>`;
+  const tb=document.getElementById('tb'); tb.innerHTML='';
+  (d.events||[]).slice().reverse().forEach(e=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${age(e.t)}</td><td>${e.fc}</td><td>${e.addr}</td><td>${e.val}</td><td>${e.note||''}</td>`;
+    tb.appendChild(tr);
+  });
+}
+async function clr(){await fetch('/api/debug/clear',{method:'POST'});refresh();}
+tab(TAB);setInterval(()=>{if(!document.hidden)refresh();},3000);
+</script></body></html>

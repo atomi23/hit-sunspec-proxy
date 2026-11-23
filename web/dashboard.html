@@ -1,0 +1,294 @@
+
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="dark"/><title>Live · HIT Proxy</title>
+<link rel="preload" href="/f/barlow-600.woff" as="font" type="font/woff" crossorigin/>
+<link rel="stylesheet" href="/a.css"/>
+</head><body><div class="app">
+<aside class="side">
+  <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M18 6 10 18h6l-2 8 8-12h-6z" style="fill:var(--bg)"/></svg><div><b>HIT-Proxy</b><span data-en="SunSpec for Consolinno">SunSpec für Consolinno</span></div></div>
+  <nav>
+    <a class="on" aria-current="page" href="/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg> Live</a>
+    <a href="/history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg> <span data-en="History">Verlauf</span></a>
+    <div class="nav-grp" data-en="Data sources">Datenquellen</div>
+    <a href="/config#hit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 20 20 4M7 8.5h4M13 16c.9-1.1 1.8-1.1 2.7 0s1.8 1.1 2.7 0"/></svg> <span data-en="HIT inverter">HIT-Wechselrichter</span></a>
+    <a href="/config#tasmota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg> <span data-en="Tasmota meter">Tasmota-Zähler</span></a>
+    <a href="/config#cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 9.6 4.2 4.2 0 0 0 7 18z"/></svg> <span data-en="Hoymiles Cloud">Hoymiles-Cloud</span></a>
+    <a href="/config#akku"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 12h8"/></svg> <span data-en="Battery">Akku</span></a>
+    <div class="nav-grp" data-en="Outputs">Ausgänge</div>
+    <a href="/config#sunspec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h14M5 20h8"/></svg> Consolinno</a>
+    <a href="/config#mqtt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></svg> Home Assistant</a>
+    <a href="/config#gateway"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16M8 7v10M16 7v10"/><circle cx="12" cy="12" r="2"/></svg> <span data-en="Modbus gateway">Modbus-Gateway</span></a>
+    <a href="/config#knx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18M3 15h18"/><circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="15" r="1.6"/></svg> KNX</a>
+    <div class="nav-grp" data-en="Device">Gerät</div>
+    <a href="/system"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg> <span data-en="Overview">Übersicht</span></a>
+    <a href="/config#features"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg> <span data-en="Features">Funktionen</span></a>
+    <a href="/config#netz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v10H5zM8.5 19v-3M12 19v-3M15.5 19v-3M9 9V6h6v3"/></svg> <span data-en="Network and access">Netzwerk und Zugang</span></a>
+    <a href="/config#display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M9 20h6"/></svg> Display</a>
+    <a href="/config#ctrl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></svg> <span data-en="Battery control">Akku-Steuerung</span></a>
+    <a href="/debug"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg> <span data-en="Log">Protokoll</span></a>
+    <a href="/ota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5h14v-5"/></svg> <span data-en="Firmware and reset">Firmware und Reset</span></a>
+  </nav>
+  <div class="foot">
+    <div class="online"><span class="dot ok"></span> Online</div>
+    <div class="meta" id="sideVer">—</div>
+    <div class="prefs">
+      <select id="uiLang" onchange="saveUiPrefs()" aria-label="Sprache" data-en-aria-label="Language">
+        <option value="de">Deutsch</option>
+        <option value="en">English</option>
+      </select>
+      <select id="uiTheme" onchange="saveUiPrefs()" aria-label="Design" data-en-aria-label="Theme">
+        <option value="mint">Mint</option>
+        <option value="ocean">Ocean</option>
+        <option value="ember">Ember</option>
+        <option value="light" data-en="Light">Hell</option>
+        <option value="steel" data-en="Steel">Stahl</option>
+        <option value="blueprint" data-en="Blueprint">Blaupause</option>
+      </select>
+    </div>
+  </div>
+</aside>
+<main class="main">
+<div class="page-head">
+  <div>
+    <h1><span data-t="live">Live</span><span id="demo" class="tag hide" data-t="demo">Demo-Daten</span></h1>
+    <div class="chips" id="chips" style="margin-top:14px"></div>
+  </div>
+  <div class="ip"><span id="ip">…</span><small data-t="port">Modbus-Port 1502</small></div>
+</div>
+
+<div class="flow" role="img" aria-labelledby="flowDesc">
+<p id="flowDesc" class="hide"></p>
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <path class="track" d="M344 110C400 110 400 192 436 192"/>
+  <path class="track" d="M344 310C400 310 400 228 436 228"/>
+  <path class="track" d="M524 192C560 192 560 110 616 110"/>
+  <path class="track" d="M524 228C560 228 560 310 616 310"/>
+  <path id="fPv" class="run c-pv" d="M344 110C400 110 400 192 436 192"/>
+  <path id="fBat" class="run c-bt" d="M344 310C400 310 400 228 436 228"/>
+  <path id="fGrid" class="run c-gr" d="M524 192C560 192 560 110 616 110"/>
+  <path id="fHouse" class="run c-ho" d="M524 228C560 228 560 310 616 310"/>
+  <g id="hemsG">
+  <path id="wData" class="data" d="M480 64V166"/>
+
+  <rect id="hemsBox" class="chipbox" x="370" y="24" width="220" height="40" rx="20"/>
+  <text x="480" y="49" text-anchor="middle" class="lbl"><tspan style="fill:var(--ink)">Consolinno</tspan><tspan dx="8" id="hemsTxt">wartet</tspan></text>
+  </g>
+
+  <rect class="hub" x="436" y="166" width="88" height="88" rx="26"/>
+  <path class="hub-i" d="M462 194h36M462 201h36" style="stroke-dasharray:6 4"/>
+  <path class="hub-i" d="M462 224c4.5-8 7.5-8 12 0s7.5 8 12 0 7.5-8 12 0"/>
+  <text x="480" y="284" text-anchor="middle" class="lbl" style="fill:var(--ink)">Hoymiles HIT</text>
+  <text x="480" y="304" text-anchor="middle" class="dir" id="dHit">—</text>
+
+  <circle class="node n-pv" cx="300" cy="110" r="44"/>
+  <g class="ico i-pv" transform="translate(283 93) scale(1.42)"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></g>
+
+  <circle class="ring-bg" cx="300" cy="310" r="52"/>
+  <circle id="socRing" class="ring" cx="300" cy="310" r="52" transform="rotate(-90 300 310)" stroke-dasharray="0 327"/>
+  <circle class="node n-bt" cx="300" cy="310" r="44"/>
+  <g class="ico i-bt" transform="translate(283 293) scale(1.42)"><rect x="3" y="7" width="16" height="10" rx="2.5"/><path d="M21 10.5v3M7 10.5v3M11 10.5v3"/></g>
+
+  <circle class="node n-gr" cx="660" cy="110" r="44"/>
+  <g class="ico i-gr" transform="translate(643 93) scale(1.42)"><path d="M8 21 12 3l4 18M9.6 14h4.8M10.6 9h2.8M5 7h14"/></g>
+
+  <circle class="node n-ho" cx="660" cy="310" r="44"/>
+  <g class="ico i-ho" transform="translate(643 293) scale(1.42)"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5"/></g>
+
+  <text x="228" y="96" text-anchor="end" class="lbl" data-t="pv">PV-Leistung</text>
+  <text x="228" y="134" text-anchor="end" class="val" id="vPv">—</text>
+  <text x="228" y="158" text-anchor="end" class="dir" id="dPv"></text>
+
+  <text x="228" y="296" text-anchor="end" class="lbl" data-t="bat">Akku</text>
+  <text x="228" y="334" text-anchor="end" class="val" id="vBat">—</text>
+  <text x="228" y="358" text-anchor="end" class="dir" id="dBat"></text>
+
+  <text x="732" y="96" class="lbl" data-t="grid">Netz</text>
+  <text x="732" y="134" class="val" id="vGrid">—</text>
+  <text x="732" y="158" class="dir" id="dGrid"></text>
+
+  <text x="732" y="296" class="lbl" data-t="house">Haus</text>
+  <text x="732" y="334" class="val" id="vHouse">—</text>
+  <text x="732" y="358" class="dir" data-t="calc">aus PV, Akku und Netz</text>
+</svg>
+</div>
+
+<div class="cards">
+  <section class="panel">
+    <h2 data-t="strings">PV-Strings</h2>
+    <table id="tStr"></table>
+  </section>
+  <section class="panel">
+    <h2 data-t="phases">Netz je Phase</h2>
+    <table id="tPh"></table>
+    <p class="note" id="nHz"></p>
+  </section>
+  <section class="panel">
+    <h2 data-t="meters">Zähler und Akku</h2>
+    <table id="tEn"></table>
+  </section>
+</div>
+<div class="cards two">
+  <section class="panel">
+    <h2 data-t="limit">Leistungsbegrenzung durch Consolinno</h2>
+    <table id="tLim"></table>
+    <p class="note" id="nLim"></p>
+  </section>
+  <section class="panel">
+    <h2 data-t="tas">Tasmota-Zähler</h2>
+    <table id="tTas"></table>
+    <p class="note" id="nTas"></p>
+  </section>
+</div>
+
+<div class="foot-row">
+  <button class="sec" type="button" onclick="poll()" data-t="poll">HIT jetzt abfragen</button>
+  <span class="meta" id="age"></span>
+</div>
+</main></div>
+
+<script>
+const I18N={
+ de:{live:'Live',settings:'Einstellungen',proto:'Protokoll'},
+ en:{live:'Live',settings:'Settings',proto:'Log'}
+};
+let LANG='de';
+// Menüpunkte nicht gewählter Funktionen ausblenden (Einstellungen > Funktionen schaltet sie wieder ein)
+function navFeat(F,disp){
+  F=F||{};const off={sunspec:F.sunspec===false,mqtt:F.mqtt===false,gateway:F.gateway===false,knx:F.knx===false,
+    tasmota:F.tasmota===false,cloud:F.cloud===false,akku:F.akku===false,display:disp===false};
+  document.querySelectorAll('.side nav a').forEach(a=>{const m=/#(\w+)$/.exec(a.getAttribute('href')||'');
+    if(m&&m[1] in off)a.classList.toggle('hide',off[m[1]]);});
+}
+function t(k){return (I18N[LANG]&&I18N[LANG][k])||k;}
+function applyThemeLang(s){
+  LANG=(s.uiLang==='en')?'en':'de';
+  document.documentElement.lang=LANG;
+  document.documentElement.dataset.theme=s.uiTheme||'mint';
+  const sl=document.getElementById('uiLang'); if(sl)sl.value=LANG;
+  const st=document.getElementById('uiTheme'); if(st)st.value=s.uiTheme||'mint';
+  const sv=document.getElementById('sideVer'); if(sv)sv.textContent='v'+(s.version||'')+'\n'+(s.ipShown||'');
+  if(!window.NAV_FROM_FORM)navFeat(s.features,s.hasDisplay);
+}
+async function saveUiPrefs(){
+  const body={uiLang:document.getElementById('uiLang').value,uiTheme:document.getElementById('uiTheme').value};
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  location.reload();
+}
+</script>
+<script src="/b.js"></script>
+<script>
+const TX={
+ de:{live:'Live',demo:'Demo-Daten',port:'Modbus-Port 1502',pv:'PV-Leistung',bat:'Akku',grid:'Netz',house:'Haus',
+   calc:'aus PV, Akku und Netz',strings:'PV-Strings',phases:'Netz je Phase',meters:'Zähler und Akku',
+   limit:'Leistungsbegrenzung durch Consolinno',tas:'Tasmota-Zähler',poll:'HIT jetzt abfragen',
+   charge:'lädt',discharge:'entlädt',idle:'ruht',imp:'Bezug',exp:'Einspeisung',soc:'Ladestand',
+   hitOk:'antwortet',hitBad:'keine Antwort',hemsOk:'fragt ab',hemsWait:'wartet',
+   string:'String',total:'Summe',phase:'Phase',freq:'Netzfrequenz',yield:'PV-Ertrag gesamt',eimp:'Netzbezug gesamt',
+   eexp:'Einspeisung gesamt',batv:'Akkuspannung',bata:'Akkustrom',soh:'Akkuzustand (SoH)',ctmax:'Zelltemperatur max',cspread:'Zellspreizung',
+   lim:'Begrenzung',limOn:'aktiv',limOff:'keine',limVal:'Grenzwert',noWrite:'Consolinno hat noch nichts geschrieben.',
+   tasOff:'Kein Tasmota-Zähler verbunden. Einrichten unter Datenquellen, Tasmota-Zähler.',power:'Leistung',
+   src:'Quelle',srcN:'HIT direkt',srcM:'MQTT',srcC:'Hoymiles-Cloud',srcD:'Demo',srcX:'keine',
+   age:s=>'Letzte Antwort vom HIT vor '+s+' s',net:'Netzwerk',hems:'Consolinno',mqin:'MQTT-Eingang',
+   today:'Ertrag gesamt',flow:'Energiefluss zwischen PV, Akku, HIT, Netz und Haus'},
+ en:{live:'Live',demo:'Demo data',port:'Modbus port 1502',pv:'Solar power',bat:'Battery',grid:'Grid',house:'Home',
+   calc:'from solar, battery and grid',strings:'PV strings',phases:'Grid per phase',meters:'Meters and battery',
+   limit:'Power limit set by Consolinno',tas:'Tasmota meter',poll:'Poll HIT now',
+   charge:'charging',discharge:'discharging',idle:'idle',imp:'import',exp:'export',soc:'Charge',
+   hitOk:'responding',hitBad:'no response',hemsOk:'polling',hemsWait:'waiting',
+   string:'String',total:'Total',phase:'Phase',freq:'Grid frequency',yield:'PV yield total',eimp:'Grid import total',
+   eexp:'Export total',batv:'Battery voltage',bata:'Battery current',soh:'Battery health (SoH)',ctmax:'Cell temperature max',cspread:'Cell spread',
+   lim:'Limit',limOn:'active',limOff:'none',limVal:'Setpoint',noWrite:'Consolinno has not written anything yet.',
+   tasOff:'No Tasmota meter connected. Set it up under Data sources, Tasmota meter.',power:'Power',
+   src:'Source',srcN:'HIT direct',srcM:'MQTT',srcC:'Hoymiles cloud',srcD:'Demo',srcX:'none',
+   age:s=>'Last HIT response '+s+' s ago',net:'Network',hems:'Consolinno',mqin:'MQTT input',
+   today:'Total yield',flow:'Energy flow between solar, battery, HIT, grid and home'}
+};
+const T=k=>(TX[LANG]||TX.de)[k];
+// Akkudetails (eigener Abruf alle 30 s); nur Zeilen mit Werten
+let BAT=null,BAT_AT=0;
+function batRows(F){const m=(BAT&&BAT.merged)||{},r=[];if(F.akku===false)return r;
+  if(m.cellTempMax!==undefined)r.push([T('ctmax'),m.cellTempMax+' °C']);
+  if(m.cellDiffMv!==undefined)r.push([T('cspread'),m.cellDiffMv+' mV']);return r;}
+const $=id=>document.getElementById(id);
+const watt=n=>num(Math.abs(n))+'<tspan dx="6">W</tspan>';
+// Netz: Bezug positiv, Einspeisung mit Minus; Farbe Weiß→Rot / Gelb→Grün
+const wattGrid=n=>{const v=Number(n)||0;return (v<0?'−':'')+num(Math.abs(v))+'<tspan dx="6">W</tspan>';};
+const gridFill=n=>{
+  const v=Number(n)||0,p=Math.round(Math.min(1,Math.abs(v)/2000)*100);
+  if(v>=0)return`color-mix(in srgb,var(--fault) ${p}%,var(--ink))`; // ink→rot
+  return`color-mix(in srgb,#2eb478 ${p}%,var(--sun))`; // gelb→grün
+};
+const rows=r=>r.map(([k,v])=>`<tr><td>${k}</td><td class="n">${v}</td></tr>`).join('');
+function run(id,w,forward){const e=$(id);const on=Math.abs(w)>20;e.classList.toggle('on',on);e.classList.toggle('rev',on&&!forward);}
+const chip=(state,label)=>`<span class="chip ${state}"><span class="dot"></span>${label}</span>`;
+async function poll(){await fetch('/api/poll',{method:'POST'});refresh();}
+async function refresh(){
+  const s=await(await fetch('/api/status')).json();
+  if(s.setupComplete===false){location.href='/setup';return;}
+  applyThemeLang(s);
+  document.querySelectorAll('[data-t]').forEach(e=>{const v=T(e.dataset.t);if(typeof v==='string')e.textContent=v;});
+  $('flowDesc').textContent=T('flow');
+  $('ip').textContent=s.ipShown||'—';
+  $('demo').classList.toggle('hide',!s.demoMode);
+
+  const pv=Number(s.pvW)||0, bat=Number(s.batW)||0;
+  const useTas=!!(s.tasmotaOk&&s.tasmotaLiveGrid);
+  const grid=useTas?(Number(s.tasmotaPowerW)||0):(Number(s.gridW)||0);
+  const house=Math.max(0,pv+bat+grid);
+  $('vPv').innerHTML=watt(pv);
+  $('dPv').textContent=T('today')+' '+num(s.energyPvKwh)+' kWh';
+  $('vBat').innerHTML=watt(bat);
+  const soc=Math.max(0,Math.min(100,Number(s.soc)||0));
+  $('dBat').textContent=(bat>20?T('discharge'):(bat<-20?T('charge'):T('idle')))+', '+num(soc)+' %';
+  $('socRing').setAttribute('stroke-dasharray',(326.7*soc/100).toFixed(1)+' 327');
+  $('socRing').style.stroke=soc<15?'var(--fault)':(soc<30?'var(--warn)':'var(--acc)');
+  $('vGrid').innerHTML=wattGrid(grid);
+  $('vGrid').style.fill=gridFill(grid);
+  const gridDir=grid>20?T('imp'):(grid<-20?T('exp'):'');
+  $('dGrid').textContent=useTas?(gridDir?(T('tas')+' · '+gridDir):T('tas')):gridDir;
+  $('vHouse').innerHTML=watt(house);
+  run('fPv',pv,true); run('fBat',bat,bat>0); run('fGrid',grid,grid<0); run('fHouse',house,true);
+  $('dHit').textContent=s.hitOk?T('hitOk'):T('hitBad');
+  $('dHit').style.fill=s.hitOk?'var(--dim)':'var(--fault)';
+  $('hemsTxt').textContent=s.sunspecClient?T('hemsOk'):T('hemsWait');
+  $('wData').classList.toggle('live',!!s.sunspecClient);
+  $('hemsBox').classList.toggle('live',!!s.sunspecClient);
+  const F=s.features||{};
+  if(F.akku!==false&&Date.now()-BAT_AT>30000){BAT_AT=Date.now();fetch('/api/battery').then(r=>r.json()).then(d=>{BAT=d;}).catch(()=>{});}
+  $('hemsG').style.display=F.sunspec===false?'none':'';
+
+  const src={NATIVE:T('srcN'),MQTT:T('srcM'),CLOUD:T('srcC'),DEMO:T('srcD')}[s.dataOrigin]||T('srcX');
+  const opt=ok=>ok?'on':'idle';
+  // nur Dienste zeigen, die gewählt sind
+  const fc=(on,html)=>on===false?'':html;
+  $('chips').innerHTML=chip(s.hitOk?'on':'off','HIT')+fc(F.sunspec,chip(opt(s.sunspecClient),T('hems')))+
+    chip((s.ethOk||s.wifiOk)?'on':'off',T('net'))+fc(F.mqtt,chip(opt(s.mqttOk),'MQTT')+chip(opt(s.mqttIngestOk),T('mqin')))+
+    fc(F.cloud,chip(opt(s.cloudOk),'Cloud'))+fc(F.knx,chip(opt(s.knxOk),'KNX'))+
+    (s.gatewayEnabled?chip(opt(s.gatewayClients>0),'Gateway'+(s.gatewayClients?' ('+s.gatewayClients+')':'')):'')+
+    `<span class="chip">${T('src')}: <b style="color:var(--ink);font-weight:600">${src}</b></span>`;
+
+  const str=[1,2,3,4].map(i=>[T('string')+' '+i,num(s['pv'+i+'W'])+' W']);
+  str.push([T('total'),`<b>${num(pv)} W</b>`]);
+  $('tStr').innerHTML=rows(str);
+  const phW=w=>{const v=Number(w)||0;const t=(v<0?'−':'')+num(Math.abs(v));return`<span style="color:${gridFill(v)}">${t}</span>`;};
+  $('tPh').innerHTML=`<tr><th>${T('phase')}</th><th class="n">V</th><th class="n">A</th><th class="n">W</th></tr>`+
+    [1,2,3].map(i=>`<tr><td>L${i}</td><td class="n">${num(s['v'+i],1)}</td><td class="n">${num(s['i'+i],1)}</td><td class="n">${phW(s['gridW'+i])}</td></tr>`).join('');
+  $('nHz').textContent=T('freq')+' '+num(s.freqHz,2)+' Hz';
+  $('tEn').innerHTML=rows([
+    [T('yield'),num(s.energyPvKwh,1)+' kWh'],[T('eimp'),num(s.energyImpKwh,1)+' kWh'],[T('eexp'),num(s.energyExpKwh,1)+' kWh'],
+    [T('soc'),num(soc)+' %'],[T('batv'),num(s.batV,1)+' V'],
+    [T('bata'),(()=>{const a=-(Number(s.batA)||0);return (a>0?'+':'')+num(a,1)+' A';})()],
+    [T('soh'),num(s.soh)+' %']].concat(batRows(F)));
+  $('tLim').innerHTML=rows([[T('lim'),s.wMaxLimEna?T('limOn'):T('limOff')],[T('limVal'),num((Number(s.wMaxLimPct)||0)/100,1)+' %']]);
+  $('nLim').textContent=s.lastWriteNote||T('noWrite');
+  if(s.tasmotaOk){
+    const tp=Number(s.tasmotaPowerW)||0;
+    $('tTas').innerHTML=rows([[T('power'),`<span style="color:${gridFill(tp)}">${(tp<0?'−':'')+num(Math.abs(tp))} W</span>`],[T('eimp'),num(s.tasmotaTotalKwh,2)+' kWh'],[T('eexp'),num(s.tasmotaExportKwh,2)+' kWh']]);
+    $('nTas').textContent=s.tasmotaSensorKey||'';
+  }else{$('tTas').innerHTML='';$('nTas').textContent=T('tasOff');}
+  $('age').textContent=T('age')(Math.floor((s.lastHitAgeMs||0)/1000));
+}
+refresh();setInterval(()=>{if(!document.hidden)refresh();},2000);
+</script></body></html>
