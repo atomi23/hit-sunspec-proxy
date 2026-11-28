@@ -2,15 +2,18 @@
 
 [Deutsch](./changelog.md) · **English** · [Back to overview](../README.en.md)
 
-## New in v0.7.1
+## New in v0.7.2
+- **Web UI stays reachable:** If the web server or the HTTPS proxy hung, SunSpec kept running but the pages would not open until the device was power-cycled. A self-test now queries port 80 via 127.0.0.1 every 30 s and restarts the device after about 2 minutes without an answer. If only port 443 hangs, port 80 stops redirecting to HTTPS at once; after 10 minutes the device restarts as well. Every restart by the self-test is logged with its reason in the system log.
+
+<details>
+<summary><b>Older versions</b> (v0.7.1 to v0.5.6)</summary>
+
+### v0.7.1
 - **Bluetooth LED strip via KNX (T-Connect-Pro only):** The smallest brightness value (DPT 5.001, raw value 1) dims the strip to 1 % instead of switching it off. Only 0 switches off.
 - **"Bluetooth" page:** "Last sent" shows every command the strip accepted, even if a later command of the same sequence fails. Rapid use no longer starts parallel requests (3 clicks: 10 instead of 51 requests to the device).
 - **SunSpec and Modbus gateway:** When all connection slots are taken, the longest-idle connection is dropped instead of always the first one. Until now that could hit the active HEMS.
 - **Tasmota meter:** A slow or silent meter no longer stalls SunSpec and the Modbus gateway (previously up to 3 s per poll).
 - **Web UI:** Is gzip-compressed at build time; the firmware is about 105 KiB smaller per board (WT32-ETH01: 88.8 % used instead of 94.3 %).
-
-<details>
-<summary><b>Older versions</b> (v0.7.0 to v0.5.6)</summary>
 
 ### v0.7.0
 - **Bluetooth settings on the "Bluetooth" page (T-Connect-Pro only):** Strip search, name, address and power-on command now sit where the strip is controlled, instead of under *Settings → KNX*. Only the group addresses stay there.
