@@ -3,6 +3,7 @@
 #include "EventLog.h"
 #include "LiveData.h"
 #include "LocalCertificates.h"
+#include "WebHealth.h"
 #include <LittleFS.h>
 #include <Preferences.h>
 #include <WiFi.h>
@@ -22,6 +23,8 @@
 #include <mbedtls/x509_crt.h>
 #include <time.h>
 
+// OtaUpdate.h bringt ESPAsyncWebServer mit, dessen HTTP_GET/HTTP_POST mit esp_http_server kollidieren
+namespace OtaUpdate { bool inProgress(); }
 namespace {
 constexpr const char *OWN_CRT = "/tls/own.crt";
 constexpr const char *OWN_KEY = "/tls/own.key";
@@ -37,6 +40,14 @@ bool caSigned = false;
 bool lowRam = false;
 uint32_t startAfterMs = 0;
 uint32_t restartAt = 0;
+// Lebenszeichen der httpd-Task (checkAlive)
+constexpr uint32_t BEACON_PERIOD_MS = 30000;
+constexpr uint32_t STUCK_AFTER_MS = 60000;        // länger als jede Proxy-Anfrage ohne Daten (15 s Leerlauf)
+constexpr uint32_t STUCK_RESTART_MS = 10 * 60000; // so lange darf Port 443 hängen, bevor das Gerät neu startet
+std::atomic<bool> beaconDone{false};
+uint32_t beaconSent = 0;
+uint32_t lastBeacon = 0;
+uint32_t stuckSince = 0;
 std::atomic<uint8_t> pending{0};
 enum : uint8_t { P_NONE = 0, P_RESTART = 1, P_REGENERATE = 2 };
 
@@ -589,9 +600,41 @@ void stop() {
   if (!server) return;
   httpd_ssl_stop(server);
   server = nullptr;
+  beaconSent = 0;
+  stuckSince = 0;
   portENTER_CRITICAL(&sessMux);
   for (Sess &s : sess) s.fd = -1;
   portEXIT_CRITICAL(&sessMux);
+}
+
+// Läuft die httpd-Task noch? Ein Arbeitsauftrag in ihrer Warteschlange muss zeitnah drankommen.
+// Hängt sie, leitet Port 80 nicht mehr auf HTTPS um; bleibt es so, startet das Gerät neu.
+void checkAlive() {
+  if (!server || restartAt) return;
+  const uint32_t now = millis();
+  if (beaconSent && beaconDone.load()) {
+    beaconSent = 0;
+    lastBeacon = now;
+    if (stuckSince) {
+      stuckSince = 0;
+      EventLog::add('I', "HTTPS", ConfigStore::uiText("Port 443 antwortet wieder", "Port 443 responding again"));
+    }
+    return;
+  }
+  if (!beaconSent) {
+    if (now - lastBeacon < BEACON_PERIOD_MS) return;
+    beaconDone = false;
+    if (httpd_queue_work(server, [](void *) { beaconDone = true; }, nullptr) == ESP_OK) beaconSent = now ? now : 1;
+    else lastBeacon = now;
+    return;
+  }
+  if (!stuckSince && now - beaconSent > STUCK_AFTER_MS) {
+    stuckSince = now ? now : 1;
+    EventLog::add('E', "HTTPS", ConfigStore::uiText("Port 443 hängt, Port 80 leitet nicht mehr um",
+                                                  "Port 443 is stuck; port 80 no longer redirects"));
+  }
+  if (stuckSince && now - stuckSince > STUCK_RESTART_MS && !OtaUpdate::inProgress())
+    WebHealth::restart(WebHealth::Reason::Https);
 }
 
 void closeIdle() {
@@ -757,6 +800,7 @@ void loop() {
     regen = false;
   }
   closeIdle();
+  checkAlive();
 }
 
 bool running() { return server != nullptr; }
@@ -764,7 +808,8 @@ bool running() { return server != nullptr; }
 // Ohne PSRAM kann der interne RAM für eine TLS-Sitzung fehlen; dann darf HTTP nicht auf HTTPS umleiten,
 // sonst ist die Oberfläche gar nicht mehr erreichbar
 bool hasRoom() {
-  return server && (tlsInPsram || heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) >= 2 * TLS_BUF + 64);
+  return server && !stuckSince &&
+         (tlsInPsram || heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) >= 2 * TLS_BUF + 64);
 }
 
 String infoJson() {

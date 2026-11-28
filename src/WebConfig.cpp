@@ -534,6 +534,8 @@ void begin() {
     next();
   });
 
+  // Selbsttest (WebHealth): ohne Anmeldung, ohne Inhalt
+  server.on(AsyncURIMatcher::exact("/api/ping"), HTTP_GET, [](AsyncWebServerRequest *req) { req->send(204); });
   // Retain the public stylesheet for clients with HTML cached from older firmware.
   server.on("/a.css", HTTP_GET, [](AsyncWebServerRequest *req) {
     sendGzip(req, "text/css", WebAssets::UI_CSS, sizeof(WebAssets::UI_CSS));

@@ -19,6 +19,7 @@
 #include "History.h"
 #include "EventLog.h"
 #include "HttpsServer.h"
+#include "WebHealth.h"
 #include "BatteryData.h"
 #ifdef TLS_DIAG
 #include <esp_heap_caps.h>
@@ -55,6 +56,7 @@ void setup() {
   KnxIp::begin(cfg);
   DataBroker::begin();
   WebConfig::begin();
+  WebHealth::begin();
   History::begin();
   HttpsServer::begin(cfg); // nach History: braucht das Dateisystem
 
